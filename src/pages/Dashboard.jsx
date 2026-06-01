@@ -466,16 +466,26 @@ export default function Dashboard() {
 
     return (
         <div className="dashboard-page compact-dashboard">
-            <header className="dashboard-simple-header">
+            <header className="dashboard-simple-header dashboard-household-header">
                 <div>
-                    <p className="eyebrow">Evergrove</p>
-                    <h2>Today</h2>
-                </div>
+                    <p className="dashboard-household-name">
+                        {preferences?.household_name || "My Household"}
+                    </p>
 
-                <p>
-                    A simple view of what is happening today, what is coming up,
-                    and what still needs to get done.
-                </p>
+                    <h2>Family Command Center</h2>
+
+                    <p className="dashboard-date">
+                        {new Date().toLocaleDateString(undefined, {
+                            weekday: "long",
+                            month: "long",
+                            day: "numeric"
+                        })}
+                    </p>
+
+                    <p className="dashboard-powered-by">
+                        Powered by Evergrove
+                    </p>
+                </div>
             </header>
 
             {happeningNowEvents.length > 0 && (
@@ -505,7 +515,7 @@ export default function Dashboard() {
                         {dashboardLoading ? (
                             <EmptyState>Loading today...</EmptyState>
                         ) : todayEvents.length === 0 ? (
-                            <EmptyState>Nothing scheduled for today.</EmptyState>
+                            <EmptyState>Enjoy your day! Nothing scheduled for today.</EmptyState>
                         ) : (
                             <div className="today-checklist">
                                 {todayEvents.map(item => (

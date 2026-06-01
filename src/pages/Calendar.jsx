@@ -6,7 +6,6 @@ import useSchoolItems from "../hooks/useSchoolItems"
 import useFamilyMembers from "../hooks/useFamilyMembers"
 import useTrips from "../hooks/useTrips"
 import useActivitySessions from "../hooks/useActivitySessions"
-
 import usePreferences from "../hooks/usePreferences"
 
 function getDateOnly(value) {
@@ -50,6 +49,13 @@ function formatTimeRange(startTime, endTime) {
     if (startTime) return formatTime(startTime)
 
     return ""
+}
+
+function getMinutesFromTime(timeString) {
+    if (!timeString) return 99999
+
+    const [hours, minutes] = timeString.split(":").map(Number)
+    return hours * 60 + minutes
 }
 
 function getTodayString() {
@@ -111,31 +117,49 @@ function buildCalendarEvents({
     schoolItems,
     familyMembers,
     trips,
-    visibleDate
+    visibleDate,
+    showActivitySessions
 }) {
     const events = []
 
-    activitySessions.forEach(session => {
-        if (!session.session_date) return
+    const activityIdsWithSessions = new Set(
+        activitySessions
+            .map(session => session.activity_id)
+            .filter(Boolean)
+    )
 
-        const activity = session.activities
-        const member = activity?.family_members
-        const timeRange = formatTimeRange(session.start_time, session.end_time)
+    if (showActivitySessions) {
+        activitySessions.forEach(session => {
+            if (!session.session_date) return
 
-        events.push({
-            id: `session-${session.id}`,
-            type: "session",
-            date: getDateOnly(session.session_date),
-            icon: member?.avatar_emoji || "📅",
-            title: activity?.name || "Activity session",
-            subtitle: [member?.name, timeRange, session.location]
-                .filter(Boolean)
-                .join(" • ")
+            const activity = session.activities
+            const member = activity?.family_members
+            const timeRange = formatTimeRange(
+                session.start_time,
+                session.end_time
+            )
+
+            events.push({
+                id: `session-${session.id}`,
+                type: "session",
+                date: getDateOnly(session.session_date),
+                icon: member?.avatar_emoji || "📅",
+                title: activity?.name || "Activity session",
+                subtitle: [
+                    timeRange,
+                    member?.name,
+                    session.location
+                ]
+                    .filter(Boolean)
+                    .join(" • "),
+                sortTime: getMinutesFromTime(session.start_time)
+            })
         })
-    })
+    }
 
     activities.forEach(activity => {
         const member = activity.family_members
+        const hasSessions = activityIdsWithSessions.has(activity.id)
 
         if (activity.registration_open_date) {
             events.push({
@@ -144,7 +168,8 @@ function buildCalendarEvents({
                 date: getDateOnly(activity.registration_open_date),
                 icon: "📣",
                 title: `${activity.name} registration opens`,
-                subtitle: member?.name || ""
+                subtitle: member?.name || "",
+                sortTime: 99999
             })
         }
 
@@ -155,18 +180,43 @@ function buildCalendarEvents({
                 date: getDateOnly(activity.registration_close_date),
                 icon: "⏳",
                 title: `${activity.name} registration closes`,
-                subtitle: member?.name || ""
+                subtitle: member?.name || "",
+                sortTime: 99999
             })
         }
 
-        if (activity.start_date) {
+        if (!hasSessions && activity.start_date) {
+            const timeRange = formatTimeRange(
+                activity.start_time,
+                activity.end_time
+            )
+
             events.push({
                 id: `activity-${activity.id}-start`,
                 type: "activity",
                 date: getDateOnly(activity.start_date),
                 icon: member?.avatar_emoji || "📅",
                 title: `${activity.name} starts`,
-                subtitle: member?.name || ""
+                subtitle: [timeRange, member?.name]
+                    .filter(Boolean)
+                    .join(" • "),
+                sortTime: getMinutesFromTime(activity.start_time)
+            })
+        }
+
+        if (
+            !hasSessions &&
+            activity.end_date &&
+            activity.end_date !== activity.start_date
+        ) {
+            events.push({
+                id: `activity-${activity.id}-end`,
+                type: "activity",
+                date: getDateOnly(activity.end_date),
+                icon: "🏁",
+                title: `${activity.name} ends`,
+                subtitle: member?.name || "",
+                sortTime: 99999
             })
         }
     })
@@ -180,7 +230,8 @@ function buildCalendarEvents({
             date: getDateOnly(item.due_date),
             icon: item.family_members?.avatar_emoji || "🎒",
             title: item.title,
-            subtitle: item.family_members?.name || item.category || "School"
+            subtitle: item.family_members?.name || item.category || "School",
+            sortTime: 99999
         })
     })
 
@@ -198,7 +249,8 @@ function buildCalendarEvents({
             date: getDateOnly(trip.start_date),
             icon: "🚗",
             title: trip.name,
-            subtitle: attendees || trip.destination || "Trip"
+            subtitle: attendees || trip.destination || "Trip",
+            sortTime: 99999
         })
     })
 
@@ -212,11 +264,22 @@ function buildCalendarEvents({
             date,
             icon: "🎂",
             title: `${member.name}'s birthday`,
-            subtitle: "Birthday"
+            subtitle: "Birthday",
+            sortTime: 99999
         })
     })
 
-    return events
+    return events.sort((a, b) => {
+        if (a.date !== b.date) {
+            return a.date.localeCompare(b.date)
+        }
+
+        if ((a.sortTime || 99999) !== (b.sortTime || 99999)) {
+            return (a.sortTime || 99999) - (b.sortTime || 99999)
+        }
+
+        return a.title.localeCompare(b.title)
+    })
 }
 
 export default function Calendar() {
@@ -231,6 +294,8 @@ export default function Calendar() {
     const { preferences, loading: preferencesLoading } = usePreferences()
 
     const weekStartsOn = preferences?.week_starts_on || "Sunday"
+    const showActivitySessions =
+        preferences?.show_activity_sessions !== false
 
     const calendarDays = useMemo(
         () => getCalendarDays(visibleDate, weekStartsOn),
@@ -245,7 +310,8 @@ export default function Calendar() {
                 schoolItems,
                 familyMembers,
                 trips,
-                visibleDate
+                visibleDate,
+                showActivitySessions
             }),
         [
             activities,
@@ -253,7 +319,8 @@ export default function Calendar() {
             schoolItems,
             familyMembers,
             trips,
-            visibleDate
+            visibleDate,
+            showActivitySessions
         ]
     )
 
@@ -382,7 +449,9 @@ export default function Calendar() {
 
                             return (
                                 <div
-                                    className={`calendar-day ${day.isCurrentMonth ? "" : "calendar-day-muted"
+                                    className={`calendar-day ${day.isCurrentMonth
+                                            ? ""
+                                            : "calendar-day-muted"
                                         } ${isToday ? "calendar-day-today" : ""}`}
                                     key={day.dateString}
                                 >
@@ -402,7 +471,10 @@ export default function Calendar() {
                                                 onClick={() => handleEventClick(event)}
                                             >
                                                 <span>{event.icon}</span>
-                                                <strong>{event.title}</strong>
+
+                                                <strong>
+                                                    {event.title}
+                                                </strong>
                                             </button>
                                         ))}
 

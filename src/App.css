@@ -1217,3 +1217,36 @@ a {
 .dashboard-now-banner strong {
   color: var(--accent);
 }
+
+.dashboard-household-header {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.dashboard-household-header>div {
+  max-width: 700px;
+}
+
+.dashboard-household-name {
+  margin: 0 0 4px;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.dashboard-powered-by {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.dashboard-date {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
