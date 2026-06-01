@@ -170,12 +170,8 @@ function formatTime(timeString) {
 }
 
 function formatTimeRange(startTime, endTime) {
-    if (startTime && endTime) {
-        return `${formatTime(startTime)} - ${formatTime(endTime)}`
-    }
-
+    if (startTime && endTime) return `${formatTime(startTime)} - ${formatTime(endTime)}`
     if (startTime) return formatTime(startTime)
-
     return ""
 }
 
@@ -263,9 +259,7 @@ function sortActivitiesByDate(a, b) {
     const aDate = getClosestRelevantDate(a)
     const bDate = getClosestRelevantDate(b)
 
-    if (aDate.getTime() !== bDate.getTime()) {
-        return aDate - bDate
-    }
+    if (aDate.getTime() !== bDate.getTime()) return aDate - bDate
 
     return (a.name || "").localeCompare(b.name || "")
 }
@@ -283,6 +277,96 @@ function getActivityMeta(activity, member) {
     ]
         .filter(Boolean)
         .join(" • ")
+}
+
+function getTodayString() {
+    const today = new Date()
+    return [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, "0"),
+        String(today.getDate()).padStart(2, "0")
+    ].join("-")
+}
+
+function createLocalDate(dateString) {
+    const [year, month, day] = String(dateString)
+        .slice(0, 10)
+        .split("-")
+        .map(Number)
+
+    return new Date(year, month - 1, day)
+}
+
+function getDaysUntil(dateString) {
+    if (!dateString) return null
+
+    const today = createLocalDate(getTodayString())
+    const target = createLocalDate(dateString)
+
+    return Math.round((target - today) / (1000 * 60 * 60 * 24))
+}
+
+function groupActivities(activities) {
+    const groups = {
+        thisWeek: [],
+        later: [],
+        unscheduled: [],
+        past: []
+    }
+
+    activities.forEach(activity => {
+        const date = activity.start_date || activity.end_date
+        const daysUntil = getDaysUntil(date)
+
+        if (daysUntil === null) {
+            groups.unscheduled.push(activity)
+            return
+        }
+
+        if (daysUntil < 0) {
+            groups.past.push(activity)
+            return
+        }
+
+        if (daysUntil <= 7) {
+            groups.thisWeek.push(activity)
+            return
+        }
+
+        groups.later.push(activity)
+    })
+
+    return groups
+}
+
+function ActivitySection({
+    title,
+    subtitle,
+    activities,
+    emptyText,
+    renderActivityRow,
+    className = ""
+}) {
+    return (
+        <section className={`activity-command-section ${className}`}>
+            <div className="activity-section-header">
+                <div>
+                    <h3>{title}</h3>
+                    {subtitle && <p>{subtitle}</p>}
+                </div>
+
+                <span>{activities.length}</span>
+            </div>
+
+            {activities.length === 0 ? (
+                <p className="dashboard-empty">{emptyText}</p>
+            ) : (
+                <div className="activity-command-list">
+                    {activities.map(activity => renderActivityRow(activity))}
+                </div>
+            )}
+        </section>
+    )
 }
 
 export default function Activities() {
@@ -342,11 +426,18 @@ export default function Activities() {
             .sort(sortActivitiesByDate)
     }, [activities, activitiesById, selectedFamilyMemberId])
 
+    const groupedActivities = groupActivities(visibleActivities)
+
     const parentOptions = useMemo(() => {
         return activities
             .filter(activity => activity.id !== editingId)
             .sort(sortActivitiesByDate)
     }, [activities, editingId])
+
+    const activeCount =
+        groupedActivities.thisWeek.length +
+        groupedActivities.later.length +
+        groupedActivities.unscheduled.length
 
     async function loadData() {
         try {
@@ -692,18 +783,15 @@ export default function Activities() {
         const icon = getActivityIcon(activity)
 
         return (
-            <section className="card" key={activity.id}>
-                <div
-                    className="mini-row"
-                    style={{
-                        alignItems: "center",
-                        cursor: "pointer"
-                    }}
-                    onClick={() => toggleExpanded(activity.id)}
-                >
-                    <span className="mini-avatar">{icon}</span>
+            <div className="activity-command-item" key={activity.id}>
+                <div className="activity-command-row">
+                    <span className="activity-command-icon">{icon}</span>
 
-                    <div style={{ flex: 1 }}>
+                    <button
+                        className="activity-command-main"
+                        type="button"
+                        onClick={() => toggleExpanded(activity.id)}
+                    >
                         <strong>{activity.name}</strong>
 
                         <p>
@@ -712,42 +800,34 @@ export default function Activities() {
                         </p>
 
                         <small>{getActivityMeta(activity, member)}</small>
+                    </button>
+
+                    <div className="activity-command-badges">
+                        {config.showRegistration && (
+                            <span className={`status-pill ${getRegistrationStatus(activity).className}`}>
+                                {getRegistrationStatus(activity).label}
+                            </span>
+                        )}
+
+                        {childActivities.length > 0 && (
+                            <span className="status-pill">
+                                {childActivities.length} linked
+                            </span>
+                        )}
                     </div>
-
-                    {config.showRegistration && (
-                        <span className={`status-pill ${getRegistrationStatus(activity).className}`}>
-                            {getRegistrationStatus(activity).label}
-                        </span>
-                    )}
-
-                    {childActivities.length > 0 && (
-                        <span className="status-pill">
-                            {childActivities.length} linked
-                        </span>
-                    )}
 
                     <button
                         type="button"
-                        className="secondary-button"
-                        onClick={event => {
-                            event.stopPropagation()
-                            toggleExpanded(activity.id)
-                        }}
+                        className="secondary-button activity-details-button"
+                        onClick={() => toggleExpanded(activity.id)}
                     >
                         {isExpanded ? "Hide" : "Details"}
                     </button>
                 </div>
 
                 {isExpanded && (
-                    <div
-                        className="stack"
-                        style={{
-                            marginTop: "1rem",
-                            paddingTop: "1rem",
-                            borderTop: "1px solid var(--border)"
-                        }}
-                    >
-                        <div className="grid">
+                    <div className="activity-details-panel">
+                        <div className="activity-detail-grid">
                             {activity.organization && (
                                 <div>
                                     <p className="card-kicker">Organization</p>
@@ -829,13 +909,7 @@ export default function Activities() {
                                                     )}
                                                 </div>
 
-                                                <div
-                                                    style={{
-                                                        display: "flex",
-                                                        gap: "0.5rem",
-                                                        alignItems: "center"
-                                                    }}
-                                                >
+                                                <div className="sessions-actions">
                                                     <button
                                                         className="secondary-button"
                                                         type="button"
@@ -868,27 +942,15 @@ export default function Activities() {
                                     </div>
 
                                     <div className="sessions-actions">
-                                        <button
-                                            className="secondary-button"
-                                            type="button"
-                                            onClick={() => handleGenerateSessions(activity, "daily")}
-                                        >
+                                        <button className="secondary-button" type="button" onClick={() => handleGenerateSessions(activity, "daily")}>
                                             Generate Daily
                                         </button>
 
-                                        <button
-                                            className="secondary-button"
-                                            type="button"
-                                            onClick={() => handleGenerateSessions(activity, "weekly")}
-                                        >
+                                        <button className="secondary-button" type="button" onClick={() => handleGenerateSessions(activity, "weekly")}>
                                             Generate Weekly
                                         </button>
 
-                                        <button
-                                            className="secondary-button"
-                                            type="button"
-                                            onClick={() => handleCopyLastSession(activity, sessions)}
-                                        >
+                                        <button className="secondary-button" type="button" onClick={() => handleCopyLastSession(activity, sessions)}>
                                             Copy Last
                                         </button>
 
@@ -1018,67 +1080,53 @@ export default function Activities() {
                         )}
 
                         <div className="card-actions">
-                            <button
-                                className="secondary-button"
-                                type="button"
-                                onClick={() => startAddAssociatedEvent(activity)}
-                            >
+                            <button className="secondary-button" type="button" onClick={() => startAddAssociatedEvent(activity)}>
                                 + Add Associated Event
                             </button>
 
-                            <button
-                                className="secondary-button"
-                                type="button"
-                                onClick={() => startEdit(activity)}
-                            >
+                            <button className="secondary-button" type="button" onClick={() => startEdit(activity)}>
                                 Edit
                             </button>
 
-                            <button
-                                className="danger-button"
-                                type="button"
-                                onClick={() => handleDelete(activity)}
-                            >
+                            <button className="danger-button" type="button" onClick={() => handleDelete(activity)}>
                                 Delete
                             </button>
                         </div>
                     </div>
                 )}
-            </section>
+            </div>
         )
     }
 
     return (
-        <>
-            <section className="hero-card">
-                <div className="section-header">
-                    <div>
-                        <p className="eyebrow">Activities</p>
-                        <h2>Activities</h2>
-                        <p>
-                            Track sports, camps, school events, church events,
-                            travel, lodging, birthdays, holidays, costs, dates,
-                            and associated plans.
-                        </p>
-                    </div>
+        <div className="activities-command-page">
+            <header className="calendar-header activities-command-header">
+                <div>
+                    <p className="dashboard-household-name">Activities</p>
+                    <h2>Family Activities</h2>
 
-                    <button
-                        type="button"
-                        className="primary-button"
-                        onClick={() => {
-                            if (showForm) {
-                                resetForm()
-                            } else {
-                                setForm({ ...initialForm })
-                                setEditingId(null)
-                                setShowForm(true)
-                            }
-                        }}
-                    >
-                        {showForm ? "Cancel" : "+ Add Activity"}
-                    </button>
+                    <p className="activities-header-summary">
+                        {activeCount} active • {groupedActivities.thisWeek.length} this week •{" "}
+                        {groupedActivities.past.length} past
+                    </p>
                 </div>
-            </section>
+
+                <button
+                    type="button"
+                    className="primary-button"
+                    onClick={() => {
+                        if (showForm) {
+                            resetForm()
+                        } else {
+                            setForm({ ...initialForm })
+                            setEditingId(null)
+                            setShowForm(true)
+                        }
+                    }}
+                >
+                    {showForm ? "Cancel" : "+ Add Activity"}
+                </button>
+            </header>
 
             {showForm && (
                 <section className="card form-card">
@@ -1088,12 +1136,7 @@ export default function Activities() {
                         {currentTypeConfig.showFamilyMember && (
                             <label>
                                 Family Member
-                                <select
-                                    value={form.family_member_id}
-                                    onChange={event =>
-                                        updateForm("family_member_id", event.target.value)
-                                    }
-                                >
+                                <select value={form.family_member_id} onChange={event => updateForm("family_member_id", event.target.value)}>
                                     <option value="">No family member selected</option>
                                     {familyMembers.map(member => (
                                         <option key={member.id} value={member.id}>
@@ -1107,10 +1150,7 @@ export default function Activities() {
 
                         <label>
                             Activity Type
-                            <select
-                                value={form.activity_type}
-                                onChange={event => updateActivityType(event.target.value)}
-                            >
+                            <select value={form.activity_type} onChange={event => updateActivityType(event.target.value)}>
                                 {activityTypes.map(type => (
                                     <option key={type} value={type}>
                                         {activityTypeConfig[type].icon} {type}
@@ -1121,12 +1161,7 @@ export default function Activities() {
 
                         <label>
                             Parent Activity
-                            <select
-                                value={form.parent_activity_id}
-                                onChange={event =>
-                                    updateForm("parent_activity_id", event.target.value)
-                                }
-                            >
+                            <select value={form.parent_activity_id} onChange={event => updateForm("parent_activity_id", event.target.value)}>
                                 <option value="">None</option>
                                 {parentOptions.map(activity => (
                                     <option key={activity.id} value={activity.id}>
@@ -1149,94 +1184,52 @@ export default function Activities() {
                         {currentTypeConfig.showOrganization && (
                             <label>
                                 Organization
-                                <input
-                                    value={form.organization}
-                                    onChange={event =>
-                                        updateForm("organization", event.target.value)
-                                    }
-                                    placeholder="YMCA, school, church..."
-                                />
+                                <input value={form.organization} onChange={event => updateForm("organization", event.target.value)} placeholder="YMCA, school, church..." />
                             </label>
                         )}
 
                         {currentTypeConfig.showSeason && (
                             <label>
                                 Season
-                                <input
-                                    value={form.season}
-                                    onChange={event => updateForm("season", event.target.value)}
-                                    placeholder="Summer 2026"
-                                />
+                                <input value={form.season} onChange={event => updateForm("season", event.target.value)} placeholder="Summer 2026" />
                             </label>
                         )}
 
                         <label>
                             Location
-                            <input
-                                value={form.location}
-                                onChange={event => updateForm("location", event.target.value)}
-                                placeholder={currentTypeConfig.locationPlaceholder}
-                            />
+                            <input value={form.location} onChange={event => updateForm("location", event.target.value)} placeholder={currentTypeConfig.locationPlaceholder} />
                         </label>
 
                         <label>
                             Start Date
-                            <input
-                                type="date"
-                                value={form.start_date}
-                                onChange={event => updateForm("start_date", event.target.value)}
-                            />
+                            <input type="date" value={form.start_date} onChange={event => updateForm("start_date", event.target.value)} />
                         </label>
 
                         <label>
                             End Date
-                            <input
-                                type="date"
-                                value={form.end_date}
-                                onChange={event => updateForm("end_date", event.target.value)}
-                            />
+                            <input type="date" value={form.end_date} onChange={event => updateForm("end_date", event.target.value)} />
                         </label>
 
                         <label>
                             Start Time
-                            <input
-                                type="time"
-                                value={form.start_time}
-                                onChange={event => updateForm("start_time", event.target.value)}
-                            />
+                            <input type="time" value={form.start_time} onChange={event => updateForm("start_time", event.target.value)} />
                         </label>
 
                         <label>
                             End Time
-                            <input
-                                type="time"
-                                value={form.end_time}
-                                onChange={event => updateForm("end_time", event.target.value)}
-                            />
+                            <input type="time" value={form.end_time} onChange={event => updateForm("end_time", event.target.value)} />
                         </label>
 
                         {currentTypeConfig.showRegistration && (
                             <>
                                 <label>
                                     Registration Opens
-                                    <input
-                                        type="date"
-                                        value={form.registration_open_date}
-                                        onChange={event =>
-                                            updateForm("registration_open_date", event.target.value)
-                                        }
-                                    />
+                                    <input type="date" value={form.registration_open_date} onChange={event => updateForm("registration_open_date", event.target.value)} />
                                 </label>
 
                                 <label>
                                     Registration Closes
-                                    <input
-                                        type="date"
-                                        value={form.registration_close_date}
-                                        onChange={event =>
-                                            updateForm("registration_close_date", event.target.value)
-                                        }
-                                    />
+                                    <input type="date" value={form.registration_close_date} onChange={event => updateForm("registration_close_date", event.target.value)} />
                                 </label>
                             </>
                         )}
@@ -1244,78 +1237,87 @@ export default function Activities() {
                         {currentTypeConfig.showCost && (
                             <label>
                                 Cost
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={form.cost}
-                                    onChange={event => updateForm("cost", event.target.value)}
-                                    placeholder="75.00"
-                                />
+                                <input type="number" min="0" step="0.01" value={form.cost} onChange={event => updateForm("cost", event.target.value)} placeholder="75.00" />
                             </label>
                         )}
 
                         <label className="full-width">
                             Notes
-                            <textarea
-                                value={form.notes}
-                                onChange={event => updateForm("notes", event.target.value)}
-                                rows="3"
-                            />
+                            <textarea value={form.notes} onChange={event => updateForm("notes", event.target.value)} rows="3" />
                         </label>
 
-                        <button
-                            className="primary-button full-width"
-                            type="submit"
-                            disabled={saving}
-                        >
-                            {saving
-                                ? "Saving..."
-                                : editingId
-                                    ? "Save Changes"
-                                    : "Save Activity"}
+                        <button className="primary-button full-width" type="submit" disabled={saving}>
+                            {saving ? "Saving..." : editingId ? "Save Changes" : "Save Activity"}
                         </button>
                     </form>
                 </section>
             )}
 
-            <section className="card">
-                <div className="section-header">
+            <section className="card activities-command-card">
+                <div className="activity-command-toolbar">
                     <div>
+                        <p className="card-kicker">Filter</p>
                         <h3>Upcoming Activities</h3>
                     </div>
 
-                    <div className="activity-filter-control">
-                        <select
-                            className="activity-filter-select"
-                            value={selectedFamilyMemberId}
-                            onChange={event =>
-                                setSelectedFamilyMemberId(event.target.value)
-                            }
-                        >
-                            <option value="all">Entire Family</option>
+                    <select
+                        className="activity-filter-select"
+                        value={selectedFamilyMemberId}
+                        onChange={event => setSelectedFamilyMemberId(event.target.value)}
+                    >
+                        <option value="all">Entire Family</option>
 
-                            {familyMembers.map(member => (
-                                <option key={member.id} value={member.id}>
-                                    {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
-                                    {member.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                        {familyMembers.map(member => (
+                            <option key={member.id} value={member.id}>
+                                {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
+                                {member.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
-
 
                 {loading ? (
                     <p>Loading activities...</p>
                 ) : visibleActivities.length === 0 ? (
-                    <p>No activities found for this filter.</p>
+                    <p className="dashboard-empty">No activities found for this filter.</p>
                 ) : (
-                    <div className="stack">
-                        {visibleActivities.map(activity => renderActivityRow(activity))}
-                    </div>
+                    <>
+                        <ActivitySection
+                            title="This Week"
+                            subtitle="Coming up soon."
+                            activities={groupedActivities.thisWeek}
+                            emptyText="Nothing this week."
+                            renderActivityRow={renderActivityRow}
+                        />
+
+                        <ActivitySection
+                            title="Later"
+                            subtitle="Upcoming after this week."
+                            activities={groupedActivities.later}
+                            emptyText="No later activities."
+                            renderActivityRow={renderActivityRow}
+                        />
+
+                        <ActivitySection
+                            title="Unscheduled"
+                            subtitle="Saved without a date."
+                            activities={groupedActivities.unscheduled}
+                            emptyText="No unscheduled activities."
+                            renderActivityRow={renderActivityRow}
+                        />
+
+                        {groupedActivities.past.length > 0 && (
+                            <ActivitySection
+                                title="Past"
+                                subtitle="Already happened."
+                                activities={groupedActivities.past}
+                                emptyText="No past activities."
+                                renderActivityRow={renderActivityRow}
+                            />
+                        )}
+                    </>
                 )}
             </section>
-        </>
+        </div>
     )
 }

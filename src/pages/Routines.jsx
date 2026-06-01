@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
     completeRoutine,
     createRoutine,
@@ -33,6 +33,137 @@ function normalizeRoutine(routine) {
     }
 }
 
+function formatFrequency(value) {
+    const labels = {
+        daily: "Daily",
+        every_2_days: "Every 2 days",
+        weekly: "Weekly",
+        every_2_weeks: "Every 2 weeks",
+        monthly: "Monthly"
+    }
+
+    return labels[value] || value || "Routine"
+}
+
+function formatDate(dateString) {
+    if (!dateString) return "No due date"
+
+    const [year, month, day] = String(dateString)
+        .slice(0, 10)
+        .split("-")
+        .map(Number)
+
+    return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric"
+    })
+}
+
+function createLocalDate(dateString) {
+    if (!dateString) return null
+
+    const [year, month, day] = String(dateString)
+        .slice(0, 10)
+        .split("-")
+        .map(Number)
+
+    return new Date(year, month - 1, day)
+}
+
+function getTodayString() {
+    const today = new Date()
+
+    return [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, "0"),
+        String(today.getDate()).padStart(2, "0")
+    ].join("-")
+}
+
+function getDaysUntil(dateString) {
+    if (!dateString) return null
+
+    const today = createLocalDate(getTodayString())
+    const target = createLocalDate(dateString)
+
+    return Math.round((target - today) / (1000 * 60 * 60 * 24))
+}
+
+function sortRoutines(routines) {
+    return [...routines].sort((a, b) => {
+        if (!a.next_due && !b.next_due) return a.title.localeCompare(b.title)
+        if (!a.next_due) return 1
+        if (!b.next_due) return -1
+
+        const dateDiff = createLocalDate(a.next_due) - createLocalDate(b.next_due)
+        if (dateDiff !== 0) return dateDiff
+
+        return a.title.localeCompare(b.title)
+    })
+}
+
+function groupRoutines(routines) {
+    const groups = {
+        dueNow: [],
+        thisWeek: [],
+        later: [],
+        paused: []
+    }
+
+    routines.forEach(routine => {
+        if (routine.active === false) {
+            groups.paused.push(routine)
+            return
+        }
+
+        const daysUntil = getDaysUntil(routine.next_due)
+
+        if (daysUntil !== null && daysUntil <= 0) {
+            groups.dueNow.push(routine)
+            return
+        }
+
+        if (daysUntil !== null && daysUntil <= 7) {
+            groups.thisWeek.push(routine)
+            return
+        }
+
+        groups.later.push(routine)
+    })
+
+    return groups
+}
+
+function RoutineSection({
+    title,
+    subtitle,
+    routines,
+    emptyText,
+    renderRoutineRow
+}) {
+    return (
+        <section className="routine-command-section">
+            <div className="routine-section-header">
+                <div>
+                    <h3>{title}</h3>
+                    {subtitle && <p>{subtitle}</p>}
+                </div>
+
+                <span>{routines.length}</span>
+            </div>
+
+            {routines.length === 0 ? (
+                <p className="dashboard-empty">{emptyText}</p>
+            ) : (
+                <div className="routine-command-list">
+                    {routines.map(routine => renderRoutineRow(routine))}
+                </div>
+            )}
+        </section>
+    )
+}
+
 export default function Routines() {
     const [routines, setRoutines] = useState([])
     const [familyMembers, setFamilyMembers] = useState([])
@@ -41,6 +172,15 @@ export default function Routines() {
     const [form, setForm] = useState(initialForm)
     const [saving, setSaving] = useState(false)
     const [editingId, setEditingId] = useState(null)
+
+    const groupedRoutines = useMemo(() => {
+        return groupRoutines(sortRoutines(routines))
+    }, [routines])
+
+    const activeCount =
+        groupedRoutines.dueNow.length +
+        groupedRoutines.thisWeek.length +
+        groupedRoutines.later.length
 
     async function loadData() {
         try {
@@ -79,6 +219,7 @@ export default function Routines() {
         setEditingId(routine.id)
         setForm(normalizeRoutine(routine))
         setShowForm(true)
+        window.scrollTo({ top: 0, behavior: "smooth" })
     }
 
     async function handleSubmit(event) {
@@ -102,6 +243,7 @@ export default function Routines() {
             await loadData()
         } catch (error) {
             console.error(error)
+            alert(error.message || "Could not save routine.")
         } finally {
             setSaving(false)
         }
@@ -113,6 +255,7 @@ export default function Routines() {
             await loadData()
         } catch (error) {
             console.error(error)
+            alert(error.message || "Could not complete routine.")
         }
     }
 
@@ -122,6 +265,7 @@ export default function Routines() {
             await loadData()
         } catch (error) {
             console.error(error)
+            alert(error.message || "Could not create task from routine.")
         }
     }
 
@@ -137,33 +281,115 @@ export default function Routines() {
             await loadData()
         } catch (error) {
             console.error(error)
+            alert(error.message || "Could not delete routine.")
         }
     }
 
-    return (
-        <>
-            <section className="hero-card">
-                <div className="section-header">
-                    <div>
-                        <p className="eyebrow">Routines</p>
-                        <h2>Family Routines</h2>
-                        <p>
-                            Manage recurring household, school, activity, and family
-                            responsibilities that need to happen on a regular rhythm.
-                        </p>
-                    </div>
+    function renderRoutineRow(routine) {
+        const member = routine.family_members
+        const isPaused = routine.active === false
+
+        return (
+            <div
+                className={`routine-command-row ${isPaused ? "routine-command-row-paused" : ""}`}
+                key={routine.id}
+            >
+                <span className="routine-command-icon">
+                    {member?.avatar_emoji || "🔁"}
+                </span>
+
+                <div className="routine-command-main">
+                    <strong>{routine.title}</strong>
+
+                    <p>
+                        {formatFrequency(routine.frequency)}
+                        {routine.next_due ? ` • Next due ${formatDate(routine.next_due)}` : ""}
+                        {member?.name ? ` • ${member.name}` : ""}
+                    </p>
+
+                    <small>
+                        {routine.category || "general"}
+                        {routine.last_completed
+                            ? ` • Last completed ${formatDate(routine.last_completed)}`
+                            : ""}
+                    </small>
+
+                    {routine.description && <small>{routine.description}</small>}
+                </div>
+
+                <div className="routine-command-status">
+                    <span
+                        className={`status-pill ${isPaused ? "status-muted" : "status-success"}`}
+                    >
+                        {isPaused ? "Paused" : "Active"}
+                    </span>
+                </div>
+
+                <div className="routine-command-actions">
+                    {!isPaused && (
+                        <>
+                            <button
+                                className="secondary-button"
+                                type="button"
+                                onClick={() => handleComplete(routine)}
+                            >
+                                Complete
+                            </button>
+
+                            <button
+                                className="secondary-button"
+                                type="button"
+                                onClick={() => handleCreateTask(routine)}
+                            >
+                                Create Task
+                            </button>
+                        </>
+                    )}
 
                     <button
-                        className="primary-button"
-                        onClick={() => {
-                            if (showForm) resetForm()
-                            else setShowForm(true)
-                        }}
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => startEdit(routine)}
                     >
-                        {showForm ? "Cancel" : "+ Add Routine"}
+                        Edit
+                    </button>
+
+                    <button
+                        className="danger-button"
+                        type="button"
+                        onClick={() => handleDelete(routine)}
+                    >
+                        Delete
                     </button>
                 </div>
-            </section>
+            </div>
+        )
+    }
+
+    return (
+        <div className="routines-command-page">
+            <header className="calendar-header routines-command-header">
+                <div>
+                    <p className="dashboard-household-name">Routines</p>
+                    <h2>Family Routines</h2>
+
+                    <p className="routines-header-summary">
+                        {activeCount} active • {groupedRoutines.dueNow.length} due now •{" "}
+                        {groupedRoutines.paused.length} paused
+                    </p>
+                </div>
+
+                <button
+                    className="primary-button"
+                    type="button"
+                    onClick={() => {
+                        if (showForm) resetForm()
+                        else setShowForm(true)
+                    }}
+                >
+                    {showForm ? "Cancel" : "+ Add Routine"}
+                </button>
+            </header>
 
             {showForm && (
                 <section className="card form-card">
@@ -276,89 +502,49 @@ export default function Routines() {
                 </section>
             )}
 
-            <div className="grid">
+            <section className="card routines-command-card">
                 {loading ? (
-                    <section className="card">
-                        <p>Loading routines...</p>
-                    </section>
+                    <p>Loading routines...</p>
                 ) : routines.length === 0 ? (
-                    <section className="card">
-                        <p>No routines added yet.</p>
-                    </section>
+                    <p className="dashboard-empty">No routines added yet.</p>
                 ) : (
-                    routines.map(routine => {
-                        const member = routine.family_members
-                        const isPaused = routine.active === false
+                    <>
+                        <RoutineSection
+                            title="Due Now"
+                            subtitle="Needs attention first."
+                            routines={groupedRoutines.dueNow}
+                            emptyText="No routines due now."
+                            renderRoutineRow={renderRoutineRow}
+                        />
 
-                        return (
-                            <section
-                                className={`card ${isPaused ? "completed-card" : ""}`}
-                                key={routine.id}
-                            >
-                                <div className="member-header">
-                                    <span className="avatar">
-                                        {member?.avatar_emoji || "🔁"}
-                                    </span>
+                        <RoutineSection
+                            title="This Week"
+                            subtitle="Coming due in the next 7 days."
+                            routines={groupedRoutines.thisWeek}
+                            emptyText="No routines due this week."
+                            renderRoutineRow={renderRoutineRow}
+                        />
 
-                                    <div>
-                                        <h3>{routine.title}</h3>
-                                        <span
-                                            className={`status-pill ${isPaused
-                                                    ? "status-muted"
-                                                    : "status-success"
-                                                }`}
-                                        >
-                                            {isPaused ? "Paused" : routine.frequency}
-                                        </span>
-                                    </div>
-                                </div>
+                        <RoutineSection
+                            title="Later"
+                            subtitle="Upcoming routines."
+                            routines={groupedRoutines.later}
+                            emptyText="No later routines."
+                            renderRoutineRow={renderRoutineRow}
+                        />
 
-                                {routine.next_due && <p>Next due: {routine.next_due}</p>}
-                                {routine.last_completed && (
-                                    <p>Last completed: {routine.last_completed}</p>
-                                )}
-                                {member?.name && <p>For: {member.name}</p>}
-                                {routine.category && <p>Category: {routine.category}</p>}
-                                {routine.description && <p>{routine.description}</p>}
-
-                                <div className="card-actions">
-                                    {!isPaused && (
-                                        <>
-                                            <button
-                                                className="secondary-button"
-                                                onClick={() => handleComplete(routine)}
-                                            >
-                                                Complete
-                                            </button>
-
-                                            <button
-                                                className="secondary-button"
-                                                onClick={() => handleCreateTask(routine)}
-                                            >
-                                                Create Task
-                                            </button>
-                                        </>
-                                    )}
-
-                                    <button
-                                        className="secondary-button"
-                                        onClick={() => startEdit(routine)}
-                                    >
-                                        Edit
-                                    </button>
-
-                                    <button
-                                        className="danger-button"
-                                        onClick={() => handleDelete(routine)}
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
-                            </section>
-                        )
-                    })
+                        {groupedRoutines.paused.length > 0 && (
+                            <RoutineSection
+                                title="Paused"
+                                subtitle="Inactive routines."
+                                routines={groupedRoutines.paused}
+                                emptyText="No paused routines."
+                                renderRoutineRow={renderRoutineRow}
+                            />
+                        )}
+                    </>
                 )}
-            </div>
-        </>
+            </section>
+        </div>
     )
 }

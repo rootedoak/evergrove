@@ -23,6 +23,37 @@ const initialPreferences = {
     show_suggested_tasks: true
 }
 
+function PreferenceToggle({ label, checked, onChange }) {
+    return (
+        <label className="settings-toggle-row">
+            <span>{label}</span>
+
+            <input
+                type="checkbox"
+                checked={checked}
+                onChange={event => onChange(event.target.checked)}
+            />
+        </label>
+    )
+}
+
+function SettingsSection({ title, subtitle, children }) {
+    return (
+        <section className="settings-command-section">
+            <div className="settings-section-header">
+                <div>
+                    <h3>{title}</h3>
+                    {subtitle && <p>{subtitle}</p>}
+                </div>
+            </div>
+
+            <div className="settings-section-content">
+                {children}
+            </div>
+        </section>
+    )
+}
+
 export default function Profile() {
     const [user, setUser] = useState(null)
     const [preferences, setPreferences] = useState(initialPreferences)
@@ -111,30 +142,35 @@ export default function Profile() {
     }
 
     return (
-        <>
-            <section className="hero-card">
-                <p className="eyebrow">Account</p>
-                <h2>Profile</h2>
-                <p>
-                    Manage your account, household, dashboard, calendar,
-                    and notification preferences.
-                </p>
-            </section>
+        <div className="settings-command-page">
+            <header className="calendar-header settings-command-header">
+                <div>
+                    <p className="dashboard-household-name">Settings</p>
+                    <h2>Household Settings</h2>
 
-            <section className="card">
-                <h3>Account Information</h3>
-
-                <div className="stack">
-                    <div>
-                        <strong>Email</strong>
-                        <p>{user?.email || "Loading..."}</p>
-                    </div>
-
-                    <div>
-                        <strong>User ID</strong>
-                        <p>{user?.id || "Loading..."}</p>
-                    </div>
+                    <p className="settings-header-summary">
+                        Manage account, household, dashboard, calendar, and reminder preferences.
+                    </p>
                 </div>
+
+                <button
+                    className="danger-button"
+                    type="button"
+                    onClick={handleLogout}
+                >
+                    Sign Out
+                </button>
+            </header>
+
+            <section className="card settings-account-card">
+                <div>
+                    <p className="card-kicker">Account</p>
+                    <h3>{user?.email || "Loading account..."}</h3>
+                </div>
+
+                <p>
+                    User ID: <span>{user?.id || "Loading..."}</span>
+                </p>
             </section>
 
             {loading ? (
@@ -142,10 +178,11 @@ export default function Profile() {
                     <p>Loading preferences...</p>
                 </section>
             ) : (
-                <form onSubmit={handleSavePreferences}>
-                    <section className="card">
-                        <h3>Household</h3>
-
+                <form className="card settings-command-card" onSubmit={handleSavePreferences}>
+                    <SettingsSection
+                        title="Household"
+                        subtitle="The name and local timezone used across Evergrove."
+                    >
                         <div className="form-grid">
                             <label>
                                 Household Name
@@ -173,11 +210,12 @@ export default function Profile() {
                                 </select>
                             </label>
                         </div>
-                    </section>
+                    </SettingsSection>
 
-                    <section className="card">
-                        <h3>Dashboard Preferences</h3>
-
+                    <SettingsSection
+                        title="Dashboard"
+                        subtitle="Control what appears on the Family Command Center."
+                    >
                         <div className="form-grid">
                             <label>
                                 Coming Up Window
@@ -208,67 +246,43 @@ export default function Profile() {
                             </label>
                         </div>
 
-                        <div className="stack">
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={preferences.show_birthdays}
-                                    onChange={event =>
-                                        updatePreference("show_birthdays", event.target.checked)
-                                    }
-                                />{" "}
-                                Show birthdays
-                            </label>
+                        <div className="settings-toggle-grid">
+                            <PreferenceToggle
+                                label="Show birthdays"
+                                checked={preferences.show_birthdays}
+                                onChange={value => updatePreference("show_birthdays", value)}
+                            />
 
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={preferences.show_trips}
-                                    onChange={event =>
-                                        updatePreference("show_trips", event.target.checked)
-                                    }
-                                />{" "}
-                                Show trips
-                            </label>
+                            <PreferenceToggle
+                                label="Show trips"
+                                checked={preferences.show_trips}
+                                onChange={value => updatePreference("show_trips", value)}
+                            />
 
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={preferences.show_school_items}
-                                    onChange={event =>
-                                        updatePreference("show_school_items", event.target.checked)
-                                    }
-                                />{" "}
-                                Show school items
-                            </label>
+                            <PreferenceToggle
+                                label="Show school items"
+                                checked={preferences.show_school_items}
+                                onChange={value => updatePreference("show_school_items", value)}
+                            />
 
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={preferences.show_activity_sessions}
-                                    onChange={event =>
-                                        updatePreference("show_activity_sessions", event.target.checked)
-                                    }
-                                />{" "}
-                                Show activity sessions
-                            </label>
+                            <PreferenceToggle
+                                label="Show activity sessions"
+                                checked={preferences.show_activity_sessions}
+                                onChange={value => updatePreference("show_activity_sessions", value)}
+                            />
 
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={preferences.show_suggested_tasks}
-                                    onChange={event =>
-                                        updatePreference("show_suggested_tasks", event.target.checked)
-                                    }
-                                />{" "}
-                                Show suggested tasks
-                            </label>
+                            <PreferenceToggle
+                                label="Show suggested tasks"
+                                checked={preferences.show_suggested_tasks}
+                                onChange={value => updatePreference("show_suggested_tasks", value)}
+                            />
                         </div>
-                    </section>
+                    </SettingsSection>
 
-                    <section className="card">
-                        <h3>Calendar Preferences</h3>
-
+                    <SettingsSection
+                        title="Calendar"
+                        subtitle="Choose how the family calendar is displayed."
+                    >
                         <div className="form-grid">
                             <label>
                                 Week Starts On
@@ -283,98 +297,56 @@ export default function Profile() {
                                 </select>
                             </label>
                         </div>
-                    </section>
+                    </SettingsSection>
 
-                    <section className="card">
-                        <h3>Notification Preferences</h3>
+                    <SettingsSection
+                        title="Reminders"
+                        subtitle="Choose which reminder types Evergrove should surface."
+                    >
+                        <div className="settings-toggle-grid">
+                            <PreferenceToggle
+                                label="Birthday reminders"
+                                checked={preferences.birthday_reminders}
+                                onChange={value => updatePreference("birthday_reminders", value)}
+                            />
 
-                        <div className="stack">
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={preferences.birthday_reminders}
-                                    onChange={event =>
-                                        updatePreference("birthday_reminders", event.target.checked)
-                                    }
-                                />{" "}
-                                Birthday reminders
-                            </label>
+                            <PreferenceToggle
+                                label="Trip reminders"
+                                checked={preferences.trip_reminders}
+                                onChange={value => updatePreference("trip_reminders", value)}
+                            />
 
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={preferences.trip_reminders}
-                                    onChange={event =>
-                                        updatePreference("trip_reminders", event.target.checked)
-                                    }
-                                />{" "}
-                                Trip reminders
-                            </label>
+                            <PreferenceToggle
+                                label="Activity reminders"
+                                checked={preferences.activity_reminders}
+                                onChange={value => updatePreference("activity_reminders", value)}
+                            />
 
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={preferences.activity_reminders}
-                                    onChange={event =>
-                                        updatePreference("activity_reminders", event.target.checked)
-                                    }
-                                />{" "}
-                                Activity reminders
-                            </label>
+                            <PreferenceToggle
+                                label="School reminders"
+                                checked={preferences.school_reminders}
+                                onChange={value => updatePreference("school_reminders", value)}
+                            />
 
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={preferences.school_reminders}
-                                    onChange={event =>
-                                        updatePreference("school_reminders", event.target.checked)
-                                    }
-                                />{" "}
-                                School reminders
-                            </label>
-
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={preferences.task_reminders}
-                                    onChange={event =>
-                                        updatePreference("task_reminders", event.target.checked)
-                                    }
-                                />{" "}
-                                Task reminders
-                            </label>
+                            <PreferenceToggle
+                                label="Task reminders"
+                                checked={preferences.task_reminders}
+                                onChange={value => updatePreference("task_reminders", value)}
+                            />
                         </div>
-                    </section>
+                    </SettingsSection>
 
-                    <section className="card">
-                        <h3>Save Preferences</h3>
-
-                        <div className="card-actions">
-                            <button
-                                className="primary-button"
-                                type="submit"
-                                disabled={saving}
-                            >
-                                {saving ? "Saving..." : "Save Preferences"}
-                            </button>
-                        </div>
-                    </section>
+                    <div className="settings-save-row">
+                        <button
+                            className="primary-button"
+                            type="submit"
+                            disabled={saving}
+                        >
+                            {saving ? "Saving..." : "Save Preferences"}
+                        </button>
+                    </div>
                 </form>
             )}
-
-            <section className="card">
-                <h3>Account Actions</h3>
-
-                <div className="card-actions">
-                    <button
-                        className="danger-button"
-                        type="button"
-                        onClick={handleLogout}
-                    >
-                        Sign Out
-                    </button>
-                </div>
-            </section>
-        </>
+        </div>
     )
 }

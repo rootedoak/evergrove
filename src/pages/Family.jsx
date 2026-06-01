@@ -39,6 +39,130 @@ function getRoleLabel(role) {
     return "Family member"
 }
 
+function getDefaultAvatar(role) {
+    if (role === "parent") return "👤"
+    if (role === "child") return "🧒"
+    if (role === "pet") return "🐾"
+    return "🌿"
+}
+
+function formatDate(dateString) {
+    if (!dateString) return ""
+
+    const [year, month, day] = String(dateString).slice(0, 10).split("-").map(Number)
+
+    return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+    })
+}
+
+function groupMembers(members) {
+    return {
+        parents: members.filter(member => member.role === "parent"),
+        children: members.filter(member => member.role === "child"),
+        pets: members.filter(member => member.role === "pet"),
+        other: members.filter(
+            member =>
+                member.role !== "parent" &&
+                member.role !== "child" &&
+                member.role !== "pet"
+        )
+    }
+}
+
+function sortByName(members) {
+    return [...members].sort((a, b) => a.name.localeCompare(b.name))
+}
+
+function FamilyMemberRow({ member, onEdit, onDelete }) {
+    const details = []
+
+    if (member.role === "child") {
+        if (member.school) details.push(member.school)
+        if (member.grade) details.push(member.grade)
+    }
+
+    if (member.role === "pet") {
+        if (member.species) details.push(member.species)
+        if (member.breed) details.push(member.breed)
+    }
+
+    if (member.birthdate) {
+        details.push(
+            `${member.role === "pet" ? "Birthday / adoption" : "Birthday"}: ${formatDate(member.birthdate)}`
+        )
+    }
+
+    return (
+        <div className="family-command-row">
+            <span className="family-avatar">
+                {member.avatar_emoji || getDefaultAvatar(member.role)}
+            </span>
+
+            <div className="family-member-main">
+                <strong>{member.name}</strong>
+
+                <p>
+                    {getRoleLabel(member.role)}
+                    {details.length > 0 ? ` • ${details.join(" • ")}` : ""}
+                </p>
+
+                {member.notes && <small>{member.notes}</small>}
+            </div>
+
+            <div className="family-row-actions">
+                <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => onEdit(member)}
+                >
+                    Edit
+                </button>
+
+                <button
+                    className="danger-button"
+                    type="button"
+                    onClick={() => onDelete(member)}
+                >
+                    Delete
+                </button>
+            </div>
+        </div>
+    )
+}
+
+function FamilyGroup({ title, subtitle, members, emptyText, onEdit, onDelete }) {
+    return (
+        <section className="family-command-section">
+            <div className="family-section-header">
+                <div>
+                    <h3>{title}</h3>
+                    {subtitle && <p>{subtitle}</p>}
+                </div>
+
+                <span>{members.length}</span>
+            </div>
+
+            {members.length === 0 ? (
+                <p className="dashboard-empty">{emptyText}</p>
+            ) : (
+                <div className="family-command-list">
+                    {sortByName(members).map(member => (
+                        <FamilyMemberRow
+                            key={member.id}
+                            member={member}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                        />
+                    ))}
+                </div>
+            )}
+        </section>
+    )
+}
+
 export default function Family() {
     const [familyMembers, setFamilyMembers] = useState([])
     const [loading, setLoading] = useState(true)
@@ -49,6 +173,8 @@ export default function Family() {
 
     const isChild = form.role === "child"
     const isPet = form.role === "pet"
+
+    const groupedMembers = groupMembers(familyMembers)
 
     async function loadFamilyMembers() {
         try {
@@ -106,6 +232,7 @@ export default function Family() {
         setEditingId(member.id)
         setForm(normalizeMember(member))
         setShowForm(true)
+        window.scrollTo({ top: 0, behavior: "smooth" })
     }
 
     async function handleSubmit(event) {
@@ -132,6 +259,7 @@ export default function Family() {
             await loadFamilyMembers()
         } catch (error) {
             console.error(error)
+            alert(error.message || "Could not save family member.")
         } finally {
             setSaving(false)
         }
@@ -149,53 +277,39 @@ export default function Family() {
             await loadFamilyMembers()
         } catch (error) {
             console.error(error)
+            alert(error.message || "Could not delete family member.")
         }
     }
 
-    const sortedMembers = [...familyMembers].sort((a, b) => {
-        const roleOrder = {
-            parent: 1,
-            child: 2,
-            pet: 3
-        }
-
-        const aOrder = roleOrder[a.role] || 99
-        const bOrder = roleOrder[b.role] || 99
-
-        if (aOrder !== bOrder) {
-            return aOrder - bOrder
-        }
-
-        return a.name.localeCompare(b.name)
-    })
-
     return (
-        <>
-            <section className="hero-card">
-                <div className="section-header">
-                    <div>
-                        <p className="eyebrow">Family</p>
-                        <h2>Family Members</h2>
-                        <p>
-                            Add parents, kids, pets, schools, grades, and important
-                            family details.
-                        </p>
-                    </div>
+        <div className="family-command-page">
+            <header className="calendar-header family-command-header">
+                <div>
+                    <p className="dashboard-household-name">Family</p>
+                    <h2>Family Members</h2>
 
-                    <button
-                        className="primary-button"
-                        onClick={() => {
-                            if (showForm) {
-                                resetForm()
-                            } else {
-                                setShowForm(true)
-                            }
-                        }}
-                    >
-                        {showForm ? "Cancel" : "+ Add Family Member"}
-                    </button>
+                    <p className="family-header-summary">
+                        {familyMembers.length} total •{" "}
+                        {groupedMembers.parents.length} parents •{" "}
+                        {groupedMembers.children.length} children •{" "}
+                        {groupedMembers.pets.length} pets
+                    </p>
                 </div>
-            </section>
+
+                <button
+                    className="primary-button"
+                    type="button"
+                    onClick={() => {
+                        if (showForm) {
+                            resetForm()
+                        } else {
+                            setShowForm(true)
+                        }
+                    }}
+                >
+                    {showForm ? "Cancel" : "+ Add Family Member"}
+                </button>
+            </header>
 
             {showForm && (
                 <section className="card form-card">
@@ -236,12 +350,9 @@ export default function Family() {
                                     <input
                                         value={form.avatar_emoji}
                                         onChange={event =>
-                                            updateForm(
-                                                "avatar_emoji",
-                                                event.target.value
-                                            )
+                                            updateForm("avatar_emoji", event.target.value)
                                         }
-                                        placeholder={isPet ? "🐶" : "🏀"}
+                                        placeholder={isPet ? "🐶" : "🧒"}
                                     />
                                 </label>
 
@@ -251,10 +362,7 @@ export default function Family() {
                                         type="date"
                                         value={form.birthdate}
                                         onChange={event =>
-                                            updateForm(
-                                                "birthdate",
-                                                event.target.value
-                                            )
+                                            updateForm("birthdate", event.target.value)
                                         }
                                     />
                                 </label>
@@ -339,73 +447,55 @@ export default function Family() {
                 </section>
             )}
 
-            <div className="grid">
+            <section className="card family-command-card">
                 {loading ? (
-                    <section className="card">
-                        <p>Loading family members...</p>
-                    </section>
+                    <p>Loading family members...</p>
                 ) : familyMembers.length === 0 ? (
-                    <section className="card">
-                        <p>No family members added yet.</p>
-                    </section>
+                    <p className="dashboard-empty">
+                        No family members added yet.
+                    </p>
                 ) : (
-                    sortedMembers.map(member => (
-                        <section className="card" key={member.id}>
-                            <div className="member-header">
-                                <span className="avatar">
-                                    {member.avatar_emoji || "🌿"}
-                                </span>
+                    <>
+                        <FamilyGroup
+                            title="Parents"
+                            subtitle="Household adults."
+                            members={groupedMembers.parents}
+                            emptyText="No parents added yet."
+                            onEdit={startEdit}
+                            onDelete={handleDelete}
+                        />
 
-                                <div>
-                                    <h3>{member.name}</h3>
-                                    <p>{getRoleLabel(member.role)}</p>
-                                </div>
-                            </div>
+                        <FamilyGroup
+                            title="Children"
+                            subtitle="Kids, school details, and birthdays."
+                            members={groupedMembers.children}
+                            emptyText="No children added yet."
+                            onEdit={startEdit}
+                            onDelete={handleDelete}
+                        />
 
-                            {member.role === "child" && (
-                                <>
-                                    <p>{member.school || "No school listed"}</p>
-                                    <p>{member.grade || "No grade listed"}</p>
-                                </>
-                            )}
+                        <FamilyGroup
+                            title="Pets"
+                            subtitle="Pets, breeds, and adoption dates."
+                            members={groupedMembers.pets}
+                            emptyText="No pets added yet."
+                            onEdit={startEdit}
+                            onDelete={handleDelete}
+                        />
 
-                            {member.role === "pet" && (
-                                <>
-                                    <p>{member.species || "No species listed"}</p>
-                                    <p>{member.breed || "No breed listed"}</p>
-                                </>
-                            )}
-
-                            {member.birthdate && (
-                                <p>
-                                    {member.role === "pet"
-                                        ? "Birthday / Adoption Date"
-                                        : "Birthdate"}
-                                    : {member.birthdate}
-                                </p>
-                            )}
-
-                            {member.notes && <p>{member.notes}</p>}
-
-                            <div className="card-actions">
-                                <button
-                                    className="secondary-button"
-                                    onClick={() => startEdit(member)}
-                                >
-                                    Edit
-                                </button>
-
-                                <button
-                                    className="danger-button"
-                                    onClick={() => handleDelete(member)}
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        </section>
-                    ))
+                        {groupedMembers.other.length > 0 && (
+                            <FamilyGroup
+                                title="Other"
+                                subtitle="Additional family members."
+                                members={groupedMembers.other}
+                                emptyText="No additional members."
+                                onEdit={startEdit}
+                                onDelete={handleDelete}
+                            />
+                        )}
+                    </>
                 )}
-            </div>
-        </>
+            </section>
+        </div>
     )
 }

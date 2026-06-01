@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 
 import useActivities from "../hooks/useActivities"
 import useSchoolItems from "../hooks/useSchoolItems"
@@ -386,44 +387,70 @@ export default function Calendar() {
 
     return (
         <div className="calendar-page">
-            <section className="hero-card">
-                <div className="section-header">
-                    <div>
-                        <p className="eyebrow">Calendar</p>
-                        <h2>Family Calendar</h2>
-                        <p>
-                            A monthly view of activities, sessions, trips,
-                            birthdays, school items, and registration windows.
-                        </p>
-                    </div>
+            <header className="calendar-header">
+                <div>
+                    <p className="dashboard-household-name">
+                        {preferences?.household_name || "My Household"}
+                    </p>
 
-                    <div className="card-actions">
-                        <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={goToPreviousMonth}
-                        >
-                            Previous
-                        </button>
+                    <h2>Family Calendar</h2>
 
-                        <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={goToCurrentMonth}
-                        >
-                            Today
-                        </button>
+                    <div className="calendar-destinations">
+                        <Link className="calendar-destination-card" to="/activities">
+                            <span>🏀</span>
 
-                        <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={goToNextMonth}
-                        >
-                            Next
-                        </button>
+                            <div>
+                                <strong>Activities</strong>
+                                <p>Sports, lessons, clubs, and sessions.</p>
+                            </div>
+                        </Link>
+
+                        <Link className="calendar-destination-card" to="/trips">
+                            <span>🚗</span>
+
+                            <div>
+                                <strong>Trips</strong>
+                                <p>Travel plans, packing, and checklists.</p>
+                            </div>
+                        </Link>
+
+                        <Link className="calendar-destination-card" to="/school">
+                            <span>🎒</span>
+
+                            <div>
+                                <strong>School</strong>
+                                <p>School dates, forms, and deadlines.</p>
+                            </div>
+                        </Link>
                     </div>
                 </div>
-            </section>
+
+                <div className="card-actions">
+                    <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={goToPreviousMonth}
+                    >
+                        Previous
+                    </button>
+
+                    <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={goToCurrentMonth}
+                    >
+                        Today
+                    </button>
+
+                    <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={goToNextMonth}
+                    >
+                        Next
+                    </button>
+                </div>
+            </header>
 
             <section className="card calendar-card">
                 <div className="card-header-row">
@@ -450,8 +477,8 @@ export default function Calendar() {
                             return (
                                 <div
                                     className={`calendar-day ${day.isCurrentMonth
-                                            ? ""
-                                            : "calendar-day-muted"
+                                        ? ""
+                                        : "calendar-day-muted"
                                         } ${isToday ? "calendar-day-today" : ""}`}
                                     key={day.dateString}
                                 >

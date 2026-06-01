@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 
 import {
     completeTask,
@@ -36,6 +36,200 @@ function normalizeTask(task) {
     }
 }
 
+function getTodayString() {
+    const today = new Date()
+    return [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, "0"),
+        String(today.getDate()).padStart(2, "0")
+    ].join("-")
+}
+
+function createLocalDate(dateString) {
+    const [year, month, day] = String(dateString).slice(0, 10).split("-").map(Number)
+    return new Date(year, month - 1, day)
+}
+
+function getDaysUntil(dateString) {
+    if (!dateString) return null
+
+    const today = createLocalDate(getTodayString())
+    const target = createLocalDate(dateString)
+
+    return Math.round((target - today) / (1000 * 60 * 60 * 24))
+}
+
+function formatDisplayDate(dateString) {
+    if (!dateString) return "No due date"
+
+    return createLocalDate(dateString).toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric"
+    })
+}
+
+function getTaskMeta(task, familyMembers) {
+    const member = task.family_members
+    const creator = familyMembers.find(
+        familyMember => familyMember.user_id === task.user_id
+    )
+
+    const pieces = []
+
+    if (member?.name) pieces.push(member.name)
+    if (task.due_date) pieces.push(formatDisplayDate(task.due_date))
+    if (task.activities?.name) pieces.push(task.activities.name)
+    if (task.trips?.name) pieces.push(task.trips.name)
+    if (task.visibility === "private") pieces.push("Private")
+    if (creator?.name && task.visibility === "household") {
+        pieces.push(`Created by ${creator.name}`)
+    }
+
+    return pieces.join(" • ")
+}
+
+function groupTasks(tasks) {
+    const groups = {
+        overdue: [],
+        today: [],
+        thisWeek: [],
+        later: [],
+        completed: []
+    }
+
+    tasks.forEach(task => {
+        if (task.status === "complete") {
+            groups.completed.push(task)
+            return
+        }
+
+        const daysUntil = getDaysUntil(task.due_date)
+
+        if (daysUntil !== null && daysUntil < 0) {
+            groups.overdue.push(task)
+            return
+        }
+
+        if (daysUntil === 0) {
+            groups.today.push(task)
+            return
+        }
+
+        if (daysUntil !== null && daysUntil > 0 && daysUntil <= 7) {
+            groups.thisWeek.push(task)
+            return
+        }
+
+        groups.later.push(task)
+    })
+
+    return groups
+}
+
+function sortTasks(tasks) {
+    return [...tasks].sort((a, b) => {
+        if (!a.due_date && !b.due_date) return a.title.localeCompare(b.title)
+        if (!a.due_date) return 1
+        if (!b.due_date) return -1
+
+        const dateDiff = createLocalDate(a.due_date) - createLocalDate(b.due_date)
+        if (dateDiff !== 0) return dateDiff
+
+        return a.title.localeCompare(b.title)
+    })
+}
+
+function TaskDestinationCard({ to, icon, title, description }) {
+    return (
+        <Link className="task-destination-card" to={to}>
+            <span>{icon}</span>
+
+            <div>
+                <strong>{title}</strong>
+                <p>{description}</p>
+            </div>
+        </Link>
+    )
+}
+
+function TaskRow({ task, familyMembers, onComplete, onEdit, onDelete }) {
+    const isComplete = task.status === "complete"
+    const meta = getTaskMeta(task, familyMembers)
+
+    return (
+        <div className={`task-command-row ${isComplete ? "task-command-row-complete" : ""}`}>
+            <button
+                className="task-check-button"
+                type="button"
+                onClick={() => !isComplete && onComplete(task)}
+                disabled={isComplete}
+                aria-label={isComplete ? "Task complete" : "Complete task"}
+            >
+                {isComplete ? "✓" : ""}
+            </button>
+
+            <div className="task-command-main">
+                <strong>{task.title}</strong>
+                {meta && <p>{meta}</p>}
+                {task.description && <small>{task.description}</small>}
+            </div>
+
+            <div className="task-command-actions">
+                <button className="secondary-button" type="button" onClick={() => onEdit(task)}>
+                    Edit
+                </button>
+
+                <button className="danger-button" type="button" onClick={() => onDelete(task)}>
+                    Delete
+                </button>
+            </div>
+        </div>
+    )
+}
+
+function TaskSection({
+    title,
+    subtitle,
+    tasks,
+    familyMembers,
+    emptyText,
+    onComplete,
+    onEdit,
+    onDelete,
+    className = ""
+}) {
+    return (
+        <section className={`task-command-section ${className}`}>
+            <div className="task-section-header">
+                <div>
+                    <h3>{title}</h3>
+                    {subtitle && <p>{subtitle}</p>}
+                </div>
+
+                <span>{tasks.length}</span>
+            </div>
+
+            {tasks.length === 0 ? (
+                <p className="dashboard-empty">{emptyText}</p>
+            ) : (
+                <div className="task-command-list">
+                    {tasks.map(task => (
+                        <TaskRow
+                            key={task.id}
+                            task={task}
+                            familyMembers={familyMembers}
+                            onComplete={onComplete}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                        />
+                    ))}
+                </div>
+            )}
+        </section>
+    )
+}
+
 export default function Tasks() {
     const [searchParams] = useSearchParams()
     const tripId = searchParams.get("tripId")
@@ -48,12 +242,20 @@ export default function Tasks() {
     const [form, setForm] = useState(initialForm)
     const [saving, setSaving] = useState(false)
     const [editingId, setEditingId] = useState(null)
+    const [showCompleted, setShowCompleted] = useState(false)
 
     const visibleTasks = tripId
         ? tasks.filter(task => task.trip_id === tripId)
         : tasks
 
     const selectedTrip = visibleTasks.find(task => task.trips)?.trips
+    const groupedTasks = groupTasks(sortTasks(visibleTasks))
+
+    const openCount =
+        groupedTasks.overdue.length +
+        groupedTasks.today.length +
+        groupedTasks.thisWeek.length +
+        groupedTasks.later.length
 
     async function loadData() {
         try {
@@ -97,6 +299,7 @@ export default function Tasks() {
         setEditingId(task.id)
         setForm(normalizeTask(task))
         setShowForm(true)
+        window.scrollTo({ top: 0, behavior: "smooth" })
     }
 
     async function handleSubmit(event) {
@@ -156,48 +359,64 @@ export default function Tasks() {
     }
 
     return (
-        <>
-            <section className="hero-card">
-                <div className="section-header">
-                    <div>
-                        <p className="eyebrow">
-                            {tripId ? "Trip Checklist" : "Tasks"}
-                        </p>
+        <div className="tasks-command-page">
+            <header className="calendar-header tasks-command-header">
+                <div>
+                    <p className="dashboard-household-name">
+                        {tripId ? "Trip Checklist" : "Tasks"}
+                    </p>
 
-                        <h2>
-                            {tripId
-                                ? selectedTrip?.name || "Trip Checklist"
-                                : "Family Tasks"}
-                        </h2>
+                    <h2>
+                        {tripId
+                            ? selectedTrip?.name || "Trip Checklist"
+                            : "Family Tasks"}
+                    </h2>
 
-                        <p>
-                            {tripId
-                                ? "Manage the checklist for this trip."
-                                : "Manage school forms, payments, registrations, errands, packing lists, and recurring family responsibilities."}
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        className="primary-button"
-                        onClick={() => {
-                            if (showForm) {
-                                resetForm()
-                                return
-                            }
-
-                            setForm({
-                                ...initialForm,
-                                trip_id: tripId || ""
-                            })
-                            setEditingId(null)
-                            setShowForm(true)
-                        }}
-                    >
-                        {showForm ? "Cancel" : "+ Add Task"}
-                    </button>
+                    <p className="tasks-header-counts">
+                        {groupedTasks.overdue.length} Overdue •{" "}
+                        {groupedTasks.today.length} Today •{" "}
+                        {openCount} Open
+                    </p>
                 </div>
-            </section>
+
+                <button
+                    type="button"
+                    className="primary-button"
+                    onClick={() => {
+                        if (showForm) {
+                            resetForm()
+                            return
+                        }
+
+                        setForm({
+                            ...initialForm,
+                            trip_id: tripId || ""
+                        })
+                        setEditingId(null)
+                        setShowForm(true)
+                    }}
+                >
+                    {showForm ? "Cancel" : "+ Add Task"}
+                </button>
+            </header>
+
+            {!tripId && (
+                <section className="task-destinations">
+                    <TaskDestinationCard
+                        to="/routines"
+                        icon="🔁"
+                        title="Routines"
+                        description="Recurring household responsibilities."
+                    />
+
+                    <TaskDestinationCard
+                        to="/reminders"
+                        icon="🔔"
+                        title="Reminders"
+                        description="Important one-time reminders."
+                    />
+                </section>
+            )}
 
             {showForm && (
                 <section className="card form-card">
@@ -208,9 +427,7 @@ export default function Tasks() {
                             Title
                             <input
                                 value={form.title}
-                                onChange={event =>
-                                    updateForm("title", event.target.value)
-                                }
+                                onChange={event => updateForm("title", event.target.value)}
                                 placeholder="Register for basketball"
                                 required
                             />
@@ -221,9 +438,7 @@ export default function Tasks() {
                             <input
                                 type="date"
                                 value={form.due_date}
-                                onChange={event =>
-                                    updateForm("due_date", event.target.value)
-                                }
+                                onChange={event => updateForm("due_date", event.target.value)}
                             />
                         </label>
 
@@ -266,9 +481,7 @@ export default function Tasks() {
                             Status
                             <select
                                 value={form.status}
-                                onChange={event =>
-                                    updateForm("status", event.target.value)
-                                }
+                                onChange={event => updateForm("status", event.target.value)}
                             >
                                 <option value="open">Open</option>
                                 <option value="complete">Complete</option>
@@ -279,9 +492,7 @@ export default function Tasks() {
                             Visibility
                             <select
                                 value={form.visibility}
-                                onChange={event =>
-                                    updateForm("visibility", event.target.value)
-                                }
+                                onChange={event => updateForm("visibility", event.target.value)}
                             >
                                 <option value="household">Family task</option>
                                 <option value="private">Private task</option>
@@ -299,11 +510,7 @@ export default function Tasks() {
                             />
                         </label>
 
-                        <button
-                            className="primary-button full-width"
-                            type="submit"
-                            disabled={saving}
-                        >
+                        <button className="primary-button full-width" type="submit" disabled={saving}>
                             {saving
                                 ? "Saving..."
                                 : editingId
@@ -314,105 +521,93 @@ export default function Tasks() {
                 </section>
             )}
 
-            <div className="grid">
+            <section className="card task-command-card">
                 {loading ? (
-                    <section className="card">
-                        <p>Loading tasks...</p>
-                    </section>
+                    <p>Loading tasks...</p>
                 ) : visibleTasks.length === 0 ? (
-                    <section className="card">
-                        <p>
-                            {tripId
-                                ? "No checklist tasks for this trip yet."
-                                : "No tasks added yet."}
-                        </p>
-                    </section>
+                    <p className="dashboard-empty">
+                        {tripId
+                            ? "No checklist tasks for this trip yet."
+                            : "No tasks added yet."}
+                    </p>
                 ) : (
-                    visibleTasks.map(task => {
-                        const member = task.family_members
-                        const creator = familyMembers.find(
-                            familyMember => familyMember.user_id === task.user_id
-                        )
-                        const activity = task.activities
-                        const trip = task.trips
-                        const isComplete = task.status === "complete"
-                        const isPrivate = task.visibility === "private"
+                    <>
+                        <TaskSection
+                            title="Overdue"
+                            subtitle="Needs attention first."
+                            tasks={groupedTasks.overdue}
+                            familyMembers={familyMembers}
+                            emptyText="No overdue tasks."
+                            onComplete={handleComplete}
+                            onEdit={startEdit}
+                            onDelete={handleDelete}
+                        />
 
-                        return (
-                            <section
-                                className={`card ${isComplete ? "completed-card" : ""}`}
-                                key={task.id}
-                            >
-                                <div className="member-header">
-                                    <span className="avatar">
-                                        {member?.avatar_emoji || "✅"}
+                        <TaskSection
+                            title="Today"
+                            subtitle="Due today."
+                            tasks={groupedTasks.today}
+                            familyMembers={familyMembers}
+                            emptyText="Nothing due today."
+                            onComplete={handleComplete}
+                            onEdit={startEdit}
+                            onDelete={handleDelete}
+                            className="task-section-today"
+                        />
+
+                        <TaskSection
+                            title="This Week"
+                            subtitle="Due in the next 7 days."
+                            tasks={groupedTasks.thisWeek}
+                            familyMembers={familyMembers}
+                            emptyText="Nothing due this week."
+                            onComplete={handleComplete}
+                            onEdit={startEdit}
+                            onDelete={handleDelete}
+                        />
+
+                        <TaskSection
+                            title="Later"
+                            subtitle="Upcoming or unscheduled."
+                            tasks={groupedTasks.later}
+                            familyMembers={familyMembers}
+                            emptyText="No later tasks."
+                            onComplete={handleComplete}
+                            onEdit={startEdit}
+                            onDelete={handleDelete}
+                        />
+
+                        {groupedTasks.completed.length > 0 && (
+                            <section className="task-command-section">
+                                <button
+                                    className="completed-toggle"
+                                    type="button"
+                                    onClick={() => setShowCompleted(current => !current)}
+                                >
+                                    <span>
+                                        {showCompleted ? "Hide" : "Show"} Completed
                                     </span>
 
-                                    <div>
-                                        <h3>{task.title}</h3>
+                                    <strong>{groupedTasks.completed.length}</strong>
+                                </button>
 
-                                        <div className="task-badge-row">
-                                            <span
-                                                className={`status-pill ${isComplete
-                                                    ? "status-success"
-                                                    : "status-warning"
-                                                    }`}
-                                            >
-                                                {isComplete ? "Complete" : "Open"}
-                                            </span>
-
-                                            {isPrivate && (
-                                                <span className="status-pill">
-                                                    🔒 Private
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {task.due_date && <p>Due: {task.due_date}</p>}
-                                {member?.name && <p>For: {member.name}</p>}
-
-                                {creator?.name && task.visibility === "household" && (
-                                    <p>Created by: {creator.name}</p>
+                                {showCompleted && (
+                                    <TaskSection
+                                        title="Completed"
+                                        subtitle="Recently completed."
+                                        tasks={groupedTasks.completed}
+                                        familyMembers={familyMembers}
+                                        emptyText="No completed tasks."
+                                        onComplete={handleComplete}
+                                        onEdit={startEdit}
+                                        onDelete={handleDelete}
+                                    />
                                 )}
-
-                                {activity?.name && <p>Activity: {activity.name}</p>}
-                                {trip?.name && <p>Trip: {trip.name}</p>}
-                                {task.description && <p>{task.description}</p>}
-
-                                <div className="card-actions">
-                                    {!isComplete && (
-                                        <button
-                                            className="secondary-button"
-                                            type="button"
-                                            onClick={() => handleComplete(task)}
-                                        >
-                                            Complete
-                                        </button>
-                                    )}
-
-                                    <button
-                                        className="secondary-button"
-                                        type="button"
-                                        onClick={() => startEdit(task)}
-                                    >
-                                        Edit
-                                    </button>
-
-                                    <button
-                                        className="danger-button"
-                                        type="button"
-                                        onClick={() => handleDelete(task)}
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
                             </section>
-                        )
-                    })
+                        )}
+                    </>
                 )}
-            </div>
-        </>
+            </section>
+        </div>
     )
 }
