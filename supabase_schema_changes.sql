@@ -611,3 +611,59 @@ check (visibility in ('household', 'private'));
 
 alter table tasks
 add column if not exists household_id uuid;
+
+-- CREATE USER PREFERENCES TABLE
+
+create table if not exists user_preferences (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references auth.users(id) on delete cascade unique,
+
+    household_name text default 'My Family',
+    timezone text default 'America/Chicago',
+
+    dashboard_window_days integer default 7,
+    timeline_window_days integer default 90,
+    week_starts_on text default 'Sunday',
+
+    birthday_reminders boolean default true,
+    trip_reminders boolean default true,
+    activity_reminders boolean default true,
+    school_reminders boolean default true,
+    task_reminders boolean default true,
+
+    show_birthdays boolean default true,
+    show_trips boolean default true,
+    show_school_items boolean default true,
+    show_activity_sessions boolean default true,
+    show_suggested_tasks boolean default true,
+
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+alter table user_preferences enable row level security;
+
+drop policy if exists "Users can view their own preferences"
+on user_preferences;
+
+drop policy if exists "Users can create their own preferences"
+on user_preferences;
+
+drop policy if exists "Users can update their own preferences"
+on user_preferences;
+
+create policy "Users can view their own preferences"
+on user_preferences
+for select
+using (auth.uid() = user_id);
+
+create policy "Users can create their own preferences"
+on user_preferences
+for insert
+with check (auth.uid() = user_id);
+
+create policy "Users can update their own preferences"
+on user_preferences
+for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);

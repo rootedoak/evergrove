@@ -3,6 +3,7 @@ import useTasks from "../hooks/useTasks"
 import useSchoolItems from "../hooks/useSchoolItems"
 import useFamilyMembers from "../hooks/useFamilyMembers"
 import useTrips from "../hooks/useTrips"
+import usePreferences from "../hooks/usePreferences"
 
 import { completeTask, createTask } from "../services/taskService"
 import { markRegistrationTaskCreated } from "../services/activityService"
@@ -249,17 +250,40 @@ export default function Dashboard() {
     const { schoolItems } = useSchoolItems()
     const { familyMembers } = useFamilyMembers()
     const { trips } = useTrips()
+    const { preferences, loading: preferencesLoading } = usePreferences()
 
     const todayString = getTodayString()
+
+    const dashboardWindowDays = Number(
+        preferences?.dashboard_window_days || 7
+    )
+
+    const timelineDays = Number(
+        preferences?.timeline_window_days || 90
+    )
+
+    const showBirthdays = preferences?.show_birthdays !== false
+    const showTrips = preferences?.show_trips !== false
+    const showSchoolItems = preferences?.show_school_items !== false
+    const showSuggestedTasks = preferences?.show_suggested_tasks !== false
 
     const registrationActions = getRegistrationActions(activities)
     const taskSuggestions = getTaskSuggestions(activities)
 
     const allEvents = [
         ...getActivityEvents(activities),
-        ...getSchoolEvents(schoolItems),
-        ...getTripEvents(trips),
-        ...getBirthdayEvents(familyMembers)
+
+        ...(showSchoolItems
+            ? getSchoolEvents(schoolItems)
+            : []),
+
+        ...(showTrips
+            ? getTripEvents(trips)
+            : []),
+
+        ...(showBirthdays
+            ? getBirthdayEvents(familyMembers)
+            : [])
     ]
 
     const todayEvents = allEvents
@@ -269,7 +293,12 @@ export default function Dashboard() {
     const upcomingEvents = allEvents
         .filter(item => {
             const days = getDaysUntil(item.date)
-            return days !== null && days > 0 && days <= 7
+
+            return (
+                days !== null &&
+                days > 0 &&
+                days <= dashboardWindowDays
+            )
         })
         .sort((a, b) => {
             const dateDiff = createLocalDate(a.date) - createLocalDate(b.date)
@@ -341,7 +370,7 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        {loading || tasksLoading ? (
+                        {loading || tasksLoading || preferencesLoading ? (
                             <EmptyState>Loading today...</EmptyState>
                         ) : todayEvents.length === 0 ? (
                             <EmptyState>Nothing scheduled for today.</EmptyState>
@@ -367,15 +396,19 @@ export default function Dashboard() {
                     <section className="card">
                         <div className="card-header-row">
                             <div>
-                                <p className="card-kicker">Next 7 Days</p>
+                                <p className="card-kicker">
+                                    Next {dashboardWindowDays} Days
+                                </p>
                                 <h3>Coming Up</h3>
                             </div>
                         </div>
 
-                        {loading || tasksLoading ? (
+                        {loading || tasksLoading || preferencesLoading ? (
                             <EmptyState>Loading the week ahead...</EmptyState>
                         ) : upcomingEvents.length === 0 ? (
-                            <EmptyState>Nothing coming up in the next 7 days.</EmptyState>
+                            <EmptyState>
+                                Nothing coming up in the next {dashboardWindowDays} days.
+                            </EmptyState>
                         ) : (
                             <div className="dashboard-list">
                                 {upcomingEvents.map(item => (
@@ -433,7 +466,7 @@ export default function Dashboard() {
                 </aside>
             </div>
 
-            {taskSuggestions.length > 0 && (
+            {showSuggestedTasks && taskSuggestions.length > 0 && (
                 <section className="card">
                     <div className="card-header-row">
                         <div>
@@ -478,9 +511,10 @@ export default function Dashboard() {
                 <FamilyTimelineCard
                     activities={activities}
                     tasks={tasks}
-                    schoolItems={schoolItems}
-                    familyMembers={familyMembers}
-                    trips={trips}
+                    schoolItems={showSchoolItems ? schoolItems : []}
+                    familyMembers={showBirthdays ? familyMembers : []}
+                    trips={showTrips ? trips : []}
+                    timelineDays={timelineDays}
                 />
             </div>
         </div>

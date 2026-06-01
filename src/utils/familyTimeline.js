@@ -78,7 +78,8 @@ export function buildFamilyTimeline(
     tasks,
     schoolItems = [],
     familyMembers = [],
-    trips = []
+    trips = [],
+    timelineDays = 90
 ) {
     const events = []
 
@@ -202,7 +203,9 @@ export function buildFamilyTimeline(
     today.setHours(0, 0, 0, 0)
 
     const ninetyDaysFromNow = new Date(today)
-    ninetyDaysFromNow.setDate(ninetyDaysFromNow.getDate() + 90)
+    ninetyDaysFromNow.setDate(
+        ninetyDaysFromNow.getDate() + Number(timelineDays || 90)
+    )
 
     return events
         .filter(event => {

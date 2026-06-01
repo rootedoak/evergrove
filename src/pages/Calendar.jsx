@@ -7,6 +7,8 @@ import useFamilyMembers from "../hooks/useFamilyMembers"
 import useTrips from "../hooks/useTrips"
 import useActivitySessions from "../hooks/useActivitySessions"
 
+import usePreferences from "../hooks/usePreferences"
+
 function getDateOnly(value) {
     if (!value) return ""
     return String(value).slice(0, 10)
@@ -74,13 +76,18 @@ function getBirthdayDateForMonth(member, visibleDate) {
     )
 }
 
-function getCalendarDays(visibleDate) {
+function getCalendarDays(visibleDate, weekStartsOn = "Sunday") {
     const year = visibleDate.getFullYear()
     const month = visibleDate.getMonth()
 
     const firstDay = new Date(year, month, 1)
     const startDate = new Date(firstDay)
-    startDate.setDate(firstDay.getDate() - firstDay.getDay())
+
+    const weekStartOffset = weekStartsOn === "Monday" ? 1 : 0
+    const dayOffset =
+        (firstDay.getDay() - weekStartOffset + 7) % 7
+
+    startDate.setDate(firstDay.getDate() - dayOffset)
 
     return Array.from({ length: 42 }, (_, index) => {
         const date = new Date(startDate)
@@ -221,10 +228,13 @@ export default function Calendar() {
     const { schoolItems } = useSchoolItems()
     const { familyMembers } = useFamilyMembers()
     const { trips } = useTrips()
+    const { preferences, loading: preferencesLoading } = usePreferences()
+
+    const weekStartsOn = preferences?.week_starts_on || "Sunday"
 
     const calendarDays = useMemo(
-        () => getCalendarDays(visibleDate),
-        [visibleDate]
+        () => getCalendarDays(visibleDate, weekStartsOn),
+        [visibleDate, weekStartsOn]
     )
 
     const events = useMemo(
@@ -299,8 +309,13 @@ export default function Calendar() {
         }
     }
 
-    const loading = activitiesLoading || sessionsLoading
+    const loading = activitiesLoading || sessionsLoading || preferencesLoading
     const todayString = getTodayString()
+
+    const weekdayLabels =
+        weekStartsOn === "Monday"
+            ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+            : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
     return (
         <div className="calendar-page">
@@ -355,7 +370,7 @@ export default function Calendar() {
                     <p>Loading calendar...</p>
                 ) : (
                     <div className="calendar-grid">
-                        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
+                        {weekdayLabels.map(day => (
                             <div className="calendar-weekday" key={day}>
                                 {day}
                             </div>

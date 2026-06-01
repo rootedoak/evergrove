@@ -28,14 +28,16 @@ export default function FamilyTimelineCard({
     tasks = [],
     schoolItems = [],
     familyMembers = [],
-    trips = []
+    trips = [],
+    timelineDays = 90
 }) {
     const timeline = buildFamilyTimeline(
         activities,
         tasks,
         schoolItems,
         familyMembers,
-        trips
+        trips,
+        timelineDays
     ).slice(0, 15)
 
     return (
