@@ -1,0 +1,147 @@
+import { supabase } from "../lib/supabase"
+import { completeRoutine } from "./routineService"
+
+async function getCurrentUser() {
+    const {
+        data: { user },
+        error
+    } = await supabase.auth.getUser()
+
+    if (error) throw error
+    if (!user) throw new Error("No authenticated user")
+
+    return user
+}
+
+async function getCurrentUserId() {
+    const user = await getCurrentUser()
+    return user.id
+}
+
+async function getCurrentHouseholdId(userId) {
+    const { data, error } = await supabase
+        .from("family_members")
+        .select("household_id")
+        .eq("user_id", userId)
+        .limit(1)
+        .maybeSingle()
+
+    if (error) throw error
+
+    return data?.household_id || null
+}
+
+export async function getTasks() {
+    const user = await getCurrentUser()
+    const householdId = await getCurrentHouseholdId(user.id)
+
+    let query = supabase
+        .from("tasks")
+        .select(`
+            *,
+            family_members (
+                id,
+                name,
+                avatar_emoji
+            ),
+            activities (
+                id,
+                name
+            ),
+            routines (
+                id,
+                title,
+                frequency,
+                next_due
+            ),
+            trips (
+                id,
+                name,
+                destination,
+                start_date,
+                end_date
+            )
+        `)
+
+    if (householdId) {
+        query = query
+            .eq("household_id", householdId)
+            .or(`visibility.eq.household,and(visibility.eq.private,user_id.eq.${user.id})`)
+    } else {
+        query = query.eq("user_id", user.id)
+    }
+
+    const { data, error } = await query
+        .order("due_date", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: false })
+
+    if (error) throw error
+
+    return data || []
+}
+
+export async function createTask(task) {
+    const user = await getCurrentUser()
+    const householdId = await getCurrentHouseholdId(user.id)
+
+    const { data, error } = await supabase
+        .from("tasks")
+        .insert([
+            {
+                ...task,
+                user_id: user.id,
+                household_id: task.household_id || householdId,
+                visibility: task.visibility || "household"
+            }
+        ])
+        .select()
+        .single()
+
+    if (error) throw error
+
+    return data
+}
+
+export async function updateTask(id, updates) {
+    const userId = await getCurrentUserId()
+
+    const { data, error } = await supabase
+        .from("tasks")
+        .update(updates)
+        .eq("id", id)
+        .eq("user_id", userId)
+        .select()
+        .single()
+
+    if (error) throw error
+
+    return data
+}
+
+export async function deleteTask(id) {
+    const userId = await getCurrentUserId()
+
+    const { error } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", userId)
+
+    if (error) throw error
+}
+
+export async function completeTask(task) {
+    const updatedTask = await updateTask(task.id, {
+        status: "complete"
+    })
+
+    if (task.routine_id) {
+        await completeRoutine({
+            id: task.routine_id,
+            next_due: task.routines?.next_due || task.due_date,
+            frequency: task.routines?.frequency || "weekly"
+        })
+    }
+
+    return updatedTask
+}
