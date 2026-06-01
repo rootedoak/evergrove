@@ -233,6 +233,7 @@ function TaskSection({
 export default function Tasks() {
     const [searchParams] = useSearchParams()
     const tripId = searchParams.get("tripId")
+    const dueDateParam = searchParams.get("dueDate")
 
     const [tasks, setTasks] = useState([])
     const [familyMembers, setFamilyMembers] = useState([])
@@ -277,7 +278,17 @@ export default function Tasks() {
 
     useEffect(() => {
         loadData()
-    }, [])
+
+        if (dueDateParam) {
+            setForm({
+                ...initialForm,
+                due_date: dueDateParam,
+                trip_id: tripId || ""
+            })
+            setEditingId(null)
+            setShowForm(true)
+        }
+    }, [dueDateParam, tripId])
 
     function updateForm(field, value) {
         setForm(current => ({

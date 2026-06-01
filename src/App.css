@@ -2930,3 +2930,45 @@ a {
     width: fit-content;
   }
 }
+
+.calendar-detail-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.calendar-detail-actions .secondary-button,
+.calendar-detail-actions .danger-button {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 700px) {
+  .calendar-detail-actions {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+}
+
+.calendar-detail-add-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.calendar-detail-add-actions .secondary-button {
+  min-height: 34px;
+  padding: 7px 11px;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 700px) {
+  .calendar-detail-add-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

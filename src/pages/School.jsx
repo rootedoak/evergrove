@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import {
     completeSchoolItem,
     createSchoolItem,
@@ -158,6 +159,9 @@ function SchoolSection({
 }
 
 export default function School() {
+    const [searchParams] = useSearchParams()
+    const dueDateParam = searchParams.get("dueDate")
+
     const [items, setItems] = useState([])
     const [familyMembers, setFamilyMembers] = useState([])
     const [loading, setLoading] = useState(true)
@@ -204,7 +208,16 @@ export default function School() {
 
     useEffect(() => {
         loadData()
-    }, [])
+
+        if (dueDateParam) {
+            setForm({
+                ...initialForm,
+                due_date: dueDateParam
+            })
+            setEditingId(null)
+            setShowForm(true)
+        }
+    }, [dueDateParam])
 
     function updateForm(field, value) {
         setForm(current => ({ ...current, [field]: value }))

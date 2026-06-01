@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import {
     createActivity,
     deleteActivity,
@@ -370,6 +371,8 @@ function ActivitySection({
 }
 
 export default function Activities() {
+    const [searchParams] = useSearchParams()
+    const startDateParam = searchParams.get("startDate")
     const { activitySessions, refreshActivitySessions } = useActivitySessions()
 
     const [activities, setActivities] = useState([])
@@ -457,7 +460,17 @@ export default function Activities() {
 
     useEffect(() => {
         loadData()
-    }, [])
+
+        if (startDateParam) {
+            setForm({
+                ...initialForm,
+                start_date: startDateParam,
+                end_date: startDateParam
+            })
+            setEditingId(null)
+            setShowForm(true)
+        }
+    }, [startDateParam])
 
     useEffect(() => {
         localStorage.setItem(

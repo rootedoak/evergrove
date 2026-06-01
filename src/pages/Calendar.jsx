@@ -8,6 +8,11 @@ import useTrips from "../hooks/useTrips"
 import useActivitySessions from "../hooks/useActivitySessions"
 import usePreferences from "../hooks/usePreferences"
 
+import { deleteActivity } from "../services/activityService"
+import { deleteActivitySession } from "../services/activitySessionService"
+import { deleteSchoolItem } from "../services/schoolService"
+import { deleteTrip } from "../services/tripService"
+
 function getDateOnly(value) {
     if (!value) return ""
     return String(value).slice(0, 10)
@@ -154,6 +159,9 @@ function buildCalendarEvents({
             events.push({
                 id: `session-${session.id}`,
                 type: "session",
+                sourceType: "session",
+                sourceId: session.id,
+                canDelete: true,
                 date: getDateOnly(session.session_date),
                 icon: member?.avatar_emoji || "📅",
                 title: activity?.name || "Activity session",
@@ -179,6 +187,9 @@ function buildCalendarEvents({
             events.push({
                 id: `activity-${activity.id}-registration-open`,
                 type: "activity",
+                sourceType: "activity",
+                sourceId: activity.id,
+                canDelete: true,
                 date: getDateOnly(activity.registration_open_date),
                 icon: "📣",
                 title: `${activity.name} registration opens`,
@@ -191,6 +202,9 @@ function buildCalendarEvents({
             events.push({
                 id: `activity-${activity.id}-registration-close`,
                 type: "activity",
+                sourceType: "activity",
+                sourceId: activity.id,
+                canDelete: true,
                 date: getDateOnly(activity.registration_close_date),
                 icon: "⏳",
                 title: `${activity.name} registration closes`,
@@ -208,6 +222,9 @@ function buildCalendarEvents({
             events.push({
                 id: `activity-${activity.id}-start`,
                 type: "activity",
+                sourceType: "activity",
+                sourceId: activity.id,
+                canDelete: true,
                 date: getDateOnly(activity.start_date),
                 icon: member?.avatar_emoji || "📅",
                 title: `${activity.name} starts`,
@@ -228,6 +245,9 @@ function buildCalendarEvents({
             events.push({
                 id: `activity-${activity.id}-end`,
                 type: "activity",
+                sourceType: "activity",
+                sourceId: activity.id,
+                canDelete: true,
                 date: getDateOnly(activity.end_date),
                 icon: "🏁",
                 title: `${activity.name} ends`,
@@ -243,6 +263,9 @@ function buildCalendarEvents({
         events.push({
             id: `school-${item.id}`,
             type: "school",
+            sourceType: "school",
+            sourceId: item.id,
+            canDelete: true,
             date: getDateOnly(item.due_date),
             icon: item.family_members?.avatar_emoji || "🎒",
             title: item.title,
@@ -262,6 +285,9 @@ function buildCalendarEvents({
         events.push({
             id: `trip-${trip.id}`,
             type: "trip",
+            sourceType: "trip",
+            sourceId: trip.id,
+            canDelete: true,
             date: getDateOnly(trip.start_date),
             icon: "🚗",
             title: trip.name,
@@ -278,6 +304,9 @@ function buildCalendarEvents({
         events.push({
             id: `birthday-${member.id}`,
             type: "birthday",
+            sourceType: "birthday",
+            sourceId: member.id,
+            canDelete: false,
             date,
             icon: "🎂",
             title: `${member.name}'s birthday`,
@@ -387,6 +416,38 @@ export default function Calendar() {
 
         if (event.type === "birthday") {
             navigate("/family")
+        }
+    }
+
+    async function handleDeleteCalendarEvent(event) {
+        const confirmed = window.confirm(
+            `Delete "${event.title}"? This cannot be undone.`
+        )
+
+        if (!confirmed) return
+
+        try {
+            if (event.sourceType === "session") {
+                await deleteActivitySession(event.sourceId)
+            }
+
+            if (event.sourceType === "activity") {
+                await deleteActivity(event.sourceId)
+            }
+
+            if (event.sourceType === "school") {
+                await deleteSchoolItem(event.sourceId)
+            }
+
+            if (event.sourceType === "trip") {
+                await deleteTrip(event.sourceId)
+            }
+
+            setSelectedDate(null)
+            window.location.reload()
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not delete this calendar item.")
         }
     }
 
@@ -562,18 +623,62 @@ export default function Calendar() {
                                             {event.location && <small>{event.location}</small>}
                                         </div>
 
-                                        <button
-                                            className="secondary-button"
-                                            type="button"
-                                            onClick={() => handleViewEvent(event)}
-                                        >
-                                            View
-                                        </button>
+                                        <div className="calendar-detail-actions">
+                                            <button
+                                                className="secondary-button"
+                                                type="button"
+                                                onClick={() => handleViewEvent(event)}
+                                            >
+                                                Manage
+                                            </button>
+
+                                            {event.canDelete && (
+                                                <button
+                                                    className="danger-button"
+                                                    type="button"
+                                                    onClick={() => handleDeleteCalendarEvent(event)}
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         )}
                     </section>
+
+                    <div className="calendar-detail-add-actions">
+                        <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={() =>
+                                navigate(`/tasks?dueDate=${selectedDate}`)
+                            }
+                        >
+                            + Task
+                        </button>
+
+                        <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={() =>
+                                navigate(`/activities?startDate=${selectedDate}`)
+                            }
+                        >
+                            + Activity
+                        </button>
+
+                        <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={() =>
+                                navigate(`/school?dueDate=${selectedDate}`)
+                            }
+                        >
+                            + School Item
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
