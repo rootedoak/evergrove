@@ -499,81 +499,98 @@ export default function Calendar() {
                     </div>
                 </div>
 
-                <div className="card-actions">
-                    <button type="button" className="secondary-button" onClick={goToPreviousMonth}>
-                        Previous
-                    </button>
-
-                    <button type="button" className="secondary-button" onClick={goToCurrentMonth}>
-                        Today
-                    </button>
-
-                    <button type="button" className="secondary-button" onClick={goToNextMonth}>
-                        Next
-                    </button>
-                </div>
             </header>
 
             <section className="card calendar-card">
-                <div className="card-header-row">
+                <div className="calendar-toolbar">
                     <div>
                         <p className="card-kicker">Month View</p>
                         <h3>{formatMonthTitle(visibleDate)}</h3>
                     </div>
+
+                    <div className="calendar-controls">
+                        <button
+                            type="button"
+                            className="calendar-nav-button"
+                            onClick={goToPreviousMonth}
+                            aria-label="Previous month"
+                        >
+                            ‹
+                        </button>
+
+                        <button
+                            type="button"
+                            className="calendar-today-button"
+                            onClick={goToCurrentMonth}
+                        >
+                            Today
+                        </button>
+
+                        <button
+                            type="button"
+                            className="calendar-nav-button"
+                            onClick={goToNextMonth}
+                            aria-label="Next month"
+                        >
+                            ›
+                        </button>
+                    </div>
                 </div>
 
-                {loading ? (
-                    <p>Loading calendar...</p>
-                ) : (
-                    <div className="calendar-grid">
-                        {weekdayLabels.map(day => (
-                            <div className="calendar-weekday" key={day}>
-                                {day}
-                            </div>
-                        ))}
+                {
+                    loading ? (
+                        <p>Loading calendar...</p>
+                    ) : (
+                        <div className="calendar-grid">
+                            {weekdayLabels.map(day => (
+                                <div className="calendar-weekday" key={day}>
+                                    {day}
+                                </div>
+                            ))}
 
-                        {calendarDays.map(day => {
-                            const dayEvents = eventsByDate[day.dateString] || []
-                            const isToday = day.dateString === todayString
+                            {calendarDays.map(day => {
+                                const dayEvents = eventsByDate[day.dateString] || []
+                                const isToday = day.dateString === todayString
 
-                            return (
-                                <button
-                                    className={`calendar-day calendar-day-button ${day.isCurrentMonth ? "" : "calendar-day-muted"
-                                        } ${isToday ? "calendar-day-today" : ""}`}
-                                    key={day.dateString}
-                                    type="button"
-                                    onClick={() => setSelectedDate(day.dateString)}
-                                >
-                                    <div className="calendar-day-number">
-                                        {day.date.getDate()}
-                                    </div>
+                                return (
+                                    <button
+                                        className={`calendar-day calendar-day-button ${day.isCurrentMonth ? "" : "calendar-day-muted"
+                                            } ${isToday ? "calendar-day-today" : ""}`}
+                                        key={day.dateString}
+                                        type="button"
+                                        onClick={() => setSelectedDate(day.dateString)}
+                                    >
+                                        <div className="calendar-day-number">
+                                            {day.date.getDate()}
+                                        </div>
 
-                                    <div className="calendar-events">
-                                        {dayEvents.slice(0, 4).map(event => (
-                                            <div
-                                                className="calendar-event"
-                                                key={event.id}
-                                                title={[event.title, event.subtitle]
-                                                    .filter(Boolean)
-                                                    .join(" • ")}
-                                            >
-                                                <span>{event.icon}</span>
-                                                <strong>{event.title}</strong>
-                                            </div>
-                                        ))}
+                                        <div className="calendar-events">
+                                            {dayEvents.slice(0, 4).map(event => (
+                                                <div
+                                                    className="calendar-event"
+                                                    key={event.id}
+                                                    title={[event.title, event.subtitle]
+                                                        .filter(Boolean)
+                                                        .join(" • ")}
+                                                >
+                                                    <span>{event.icon}</span>
+                                                    <strong>{event.title}</strong>
+                                                </div>
+                                            ))}
 
-                                        {dayEvents.length > 4 && (
-                                            <small>
-                                                +{dayEvents.length - 4} more
-                                            </small>
-                                        )}
-                                    </div>
-                                </button>
-                            )
-                        })}
-                    </div>
-                )}
-            </section>
+                                            {dayEvents.length > 4 && (
+                                                <small>
+                                                    +{dayEvents.length - 4} more
+                                                </small>
+                                            )}
+                                        </div>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    )
+                }
+            </section >
 
             {selectedDate && (
                 <div
@@ -680,7 +697,8 @@ export default function Calendar() {
                         </button>
                     </div>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     )
 }
