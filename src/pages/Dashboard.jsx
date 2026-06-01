@@ -435,11 +435,7 @@ export default function Dashboard() {
                         ) : (
                             <div className="dashboard-list">
                                 {openTasks.map(task => (
-                                    <div className="dashboard-row" key={task.id}>
-                                        <span className="dashboard-row-icon">
-                                            {task.family_members?.avatar_emoji || "✅"}
-                                        </span>
-
+                                    <div className="dashboard-task-row" key={task.id}>
                                         <div>
                                             <strong>{task.title}</strong>
 
@@ -452,7 +448,7 @@ export default function Dashboard() {
                                         </div>
 
                                         <button
-                                            className="secondary-button"
+                                            className="secondary-button dashboard-task-complete"
                                             type="button"
                                             onClick={() => handleCompleteTask(task)}
                                         >
