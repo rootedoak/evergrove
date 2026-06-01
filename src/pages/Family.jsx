@@ -152,6 +152,23 @@ export default function Family() {
         }
     }
 
+    const sortedMembers = [...familyMembers].sort((a, b) => {
+        const roleOrder = {
+            parent: 1,
+            child: 2,
+            pet: 3
+        }
+
+        const aOrder = roleOrder[a.role] || 99
+        const bOrder = roleOrder[b.role] || 99
+
+        if (aOrder !== bOrder) {
+            return aOrder - bOrder
+        }
+
+        return a.name.localeCompare(b.name)
+    })
+
     return (
         <>
             <section className="hero-card">
@@ -332,7 +349,7 @@ export default function Family() {
                         <p>No family members added yet.</p>
                     </section>
                 ) : (
-                    familyMembers.map(member => (
+                    sortedMembers.map(member => (
                         <section className="card" key={member.id}>
                             <div className="member-header">
                                 <span className="avatar">

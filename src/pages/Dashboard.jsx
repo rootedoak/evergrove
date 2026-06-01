@@ -4,29 +4,57 @@ import useSchoolItems from "../hooks/useSchoolItems"
 import useFamilyMembers from "../hooks/useFamilyMembers"
 import useTrips from "../hooks/useTrips"
 
-import { createTask } from "../services/taskService"
+import { completeTask, createTask } from "../services/taskService"
 import { markRegistrationTaskCreated } from "../services/activityService"
 
 import FamilyTimelineCard from "../components/FamilyTimelineCard"
 
 import { getRegistrationActions } from "../utils/registrationActions"
 import { getTaskSuggestions } from "../utils/taskSuggestions"
-import { getSchoolActions } from "../utils/schoolActions"
+
+function getDateOnly(value) {
+    if (!value) return ""
+    return String(value).slice(0, 10)
+}
+
+function parseDateParts(dateString) {
+    const cleanDate = getDateOnly(dateString)
+    const [year, month, day] = cleanDate.split("-").map(Number)
+
+    return { year, month, day }
+}
+
+function createLocalDate(dateString) {
+    const { year, month, day } = parseDateParts(dateString)
+    return new Date(year, month - 1, day)
+}
+
+function formatDateParts(year, month, day) {
+    return [
+        year,
+        String(month).padStart(2, "0"),
+        String(day).padStart(2, "0")
+    ].join("-")
+}
 
 function getTodayString() {
-    return new Date().toISOString().slice(0, 10)
+    const today = new Date()
+
+    return formatDateParts(
+        today.getFullYear(),
+        today.getMonth() + 1,
+        today.getDate()
+    )
 }
 
 function getDaysUntil(dateString) {
     if (!dateString) return null
 
-    const today = new Date()
-    const target = new Date(`${dateString}T00:00:00`)
-
-    today.setHours(0, 0, 0, 0)
+    const today = createLocalDate(getTodayString())
+    const target = createLocalDate(dateString)
 
     const diffMs = target - today
-    return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+    return Math.round(diffMs / (1000 * 60 * 60 * 24))
 }
 
 function formatDateLabel(dateString) {
@@ -42,7 +70,7 @@ function formatDateLabel(dateString) {
 function formatDisplayDate(dateString) {
     if (!dateString) return ""
 
-    return new Date(`${dateString}T00:00:00`).toLocaleDateString(undefined, {
+    return createLocalDate(dateString).toLocaleDateString(undefined, {
         weekday: "short",
         month: "short",
         day: "numeric"
@@ -75,22 +103,17 @@ function formatTimeRange(startTime, endTime) {
 function getUpcomingBirthdayDate(birthdate) {
     if (!birthdate) return null
 
-    const today = new Date()
-    const birthDate = new Date(`${birthdate}T00:00:00`)
+    const { month, day } = parseDateParts(birthdate)
+    const today = createLocalDate(getTodayString())
 
-    let nextBirthday = new Date(
-        today.getFullYear(),
-        birthDate.getMonth(),
-        birthDate.getDate()
-    )
-
-    today.setHours(0, 0, 0, 0)
+    let birthdayYear = today.getFullYear()
+    let nextBirthday = new Date(birthdayYear, month - 1, day)
 
     if (nextBirthday < today) {
-        nextBirthday.setFullYear(today.getFullYear() + 1)
+        birthdayYear += 1
     }
 
-    return nextBirthday.toISOString().slice(0, 10)
+    return formatDateParts(birthdayYear, month, day)
 }
 
 function getBirthdayEvents(familyMembers) {
@@ -98,55 +121,17 @@ function getBirthdayEvents(familyMembers) {
         .filter(member => member.birthdate)
         .map(member => {
             const date = getUpcomingBirthdayDate(member.birthdate)
-            const birthDate = new Date(`${member.birthdate}T00:00:00`)
-            const birthdayDate = new Date(`${date}T00:00:00`)
-            const age = birthdayDate.getFullYear() - birthDate.getFullYear()
+            const { year: birthYear } = parseDateParts(member.birthdate)
+            const { year: birthdayYear } = parseDateParts(date)
 
             return {
                 id: `birthday-${member.id}`,
                 date,
                 icon: "🎂",
-                title: `${member.name} turns ${age}`,
+                title: `${member.name} turns ${birthdayYear - birthYear}`,
                 subtitle: "Birthday"
             }
         })
-}
-
-function getBirthdayReminders(familyMembers) {
-    return getBirthdayEvents(familyMembers)
-        .map(item => ({
-            ...item,
-            days: getDaysUntil(item.date),
-            subtitle:
-                getDaysUntil(item.date) === 0
-                    ? "Today"
-                    : getDaysUntil(item.date) === 1
-                        ? "Tomorrow"
-                        : `In ${getDaysUntil(item.date)} days`
-        }))
-        .filter(item => item.days !== null && item.days >= 0 && item.days <= 14)
-}
-
-function getTripReminders(trips) {
-    return trips
-        .filter(trip => trip.start_date)
-        .map(trip => {
-            const days = getDaysUntil(trip.start_date)
-
-            return {
-                id: `trip-reminder-${trip.id}`,
-                icon: "🚗",
-                title: trip.name,
-                subtitle:
-                    days === 0
-                        ? "Starts today"
-                        : days === 1
-                            ? "Starts tomorrow"
-                            : `Starts in ${days} days`,
-                days
-            }
-        })
-        .filter(item => item.days !== null && item.days >= 0 && item.days <= 14)
 }
 
 function getActivityEvents(activities) {
@@ -161,7 +146,7 @@ function getActivityEvents(activities) {
         if (activity.registration_open_date) {
             events.push({
                 id: `${activity.id}-registration-open`,
-                date: activity.registration_open_date,
+                date: getDateOnly(activity.registration_open_date),
                 icon: avatar,
                 title: `${activity.name} registration opens`,
                 subtitle: memberName
@@ -171,7 +156,7 @@ function getActivityEvents(activities) {
         if (activity.registration_close_date) {
             events.push({
                 id: `${activity.id}-registration-close`,
-                date: activity.registration_close_date,
+                date: getDateOnly(activity.registration_close_date),
                 icon: avatar,
                 title: `${activity.name} registration closes`,
                 subtitle: memberName
@@ -181,7 +166,7 @@ function getActivityEvents(activities) {
         if (activity.start_date) {
             events.push({
                 id: `${activity.id}-start`,
-                date: activity.start_date,
+                date: getDateOnly(activity.start_date),
                 icon: avatar,
                 title: `${activity.name} starts`,
                 subtitle: [memberName, timeRange].filter(Boolean).join(" • ")
@@ -191,7 +176,7 @@ function getActivityEvents(activities) {
         if (activity.end_date) {
             events.push({
                 id: `${activity.id}-end`,
-                date: activity.end_date,
+                date: getDateOnly(activity.end_date),
                 icon: avatar,
                 title: `${activity.name} ends`,
                 subtitle: memberName
@@ -207,7 +192,7 @@ function getSchoolEvents(schoolItems) {
         .filter(item => item.due_date)
         .map(item => ({
             id: `school-${item.id}`,
-            date: item.due_date,
+            date: getDateOnly(item.due_date),
             icon: item.family_members?.avatar_emoji || "🎒",
             title: item.title,
             subtitle: item.family_members?.name || item.category || "School"
@@ -225,7 +210,7 @@ function getTripEvents(trips) {
 
             return {
                 id: `trip-${trip.id}-start`,
-                date: trip.start_date,
+                date: getDateOnly(trip.start_date),
                 icon: "🚗",
                 title: trip.name,
                 subtitle: attendees || trip.destination || "Trip"
@@ -268,46 +253,7 @@ export default function Dashboard() {
     const todayString = getTodayString()
 
     const registrationActions = getRegistrationActions(activities)
-    const schoolActions = getSchoolActions(schoolItems)
     const taskSuggestions = getTaskSuggestions(activities)
-
-    const birthdayReminders = getBirthdayReminders(familyMembers)
-    const tripReminders = getTripReminders(trips)
-
-    const headsUpItems = [
-        ...registrationActions.map(item => ({
-            id: item.id,
-            icon: item.avatar || "📣",
-            title: item.title,
-            subtitle: item.subtitle,
-            days: getDaysUntil(item.date),
-            sortOrder: 1
-        })),
-        ...schoolActions.map(item => ({
-            id: item.id,
-            icon: item.avatar || "🏫",
-            title: item.title,
-            subtitle: item.subtitle
-                ? `${item.subtitle} • ${item.label}`
-                : item.label,
-            days: getDaysUntil(item.dueDate),
-            sortOrder: 2
-        })),
-        ...birthdayReminders.map(item => ({
-            ...item,
-            sortOrder: 3
-        })),
-        ...tripReminders.map(item => ({
-            ...item,
-            sortOrder: 4
-        }))
-    ]
-        .filter(item => item.days === null || item.days >= 0)
-        .sort((a, b) => {
-            if (a.days !== b.days) return (a.days || 0) - (b.days || 0)
-            return a.sortOrder - b.sortOrder
-        })
-        .slice(0, 8)
 
     const allEvents = [
         ...getActivityEvents(activities),
@@ -325,7 +271,11 @@ export default function Dashboard() {
             const days = getDaysUntil(item.date)
             return days !== null && days > 0 && days <= 7
         })
-        .sort((a, b) => a.date.localeCompare(b.date))
+        .sort((a, b) => {
+            const dateDiff = createLocalDate(a.date) - createLocalDate(b.date)
+            if (dateDiff !== 0) return dateDiff
+            return a.title.localeCompare(b.title)
+        })
 
     const openTasks = tasks
         .filter(task => task.status !== "complete")
@@ -333,7 +283,7 @@ export default function Dashboard() {
             if (!a.due_date && !b.due_date) return 0
             if (!a.due_date) return 1
             if (!b.due_date) return -1
-            return a.due_date.localeCompare(b.due_date)
+            return createLocalDate(a.due_date) - createLocalDate(b.due_date)
         })
         .slice(0, 8)
 
@@ -353,6 +303,17 @@ export default function Dashboard() {
             await refreshTasks()
         } catch (error) {
             console.error(error)
+            alert(error.message || "Could not create task.")
+        }
+    }
+
+    async function handleCompleteTask(task) {
+        try {
+            await completeTask(task)
+            await refreshTasks()
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not complete task.")
         }
     }
 
@@ -456,12 +417,19 @@ export default function Dashboard() {
                                                     : ""}
                                             </p>
                                         </div>
+
+                                        <button
+                                            className="secondary-button"
+                                            type="button"
+                                            onClick={() => handleCompleteTask(task)}
+                                        >
+                                            Complete
+                                        </button>
                                     </div>
                                 ))}
                             </div>
                         )}
                     </section>
-
                 </aside>
             </div>
 

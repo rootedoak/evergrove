@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { NavLink, Route, Routes } from "react-router-dom"
 import {
   Bell,
-  CalendarDays,
+  SportShoe,
   ClipboardList,
   FolderOpen,
   Home,
@@ -12,6 +12,7 @@ import {
   Users,
   Plane,
   User,
+  CalendarDays,
   X
 } from "lucide-react"
 
@@ -29,6 +30,8 @@ import Documents from "./pages/Documents"
 import Routines from "./pages/Routines"
 import Trips from "./pages/Trips"
 
+import Calendar from "./pages/Calendar"
+
 import Profile from "./pages/Profile"
 
 import "./App.css"
@@ -36,7 +39,8 @@ import "./App.css"
 const navItems = [
   { to: "/", icon: Home, label: "Home", end: true },
   { to: "/family", icon: Users, label: "Family" },
-  { to: "/activities", icon: CalendarDays, label: "Activities" },
+  { to: "/calendar", icon: CalendarDays, label: "Calendar" },
+  { to: "/activities", icon: SportShoe, label: "Activities" },
   { to: "/school", icon: School, label: "School" },
   { to: "/tasks", icon: ClipboardList, label: "Tasks" },
   { to: "/routines", icon: Repeat, label: "Routines" },
@@ -183,6 +187,7 @@ export default function App() {
           <Route path="/documents" element={<Documents />} />
           <Route path="/trips" element={<Trips />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/calendar" element={<Calendar />} />
         </Routes>
       </main>
     </div>

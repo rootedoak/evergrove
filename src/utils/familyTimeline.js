@@ -26,6 +26,53 @@ function getActivitySubtitle(activity) {
     return parts.join(" • ")
 }
 
+function parseDateParts(dateString) {
+    const [year, month, day] = dateString.split("-").map(Number)
+
+    return {
+        year,
+        month,
+        day
+    }
+}
+
+function createLocalDate(dateString) {
+    const { year, month, day } = parseDateParts(dateString)
+
+    return new Date(year, month - 1, day)
+}
+
+function toDateStringLocal(date) {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+
+    return `${year}-${month}-${day}`
+}
+
+function getNextBirthdayDate(birthdate) {
+    const { month, day } = parseDateParts(birthdate)
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    let nextBirthday = new Date(
+        today.getFullYear(),
+        month - 1,
+        day
+    )
+
+    if (nextBirthday < today) {
+        nextBirthday = new Date(
+            today.getFullYear() + 1,
+            month - 1,
+            day
+        )
+    }
+
+    return nextBirthday
+}
+
 export function buildFamilyTimeline(
     activities,
     tasks,
@@ -119,25 +166,13 @@ export function buildFamilyTimeline(
     familyMembers.forEach(member => {
         if (!member.birthdate) return
 
-        const birthDate = new Date(member.birthdate)
-        const today = new Date()
-
-        let nextBirthday = new Date(
-            today.getFullYear(),
-            birthDate.getMonth(),
-            birthDate.getDate()
-        )
-
-        if (nextBirthday < today) {
-            nextBirthday.setFullYear(today.getFullYear() + 1)
-        }
-
-        const age =
-            nextBirthday.getFullYear() - birthDate.getFullYear()
+        const { year } = parseDateParts(member.birthdate)
+        const nextBirthday = getNextBirthdayDate(member.birthdate)
+        const age = nextBirthday.getFullYear() - year
 
         events.push({
             id: `birthday-${member.id}`,
-            date: nextBirthday.toISOString().split("T")[0],
+            date: toDateStringLocal(nextBirthday),
             icon: "🎂",
             title: `${member.name} turns ${age}`,
             subtitle: "Birthday",
@@ -166,10 +201,24 @@ export function buildFamilyTimeline(
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
+    const ninetyDaysFromNow = new Date(today)
+    ninetyDaysFromNow.setDate(ninetyDaysFromNow.getDate() + 90)
+
     return events
         .filter(event => {
-            const eventDate = new Date(`${event.date}T00:00:00`)
-            return eventDate >= today
+            if (!event.date) return false
+
+            const eventDate = createLocalDate(event.date)
+
+            return (
+                eventDate >= today &&
+                eventDate <= ninetyDaysFromNow
+            )
         })
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .sort((a, b) => {
+            const firstDate = createLocalDate(a.date)
+            const secondDate = createLocalDate(b.date)
+
+            return firstDate - secondDate
+        })
 }
