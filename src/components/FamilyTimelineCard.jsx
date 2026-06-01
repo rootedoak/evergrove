@@ -2,7 +2,6 @@ import { buildFamilyTimeline } from "../utils/familyTimeline"
 
 function getDateOnly(value) {
     if (!value) return ""
-
     return String(value).slice(0, 10)
 }
 
@@ -29,6 +28,7 @@ export default function FamilyTimelineCard({
     schoolItems = [],
     familyMembers = [],
     trips = [],
+    activitySessions = [],
     timelineDays = 90
 }) {
     const timeline = buildFamilyTimeline(
@@ -37,7 +37,8 @@ export default function FamilyTimelineCard({
         schoolItems,
         familyMembers,
         trips,
-        timelineDays
+        timelineDays,
+        activitySessions
     ).slice(0, 15)
 
     return (

@@ -27,18 +27,14 @@ function getActivitySubtitle(activity) {
 }
 
 function parseDateParts(dateString) {
-    const [year, month, day] = dateString.split("-").map(Number)
+    const cleanDate = String(dateString).slice(0, 10)
+    const [year, month, day] = cleanDate.split("-").map(Number)
 
-    return {
-        year,
-        month,
-        day
-    }
+    return { year, month, day }
 }
 
 function createLocalDate(dateString) {
     const { year, month, day } = parseDateParts(dateString)
-
     return new Date(year, month - 1, day)
 }
 
@@ -73,19 +69,75 @@ function getNextBirthdayDate(birthdate) {
     return nextBirthday
 }
 
+function formatTime(timeString) {
+    if (!timeString) return ""
+
+    const [hours, minutes] = timeString.split(":")
+    const date = new Date()
+    date.setHours(Number(hours), Number(minutes), 0, 0)
+
+    return date.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit"
+    })
+}
+
+function formatTimeRange(startTime, endTime) {
+    if (startTime && endTime) {
+        return `${formatTime(startTime)} - ${formatTime(endTime)}`
+    }
+
+    if (startTime) return formatTime(startTime)
+
+    return ""
+}
+
 export function buildFamilyTimeline(
     activities,
     tasks,
     schoolItems = [],
     familyMembers = [],
     trips = [],
-    timelineDays = 90
+    timelineDays = 90,
+    activitySessions = []
 ) {
     const events = []
+
+    const activityIdsWithSessions = new Set(
+        activitySessions
+            .map(session => session.activity_id)
+            .filter(Boolean)
+    )
+
+    activitySessions.forEach(session => {
+        if (!session.session_date) return
+
+        const activity = session.activities
+        const member = activity?.family_members
+        const timeRange = formatTimeRange(
+            session.start_time,
+            session.end_time
+        )
+
+        events.push({
+            id: `activity-session-${session.id}`,
+            date: session.session_date,
+            icon: member?.avatar_emoji || "📅",
+            title: activity?.name || "Activity Session",
+            subtitle: [
+                member?.name,
+                timeRange,
+                session.location
+            ].filter(Boolean).join(" • "),
+            activity_id: session.activity_id,
+            event_type: "activity_session"
+        })
+    })
 
     activities.forEach(activity => {
         const subtitle = getActivitySubtitle(activity)
         const icon = getActivityIcon(activity)
+        const hasSessions = activityIdsWithSessions.has(activity.id)
 
         if (activity.registration_open_date) {
             events.push({
@@ -117,7 +169,7 @@ export function buildFamilyTimeline(
             })
         }
 
-        if (activity.start_date) {
+        if (!hasSessions && activity.start_date) {
             events.push({
                 id: `${activity.id}-start`,
                 date: activity.start_date,
@@ -133,6 +185,7 @@ export function buildFamilyTimeline(
         }
 
         if (
+            !hasSessions &&
             activity.end_date &&
             activity.end_date !== activity.start_date
         ) {
@@ -202,9 +255,9 @@ export function buildFamilyTimeline(
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const ninetyDaysFromNow = new Date(today)
-    ninetyDaysFromNow.setDate(
-        ninetyDaysFromNow.getDate() + Number(timelineDays || 90)
+    const endDate = new Date(today)
+    endDate.setDate(
+        endDate.getDate() + Number(timelineDays || 90)
     )
 
     return events
@@ -213,15 +266,16 @@ export function buildFamilyTimeline(
 
             const eventDate = createLocalDate(event.date)
 
-            return (
-                eventDate >= today &&
-                eventDate <= ninetyDaysFromNow
-            )
+            return eventDate >= today && eventDate <= endDate
         })
         .sort((a, b) => {
             const firstDate = createLocalDate(a.date)
             const secondDate = createLocalDate(b.date)
 
-            return firstDate - secondDate
+            if (firstDate - secondDate !== 0) {
+                return firstDate - secondDate
+            }
+
+            return a.title.localeCompare(b.title)
         })
 }

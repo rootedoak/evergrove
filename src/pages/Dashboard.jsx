@@ -4,6 +4,7 @@ import useSchoolItems from "../hooks/useSchoolItems"
 import useFamilyMembers from "../hooks/useFamilyMembers"
 import useTrips from "../hooks/useTrips"
 import usePreferences from "../hooks/usePreferences"
+import useActivitySessions from "../hooks/useActivitySessions"
 
 import { completeTask, createTask } from "../services/taskService"
 import { markRegistrationTaskCreated } from "../services/activityService"
@@ -21,7 +22,6 @@ function getDateOnly(value) {
 function parseDateParts(dateString) {
     const cleanDate = getDateOnly(dateString)
     const [year, month, day] = cleanDate.split("-").map(Number)
-
     return { year, month, day }
 }
 
@@ -40,7 +40,6 @@ function formatDateParts(year, month, day) {
 
 function getTodayString() {
     const today = new Date()
-
     return formatDateParts(
         today.getFullYear(),
         today.getMonth() + 1,
@@ -54,8 +53,7 @@ function getDaysUntil(dateString) {
     const today = createLocalDate(getTodayString())
     const target = createLocalDate(dateString)
 
-    const diffMs = target - today
-    return Math.round(diffMs / (1000 * 60 * 60 * 24))
+    return Math.round((target - today) / (1000 * 60 * 60 * 24))
 }
 
 function formatDateLabel(dateString) {
@@ -101,6 +99,25 @@ function formatTimeRange(startTime, endTime) {
     return ""
 }
 
+function getMinutesFromTime(timeString) {
+    if (!timeString) return 99999
+
+    const [hours, minutes] = timeString.split(":").map(Number)
+    return hours * 60 + minutes
+}
+
+function isHappeningNow(event) {
+    if (!event.start_time || !event.end_time) return false
+
+    const now = new Date()
+    const currentMinutes = now.getHours() * 60 + now.getMinutes()
+
+    return (
+        currentMinutes >= getMinutesFromTime(event.start_time) &&
+        currentMinutes <= getMinutesFromTime(event.end_time)
+    )
+}
+
 function getUpcomingBirthdayDate(birthdate) {
     if (!birthdate) return null
 
@@ -108,7 +125,7 @@ function getUpcomingBirthdayDate(birthdate) {
     const today = createLocalDate(getTodayString())
 
     let birthdayYear = today.getFullYear()
-    let nextBirthday = new Date(birthdayYear, month - 1, day)
+    const nextBirthday = new Date(birthdayYear, month - 1, day)
 
     if (nextBirthday < today) {
         birthdayYear += 1
@@ -130,17 +147,53 @@ function getBirthdayEvents(familyMembers) {
                 date,
                 icon: "🎂",
                 title: `${member.name} turns ${birthdayYear - birthYear}`,
-                subtitle: "Birthday"
+                subtitle: "Birthday",
+                sort_time: 99999
             }
         })
 }
 
-function getActivityEvents(activities) {
+function getActivitySessionEvents(activitySessions) {
+    return activitySessions
+        .filter(session => session.session_date)
+        .map(session => {
+            const activity = session.activities
+            const member = activity?.family_members
+            const timeRange = formatTimeRange(
+                session.start_time,
+                session.end_time
+            )
+
+            return {
+                id: `activity-session-${session.id}`,
+                date: getDateOnly(session.session_date),
+                icon: member?.avatar_emoji || "📅",
+                title: activity?.name || "Activity Session",
+                subtitle: member?.name || "",
+                detail: session.location || "",
+                time_label: timeRange,
+                start_time: session.start_time,
+                end_time: session.end_time,
+                sort_time: getMinutesFromTime(session.start_time),
+                activity_id: session.activity_id,
+                event_type: "session"
+            }
+        })
+}
+
+function getActivityEvents(activities, activitySessions = []) {
+    const activityIdsWithSessions = new Set(
+        activitySessions
+            .map(session => session.activity_id)
+            .filter(Boolean)
+    )
+
     return activities.flatMap(activity => {
         const member = activity.family_members
         const avatar = member?.avatar_emoji || "📅"
         const memberName = member?.name
         const timeRange = formatTimeRange(activity.start_time, activity.end_time)
+        const hasSessions = activityIdsWithSessions.has(activity.id)
 
         const events = []
 
@@ -150,7 +203,8 @@ function getActivityEvents(activities) {
                 date: getDateOnly(activity.registration_open_date),
                 icon: avatar,
                 title: `${activity.name} registration opens`,
-                subtitle: memberName
+                subtitle: memberName,
+                sort_time: 99999
             })
         }
 
@@ -160,27 +214,35 @@ function getActivityEvents(activities) {
                 date: getDateOnly(activity.registration_close_date),
                 icon: avatar,
                 title: `${activity.name} registration closes`,
-                subtitle: memberName
+                subtitle: memberName,
+                sort_time: 99999
             })
         }
 
-        if (activity.start_date) {
+        if (!hasSessions && activity.start_date) {
             events.push({
                 id: `${activity.id}-start`,
                 date: getDateOnly(activity.start_date),
                 icon: avatar,
                 title: `${activity.name} starts`,
-                subtitle: [memberName, timeRange].filter(Boolean).join(" • ")
+                subtitle: memberName,
+                detail: "",
+                time_label: timeRange,
+                start_time: activity.start_time,
+                end_time: activity.end_time,
+                sort_time: getMinutesFromTime(activity.start_time),
+                event_type: "activity"
             })
         }
 
-        if (activity.end_date) {
+        if (!hasSessions && activity.end_date) {
             events.push({
                 id: `${activity.id}-end`,
                 date: getDateOnly(activity.end_date),
                 icon: avatar,
                 title: `${activity.name} ends`,
-                subtitle: memberName
+                subtitle: memberName,
+                sort_time: 99999
             })
         }
 
@@ -196,7 +258,8 @@ function getSchoolEvents(schoolItems) {
             date: getDateOnly(item.due_date),
             icon: item.family_members?.avatar_emoji || "🎒",
             title: item.title,
-            subtitle: item.family_members?.name || item.category || "School"
+            subtitle: item.family_members?.name || item.category || "School",
+            sort_time: 99999
         }))
 }
 
@@ -214,7 +277,8 @@ function getTripEvents(trips) {
                 date: getDateOnly(trip.start_date),
                 icon: "🚗",
                 title: trip.name,
-                subtitle: attendees || trip.destination || "Trip"
+                subtitle: attendees || trip.destination || "Trip",
+                sort_time: 99999
             }
         })
 }
@@ -223,12 +287,36 @@ function EmptyState({ children }) {
     return <p className="dashboard-empty">{children}</p>
 }
 
+function TodayEventRow({ item }) {
+    return (
+        <div className="today-checklist-item" key={item.id}>
+            <span className="today-check-circle" />
+
+            <div>
+                {item.time_label && (
+                    <p className="card-kicker">{item.time_label}</p>
+                )}
+
+                <strong>{item.title}</strong>
+
+                {item.subtitle && <p>{item.subtitle}</p>}
+
+                {item.detail && <small>{item.detail}</small>}
+            </div>
+        </div>
+    )
+}
+
 function EventRow({ item }) {
     return (
         <div className="dashboard-row">
             <span className="dashboard-row-icon">{item.icon}</span>
 
             <div>
+                {item.time_label && (
+                    <p className="card-kicker">{item.time_label}</p>
+                )}
+
                 <strong>{item.title}</strong>
 
                 <p>
@@ -251,6 +339,10 @@ export default function Dashboard() {
     const { familyMembers } = useFamilyMembers()
     const { trips } = useTrips()
     const { preferences, loading: preferencesLoading } = usePreferences()
+    const {
+        activitySessions,
+        loading: activitySessionsLoading
+    } = useActivitySessions()
 
     const todayString = getTodayString()
 
@@ -266,12 +358,19 @@ export default function Dashboard() {
     const showTrips = preferences?.show_trips !== false
     const showSchoolItems = preferences?.show_school_items !== false
     const showSuggestedTasks = preferences?.show_suggested_tasks !== false
+    const showActivitySessions = preferences?.show_activity_sessions !== false
 
-    const registrationActions = getRegistrationActions(activities)
     const taskSuggestions = getTaskSuggestions(activities)
 
     const allEvents = [
-        ...getActivityEvents(activities),
+        ...getActivityEvents(
+            activities,
+            showActivitySessions ? activitySessions : []
+        ),
+
+        ...(showActivitySessions
+            ? getActivitySessionEvents(activitySessions)
+            : []),
 
         ...(showSchoolItems
             ? getSchoolEvents(schoolItems)
@@ -288,7 +387,15 @@ export default function Dashboard() {
 
     const todayEvents = allEvents
         .filter(item => item.date === todayString)
-        .sort((a, b) => a.title.localeCompare(b.title))
+        .sort((a, b) => {
+            if ((a.sort_time || 99999) !== (b.sort_time || 99999)) {
+                return (a.sort_time || 99999) - (b.sort_time || 99999)
+            }
+
+            return a.title.localeCompare(b.title)
+        })
+
+    const happeningNowEvents = todayEvents.filter(isHappeningNow)
 
     const upcomingEvents = allEvents
         .filter(item => {
@@ -303,6 +410,11 @@ export default function Dashboard() {
         .sort((a, b) => {
             const dateDiff = createLocalDate(a.date) - createLocalDate(b.date)
             if (dateDiff !== 0) return dateDiff
+
+            if ((a.sort_time || 99999) !== (b.sort_time || 99999)) {
+                return (a.sort_time || 99999) - (b.sort_time || 99999)
+            }
+
             return a.title.localeCompare(b.title)
         })
 
@@ -315,6 +427,12 @@ export default function Dashboard() {
             return createLocalDate(a.due_date) - createLocalDate(b.due_date)
         })
         .slice(0, 8)
+
+    const dashboardLoading =
+        loading ||
+        tasksLoading ||
+        preferencesLoading ||
+        activitySessionsLoading
 
     async function handleCreateSuggestedTask(suggestion) {
         try {
@@ -360,6 +478,20 @@ export default function Dashboard() {
                 </p>
             </header>
 
+            {happeningNowEvents.length > 0 && (
+                <div className="dashboard-now-banner">
+                    {happeningNowEvents.map(item => (
+                        <div key={item.id}>
+                            <strong>🟢 Happening Now:</strong>{" "}
+                            {item.title}
+                            {item.subtitle && ` • ${item.subtitle}`}
+                            {item.end_time &&
+                                ` • Ends ${formatTime(item.end_time)}`}
+                        </div>
+                    ))}
+                </div>
+            )}
+
             <div className="dashboard-main-layout">
                 <main className="dashboard-left-flow">
                     <section className="card">
@@ -370,24 +502,14 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        {loading || tasksLoading || preferencesLoading ? (
+                        {dashboardLoading ? (
                             <EmptyState>Loading today...</EmptyState>
                         ) : todayEvents.length === 0 ? (
                             <EmptyState>Nothing scheduled for today.</EmptyState>
                         ) : (
                             <div className="today-checklist">
                                 {todayEvents.map(item => (
-                                    <div className="today-checklist-item" key={item.id}>
-                                        <span className="today-check-circle" />
-
-                                        <div>
-                                            <strong>{item.title}</strong>
-
-                                            {item.subtitle && (
-                                                <p>{item.subtitle}</p>
-                                            )}
-                                        </div>
-                                    </div>
+                                    <TodayEventRow key={item.id} item={item} />
                                 ))}
                             </div>
                         )}
@@ -403,7 +525,7 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        {loading || tasksLoading || preferencesLoading ? (
+                        {dashboardLoading ? (
                             <EmptyState>Loading the week ahead...</EmptyState>
                         ) : upcomingEvents.length === 0 ? (
                             <EmptyState>
@@ -510,6 +632,7 @@ export default function Dashboard() {
                     schoolItems={showSchoolItems ? schoolItems : []}
                     familyMembers={showBirthdays ? familyMembers : []}
                     trips={showTrips ? trips : []}
+                    activitySessions={showActivitySessions ? activitySessions : []}
                     timelineDays={timelineDays}
                 />
             </div>

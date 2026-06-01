@@ -170,15 +170,24 @@ function formatTime(timeString) {
 }
 
 function formatTimeRange(startTime, endTime) {
-    if (startTime && endTime) return `${formatTime(startTime)} - ${formatTime(endTime)}`
+    if (startTime && endTime) {
+        return `${formatTime(startTime)} - ${formatTime(endTime)}`
+    }
+
     if (startTime) return formatTime(startTime)
+
     return ""
 }
 
 function formatDate(dateString) {
     if (!dateString) return ""
 
-    return new Date(`${dateString}T00:00:00`).toLocaleDateString(undefined, {
+    const [year, month, day] = String(dateString)
+        .slice(0, 10)
+        .split("-")
+        .map(Number)
+
+    return new Date(year, month - 1, day).toLocaleDateString(undefined, {
         weekday: "short",
         month: "short",
         day: "numeric"
@@ -197,9 +206,19 @@ function formatDateRange(startDate, endDate) {
 }
 
 function addDays(dateString, days) {
-    const date = new Date(`${dateString}T00:00:00`)
+    const [year, month, day] = String(dateString)
+        .slice(0, 10)
+        .split("-")
+        .map(Number)
+
+    const date = new Date(year, month - 1, day)
     date.setDate(date.getDate() + days)
-    return date.toISOString().slice(0, 10)
+
+    return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0")
+    ].join("-")
 }
 
 function getDatesBetween(startDate, endDate, stepDays = 1) {
@@ -220,19 +239,25 @@ function sortActivitiesByDate(a, b) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
+    function createLocalDate(dateString) {
+        const [year, month, day] = String(dateString)
+            .slice(0, 10)
+            .split("-")
+            .map(Number)
+
+        return new Date(year, month - 1, day)
+    }
+
     function getClosestRelevantDate(activity) {
-        const dates = [
-            activity.start_date,
-            activity.end_date
-        ]
+        const dates = [activity.start_date, activity.end_date]
             .filter(Boolean)
-            .map(date => new Date(`${date}T00:00:00`))
+            .map(createLocalDate)
             .filter(date => date >= today)
             .sort((dateA, dateB) => dateA - dateB)
 
         if (dates.length > 0) return dates[0]
 
-        return new Date("9999-12-31T00:00:00")
+        return new Date(9999, 11, 31)
     }
 
     const aDate = getClosestRelevantDate(a)
@@ -255,7 +280,9 @@ function getActivityMeta(activity, member) {
         member?.name,
         activity.season,
         activity.location
-    ].filter(Boolean).join(" • ")
+    ]
+        .filter(Boolean)
+        .join(" • ")
 }
 
 export default function Activities() {
@@ -270,6 +297,9 @@ export default function Activities() {
     const [editingId, setEditingId] = useState(null)
     const [expandedActivityId, setExpandedActivityId] = useState(null)
     const [expandedAssociatedActivityIds, setExpandedAssociatedActivityIds] = useState([])
+    const [selectedFamilyMemberId, setSelectedFamilyMemberId] = useState(() => {
+        return localStorage.getItem("evergrove_activity_family_filter") || "all"
+    })
 
     const [sessionActivityId, setSessionActivityId] = useState(null)
     const [sessionForm, setSessionForm] = useState(initialSessionForm)
@@ -300,11 +330,17 @@ export default function Activities() {
     const visibleActivities = useMemo(() => {
         return activities
             .filter(activity => {
+                if (selectedFamilyMemberId !== "all") {
+                    if (activity.family_member_id !== selectedFamilyMemberId) {
+                        return false
+                    }
+                }
+
                 if (!activity.parent_activity_id) return true
                 return !activitiesById[activity.parent_activity_id]
             })
             .sort(sortActivitiesByDate)
-    }, [activities, activitiesById])
+    }, [activities, activitiesById, selectedFamilyMemberId])
 
     const parentOptions = useMemo(() => {
         return activities
@@ -332,6 +368,13 @@ export default function Activities() {
         loadData()
     }, [])
 
+    useEffect(() => {
+        localStorage.setItem(
+            "evergrove_activity_family_filter",
+            selectedFamilyMemberId
+        )
+    }, [selectedFamilyMemberId])
+
     function updateForm(field, value) {
         setForm(current => ({
             ...current,
@@ -348,8 +391,12 @@ export default function Activities() {
             family_member_id: config.showFamilyMember ? current.family_member_id : "",
             organization: config.showOrganization ? current.organization : "",
             season: config.showSeason ? current.season : "",
-            registration_open_date: config.showRegistration ? current.registration_open_date : "",
-            registration_close_date: config.showRegistration ? current.registration_close_date : "",
+            registration_open_date: config.showRegistration
+                ? current.registration_open_date
+                : "",
+            registration_close_date: config.showRegistration
+                ? current.registration_close_date
+                : "",
             cost: config.showCost ? current.cost : ""
         }))
     }
@@ -437,28 +484,34 @@ export default function Activities() {
 
         const payload = {
             ...form,
-            family_member_id: config.showFamilyMember && form.family_member_id
-                ? form.family_member_id
-                : null,
-            organization: config.showOrganization && form.organization.trim()
-                ? form.organization.trim()
-                : null,
-            season: config.showSeason && form.season.trim()
-                ? form.season.trim()
-                : null,
+            family_member_id:
+                config.showFamilyMember && form.family_member_id
+                    ? form.family_member_id
+                    : null,
+            organization:
+                config.showOrganization && form.organization.trim()
+                    ? form.organization.trim()
+                    : null,
+            season:
+                config.showSeason && form.season.trim()
+                    ? form.season.trim()
+                    : null,
             start_date: form.start_date || null,
             end_date: form.end_date || null,
             start_time: form.start_time || null,
             end_time: form.end_time || null,
-            registration_open_date: config.showRegistration && form.registration_open_date
-                ? form.registration_open_date
-                : null,
-            registration_close_date: config.showRegistration && form.registration_close_date
-                ? form.registration_close_date
-                : null,
-            cost: config.showCost && form.cost !== ""
-                ? Number(form.cost)
-                : null,
+            registration_open_date:
+                config.showRegistration && form.registration_open_date
+                    ? form.registration_open_date
+                    : null,
+            registration_close_date:
+                config.showRegistration && form.registration_close_date
+                    ? form.registration_close_date
+                    : null,
+            cost:
+                config.showCost && form.cost !== ""
+                    ? Number(form.cost)
+                    : null,
             parent_activity_id: form.parent_activity_id || null,
             activity_type: form.activity_type || "Activity",
             location: form.location.trim() || null,
@@ -981,29 +1034,13 @@ export default function Activities() {
                                 Edit
                             </button>
 
-                            <div
-                                style={{
-                                    display: "flex",
-                                    gap: "0.5rem",
-                                    alignItems: "center"
-                                }}
+                            <button
+                                className="danger-button"
+                                type="button"
+                                onClick={() => handleDelete(activity)}
                             >
-                                <button
-                                    className="secondary-button"
-                                    type="button"
-                                    onClick={() => startEdit(child)}
-                                >
-                                    Edit
-                                </button>
-
-                                <button
-                                    className="danger-button"
-                                    type="button"
-                                    onClick={() => handleDelete(child)}
-                                >
-                                    Delete
-                                </button>
-                            </div>
+                                Delete
+                            </button>
                         </div>
                     </div>
                 )}
@@ -1246,14 +1283,33 @@ export default function Activities() {
                 <div className="section-header">
                     <div>
                         <h3>Upcoming Activities</h3>
-                        <p>Closest upcoming activity first.</p>
+                    </div>
+
+                    <div className="activity-filter-control">
+                        <select
+                            className="activity-filter-select"
+                            value={selectedFamilyMemberId}
+                            onChange={event =>
+                                setSelectedFamilyMemberId(event.target.value)
+                            }
+                        >
+                            <option value="all">Entire Family</option>
+
+                            {familyMembers.map(member => (
+                                <option key={member.id} value={member.id}>
+                                    {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
+                                    {member.name}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 
+
                 {loading ? (
                     <p>Loading activities...</p>
-                ) : activities.length === 0 ? (
-                    <p>No activities added yet.</p>
+                ) : visibleActivities.length === 0 ? (
+                    <p>No activities found for this filter.</p>
                 ) : (
                     <div className="stack">
                         {visibleActivities.map(activity => renderActivityRow(activity))}
