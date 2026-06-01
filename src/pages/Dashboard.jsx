@@ -6,12 +6,12 @@ import useTrips from "../hooks/useTrips"
 import usePreferences from "../hooks/usePreferences"
 import useActivitySessions from "../hooks/useActivitySessions"
 
+import { useNavigate } from "react-router-dom"
 import { completeTask, createTask } from "../services/taskService"
 import { markRegistrationTaskCreated } from "../services/activityService"
 
 import FamilyTimelineCard from "../components/FamilyTimelineCard"
 
-import { getRegistrationActions } from "../utils/registrationActions"
 import { getTaskSuggestions } from "../utils/taskSuggestions"
 
 function getDateOnly(value) {
@@ -56,17 +56,17 @@ function getDaysUntil(dateString) {
     return Math.round((target - today) / (1000 * 60 * 60 * 24))
 }
 
-function formatDateLabel(dateString) {
-    const days = getDaysUntil(dateString)
+function formatDisplayDate(dateString) {
+    if (!dateString) return ""
 
-    if (days === 0) return "Today"
-    if (days === 1) return "Tomorrow"
-    if (days > 1) return `In ${days} days`
-
-    return "Past due"
+    return createLocalDate(dateString).toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric"
+    })
 }
 
-function formatDisplayDate(dateString) {
+function formatShortDate(dateString) {
     if (!dateString) return ""
 
     return createLocalDate(dateString).toLocaleDateString(undefined, {
@@ -90,12 +90,8 @@ function formatTime(timeString) {
 }
 
 function formatTimeRange(startTime, endTime) {
-    if (startTime && endTime) {
-        return `${formatTime(startTime)} - ${formatTime(endTime)}`
-    }
-
+    if (startTime && endTime) return `${formatTime(startTime)} - ${formatTime(endTime)}`
     if (startTime) return formatTime(startTime)
-
     return ""
 }
 
@@ -127,9 +123,7 @@ function getUpcomingBirthdayDate(birthdate) {
     let birthdayYear = today.getFullYear()
     const nextBirthday = new Date(birthdayYear, month - 1, day)
 
-    if (nextBirthday < today) {
-        birthdayYear += 1
-    }
+    if (nextBirthday < today) birthdayYear += 1
 
     return formatDateParts(birthdayYear, month, day)
 }
@@ -159,10 +153,7 @@ function getActivitySessionEvents(activitySessions) {
         .map(session => {
             const activity = session.activities
             const member = activity?.family_members
-            const timeRange = formatTimeRange(
-                session.start_time,
-                session.end_time
-            )
+            const timeRange = formatTimeRange(session.start_time, session.end_time)
 
             return {
                 id: `activity-session-${session.id}`,
@@ -174,9 +165,7 @@ function getActivitySessionEvents(activitySessions) {
                 time_label: timeRange,
                 start_time: session.start_time,
                 end_time: session.end_time,
-                sort_time: getMinutesFromTime(session.start_time),
-                activity_id: session.activity_id,
-                event_type: "session"
+                sort_time: getMinutesFromTime(session.start_time)
             }
         })
 }
@@ -230,8 +219,7 @@ function getActivityEvents(activities, activitySessions = []) {
                 time_label: timeRange,
                 start_time: activity.start_time,
                 end_time: activity.end_time,
-                sort_time: getMinutesFromTime(activity.start_time),
-                event_type: "activity"
+                sort_time: getMinutesFromTime(activity.start_time)
             })
         }
 
@@ -283,14 +271,41 @@ function getTripEvents(trips) {
         })
 }
 
+function groupEventsByDate(events) {
+    return events.reduce((groups, event) => {
+        if (!groups[event.date]) groups[event.date] = []
+        groups[event.date].push(event)
+        return groups
+    }, {})
+}
+
 function EmptyState({ children }) {
     return <p className="dashboard-empty">{children}</p>
 }
 
+function HomeSection({ eyebrow, title, count, children }) {
+    return (
+        <section className="home-section">
+            <div className="home-section-header">
+                <div>
+                    <p className="card-kicker">{eyebrow}</p>
+                    <h3>{title}</h3>
+                </div>
+
+                {typeof count === "number" && (
+                    <span>{count}</span>
+                )}
+            </div>
+
+            {children}
+        </section>
+    )
+}
+
 function TodayEventRow({ item }) {
     return (
-        <div className="today-checklist-item" key={item.id}>
-            <span className="today-check-circle" />
+        <div className="home-check-row">
+            <span className="home-check-circle" />
 
             <div>
                 {item.time_label && (
@@ -300,17 +315,38 @@ function TodayEventRow({ item }) {
                 <strong>{item.title}</strong>
 
                 {item.subtitle && <p>{item.subtitle}</p>}
-
                 {item.detail && <small>{item.detail}</small>}
             </div>
         </div>
     )
 }
 
-function EventRow({ item }) {
+function TaskRow({ task, onComplete }) {
     return (
-        <div className="dashboard-row">
-            <span className="dashboard-row-icon">{item.icon}</span>
+        <div className="home-task-row">
+            <button
+                className="home-check-circle home-task-check"
+                type="button"
+                aria-label="Complete task"
+                onClick={() => onComplete(task)}
+            />
+
+            <div>
+                <strong>{task.title}</strong>
+
+                <p>
+                    {task.family_members?.name || "Task"}
+                    {task.due_date ? ` • ${formatDisplayDate(task.due_date)}` : ""}
+                </p>
+            </div>
+        </div>
+    )
+}
+
+function UpcomingEventRow({ item }) {
+    return (
+        <div className="home-upcoming-row">
+            <span className="home-upcoming-icon">{item.icon}</span>
 
             <div>
                 {item.time_label && (
@@ -320,14 +356,9 @@ function EventRow({ item }) {
                 <strong>{item.title}</strong>
 
                 <p>
-                    {item.subtitle && `${item.subtitle} • `}
-                    {formatDisplayDate(item.date)}
+                    {item.subtitle || "Family"}
                 </p>
             </div>
-
-            <span className="dashboard-date-pill">
-                {formatDateLabel(item.date)}
-            </span>
         </div>
     )
 }
@@ -345,14 +376,10 @@ export default function Dashboard() {
     } = useActivitySessions()
 
     const todayString = getTodayString()
+    const dashboardWindowDays = Number(preferences?.dashboard_window_days || 7)
+    const timelineDays = Number(preferences?.timeline_window_days || 90)
 
-    const dashboardWindowDays = Number(
-        preferences?.dashboard_window_days || 7
-    )
-
-    const timelineDays = Number(
-        preferences?.timeline_window_days || 90
-    )
+    const navigate = useNavigate()
 
     const showBirthdays = preferences?.show_birthdays !== false
     const showTrips = preferences?.show_trips !== false
@@ -367,22 +394,10 @@ export default function Dashboard() {
             activities,
             showActivitySessions ? activitySessions : []
         ),
-
-        ...(showActivitySessions
-            ? getActivitySessionEvents(activitySessions)
-            : []),
-
-        ...(showSchoolItems
-            ? getSchoolEvents(schoolItems)
-            : []),
-
-        ...(showTrips
-            ? getTripEvents(trips)
-            : []),
-
-        ...(showBirthdays
-            ? getBirthdayEvents(familyMembers)
-            : [])
+        ...(showActivitySessions ? getActivitySessionEvents(activitySessions) : []),
+        ...(showSchoolItems ? getSchoolEvents(schoolItems) : []),
+        ...(showTrips ? getTripEvents(trips) : []),
+        ...(showBirthdays ? getBirthdayEvents(familyMembers) : [])
     ]
 
     const todayEvents = allEvents
@@ -400,12 +415,7 @@ export default function Dashboard() {
     const upcomingEvents = allEvents
         .filter(item => {
             const days = getDaysUntil(item.date)
-
-            return (
-                days !== null &&
-                days > 0 &&
-                days <= dashboardWindowDays
-            )
+            return days !== null && days > 0 && days <= dashboardWindowDays
         })
         .sort((a, b) => {
             const dateDiff = createLocalDate(a.date) - createLocalDate(b.date)
@@ -418,6 +428,8 @@ export default function Dashboard() {
             return a.title.localeCompare(b.title)
         })
 
+    const upcomingEventsByDate = groupEventsByDate(upcomingEvents)
+
     const openTasks = tasks
         .filter(task => task.status !== "complete")
         .sort((a, b) => {
@@ -426,7 +438,7 @@ export default function Dashboard() {
             if (!b.due_date) return -1
             return createLocalDate(a.due_date) - createLocalDate(b.due_date)
         })
-        .slice(0, 8)
+        .slice(0, 6)
 
     const dashboardLoading =
         loading ||
@@ -465,7 +477,7 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="dashboard-page compact-dashboard">
+        <div className="home-command-page">
             <header className="dashboard-simple-header dashboard-household-header">
                 <div>
                     <p className="dashboard-household-name">
@@ -485,128 +497,119 @@ export default function Dashboard() {
                     <p className="dashboard-powered-by">
                         Powered by Evergrove
                     </p>
+                    <div className="home-quick-actions">
+                        <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => navigate("/tasks")}
+                        >
+                            + Task
+                        </button>
+
+                        <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => navigate("/activities")}
+                        >
+                            + Activity
+                        </button>
+                    </div>
                 </div>
             </header>
 
             {happeningNowEvents.length > 0 && (
-                <div className="dashboard-now-banner">
+                <div className="home-now-banner">
                     {happeningNowEvents.map(item => (
                         <div key={item.id}>
-                            <strong>🟢 Happening Now:</strong>{" "}
+                            <strong>Happening now:</strong>{" "}
                             {item.title}
                             {item.subtitle && ` • ${item.subtitle}`}
-                            {item.end_time &&
-                                ` • Ends ${formatTime(item.end_time)}`}
+                            {item.end_time && ` • Ends ${formatTime(item.end_time)}`}
                         </div>
                     ))}
                 </div>
             )}
 
-            <div className="dashboard-main-layout">
-                <main className="dashboard-left-flow">
-                    <section className="card">
-                        <div className="card-header-row">
-                            <div>
-                                <p className="card-kicker">Today</p>
-                                <h3>What's Happening</h3>
+            <HomeSection
+                eyebrow="Today"
+                title="Today's Agenda"
+                count={todayEvents.length}
+            >
+                {dashboardLoading ? (
+                    <EmptyState>Loading today...</EmptyState>
+                ) : todayEvents.length === 0 ? (
+                    <EmptyState>Enjoy your day. Nothing scheduled for today.</EmptyState>
+                ) : (
+                    <div className="home-check-list">
+                        {todayEvents.map(item => (
+                            <TodayEventRow key={item.id} item={item} />
+                        ))}
+                    </div>
+                )}
+            </HomeSection>
+
+            <HomeSection
+                eyebrow="Tasks"
+                title="Open Tasks"
+                count={openTasks.length}
+            >
+                {tasksLoading ? (
+                    <EmptyState>Loading tasks...</EmptyState>
+                ) : openTasks.length === 0 ? (
+                    <EmptyState>No open tasks.</EmptyState>
+                ) : (
+                    <div className="home-check-list">
+                        {openTasks.map(task => (
+                            <TaskRow
+                                key={task.id}
+                                task={task}
+                                onComplete={handleCompleteTask}
+                            />
+                        ))}
+                    </div>
+                )}
+            </HomeSection>
+
+            <HomeSection
+                eyebrow={`Next ${dashboardWindowDays} Days`}
+                title="This Week"
+                count={upcomingEvents.length}
+            >
+                {dashboardLoading ? (
+                    <EmptyState>Loading the week ahead...</EmptyState>
+                ) : upcomingEvents.length === 0 ? (
+                    <EmptyState>
+                        Nothing coming up in the next {dashboardWindowDays} days.
+                    </EmptyState>
+                ) : (
+                    <div className="home-week-list">
+                        {Object.keys(upcomingEventsByDate).map(date => (
+                            <div className="home-day-group" key={date}>
+                                <div className="home-day-label">
+                                    {formatShortDate(date)}
+                                </div>
+
+                                <div className="home-day-events">
+                                    {upcomingEventsByDate[date].map(item => (
+                                        <UpcomingEventRow key={item.id} item={item} />
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-
-                        {dashboardLoading ? (
-                            <EmptyState>Loading today...</EmptyState>
-                        ) : todayEvents.length === 0 ? (
-                            <EmptyState>Enjoy your day! Nothing scheduled for today.</EmptyState>
-                        ) : (
-                            <div className="today-checklist">
-                                {todayEvents.map(item => (
-                                    <TodayEventRow key={item.id} item={item} />
-                                ))}
-                            </div>
-                        )}
-                    </section>
-
-                    <section className="card">
-                        <div className="card-header-row">
-                            <div>
-                                <p className="card-kicker">
-                                    Next {dashboardWindowDays} Days
-                                </p>
-                                <h3>Coming Up</h3>
-                            </div>
-                        </div>
-
-                        {dashboardLoading ? (
-                            <EmptyState>Loading the week ahead...</EmptyState>
-                        ) : upcomingEvents.length === 0 ? (
-                            <EmptyState>
-                                Nothing coming up in the next {dashboardWindowDays} days.
-                            </EmptyState>
-                        ) : (
-                            <div className="dashboard-list">
-                                {upcomingEvents.map(item => (
-                                    <EventRow key={item.id} item={item} />
-                                ))}
-                            </div>
-                        )}
-                    </section>
-                </main>
-
-                <aside className="dashboard-right-rail">
-                    <section className="card">
-                        <div className="card-header-row">
-                            <div>
-                                <p className="card-kicker">Tasks</p>
-                                <h3>Open Tasks</h3>
-                            </div>
-                        </div>
-
-                        {tasksLoading ? (
-                            <EmptyState>Loading tasks...</EmptyState>
-                        ) : openTasks.length === 0 ? (
-                            <EmptyState>No open tasks.</EmptyState>
-                        ) : (
-                            <div className="dashboard-list">
-                                {openTasks.map(task => (
-                                    <div className="dashboard-task-row" key={task.id}>
-                                        <div>
-                                            <strong>{task.title}</strong>
-
-                                            <p>
-                                                {task.family_members?.name || "Task"}
-                                                {task.due_date
-                                                    ? ` • ${formatDisplayDate(task.due_date)}`
-                                                    : ""}
-                                            </p>
-                                        </div>
-
-                                        <button
-                                            className="secondary-button dashboard-task-complete"
-                                            type="button"
-                                            onClick={() => handleCompleteTask(task)}
-                                        >
-                                            Complete
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </section>
-                </aside>
-            </div>
+                        ))}
+                    </div>
+                )}
+            </HomeSection>
 
             {showSuggestedTasks && taskSuggestions.length > 0 && (
-                <section className="card">
-                    <div className="card-header-row">
-                        <div>
-                            <p className="card-kicker">Suggested</p>
-                            <h3>Helpful Next Steps</h3>
-                        </div>
-                    </div>
-
-                    <div className="dashboard-list">
+                <HomeSection
+                    eyebrow="Suggested"
+                    title="Helpful Next Steps"
+                    count={taskSuggestions.length}
+                >
+                    <div className="home-suggestion-list">
                         {taskSuggestions.map(suggestion => (
-                            <div className="dashboard-row" key={suggestion.activityId}>
-                                <span className="dashboard-row-icon">
+                            <div className="home-suggestion-row" key={suggestion.activityId}>
+                                <span className="home-upcoming-icon">
                                     {suggestion.avatar}
                                 </span>
 
@@ -632,10 +635,10 @@ export default function Dashboard() {
                             </div>
                         ))}
                     </div>
-                </section>
+                </HomeSection>
             )}
 
-            <div className="dashboard-wide">
+            <div className="home-timeline-section">
                 <FamilyTimelineCard
                     activities={activities}
                     tasks={tasks}

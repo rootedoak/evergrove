@@ -1,5 +1,36 @@
 # Release Notes
 
+## v0.9.0 - Evergrove UI Modernization
+Released: 2026-06-01
+
+### Added
+- Light gray and navy visual theme
+- Simplified sidebar navigation
+- Household-branded sidebar
+- Household-centered Home dashboard header
+- Calendar destination cards for Activities, Trips, and School
+- Tasks destination cards for Routines and Reminders
+- Mobile-first Home dashboard redesign
+- Dashboard quick action buttons for adding Tasks and Activities
+
+### Improved
+- Calendar page layout
+- Tasks page grouped by urgency
+- Family page grouped by role
+- Activities page grouped by timing
+- Trips page grouped by timing
+- Routines page grouped by due status
+- School page grouped by urgency
+- Settings page layout
+- Reminders placeholder page
+- Reduced card clutter across major pages
+- More consistent page headers, summary counts, grouped lists, and mobile behavior
+
+### Backlog Added
+- HOME-001 Quick Add Modals
+
+---
+
 ## v0.8.0 - Routines & Household Sharing
 Released: 2026-05-31
 
@@ -461,6 +492,32 @@ Status: Complete
 
 ---
 
+## FAM-020
+UI Modernization  
+Status: Complete
+
+### Completed
+- Light gray and navy theme
+- Simplified sidebar navigation
+- Household-branded sidebar
+- Home dashboard redesign
+- Mobile-first dashboard flow
+- Quick action buttons on Home
+- Calendar destination cards
+- Tasks destination cards
+- Grouped list layouts across core pages
+- Calendar page cleanup
+- Tasks page cleanup
+- Family page cleanup
+- Activities page cleanup
+- Trips page cleanup
+- Routines page cleanup
+- School page cleanup
+- Settings page cleanup
+- Reminders placeholder cleanup
+
+---
+
 # Backlog
 
 ## FAM-013
@@ -566,3 +623,23 @@ Status: Active Backlog
 - Validate routine automation across household users
 - Identify UI friction from real family usage
 - Clean up any leftover user-scoped service logic
+
+---
+
+## HOME-001
+Quick Add Modals  
+Status: Backlog
+
+### Goals
+- Add quick task creation modal from Home dashboard
+- Add quick activity creation modal from Home dashboard
+- Reuse existing task creation logic
+- Reuse existing activity creation logic
+- Refresh dashboard after save
+- Keep full Tasks and Activities pages for advanced editing
+- Support fast parent-friendly entry without leaving the dashboard
+
+### Notes
+- Current Home buttons navigate to Tasks and Activities.
+- Future version should open lightweight modal forms instead.
+- This should wait until the UI modernization pass is stable.

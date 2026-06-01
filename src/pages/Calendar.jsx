@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 import useActivities from "../hooks/useActivities"
 import useSchoolItems from "../hooks/useSchoolItems"
@@ -22,9 +21,27 @@ function formatDateParts(year, month, day) {
     ].join("-")
 }
 
+function createLocalDate(dateString) {
+    const [year, month, day] = String(dateString)
+        .slice(0, 10)
+        .split("-")
+        .map(Number)
+
+    return new Date(year, month - 1, day)
+}
+
 function formatMonthTitle(date) {
     return date.toLocaleDateString(undefined, {
         month: "long",
+        year: "numeric"
+    })
+}
+
+function formatFullDate(dateString) {
+    return createLocalDate(dateString).toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
         year: "numeric"
     })
 }
@@ -43,12 +60,8 @@ function formatTime(timeString) {
 }
 
 function formatTimeRange(startTime, endTime) {
-    if (startTime && endTime) {
-        return `${formatTime(startTime)}-${formatTime(endTime)}`
-    }
-
+    if (startTime && endTime) return `${formatTime(startTime)}-${formatTime(endTime)}`
     if (startTime) return formatTime(startTime)
-
     return ""
 }
 
@@ -86,13 +99,11 @@ function getBirthdayDateForMonth(member, visibleDate) {
 function getCalendarDays(visibleDate, weekStartsOn = "Sunday") {
     const year = visibleDate.getFullYear()
     const month = visibleDate.getMonth()
-
     const firstDay = new Date(year, month, 1)
     const startDate = new Date(firstDay)
 
     const weekStartOffset = weekStartsOn === "Monday" ? 1 : 0
-    const dayOffset =
-        (firstDay.getDay() - weekStartOffset + 7) % 7
+    const dayOffset = (firstDay.getDay() - weekStartOffset + 7) % 7
 
     startDate.setDate(firstDay.getDate() - dayOffset)
 
@@ -153,6 +164,8 @@ function buildCalendarEvents({
                 ]
                     .filter(Boolean)
                     .join(" • "),
+                timeLabel: timeRange,
+                location: session.location || "",
                 sortTime: getMinutesFromTime(session.start_time)
             })
         })
@@ -201,6 +214,8 @@ function buildCalendarEvents({
                 subtitle: [timeRange, member?.name]
                     .filter(Boolean)
                     .join(" • "),
+                timeLabel: timeRange,
+                location: activity.location || "",
                 sortTime: getMinutesFromTime(activity.start_time)
             })
         }
@@ -251,6 +266,7 @@ function buildCalendarEvents({
             icon: "🚗",
             title: trip.name,
             subtitle: attendees || trip.destination || "Trip",
+            location: trip.destination || "",
             sortTime: 99999
         })
     })
@@ -271,9 +287,7 @@ function buildCalendarEvents({
     })
 
     return events.sort((a, b) => {
-        if (a.date !== b.date) {
-            return a.date.localeCompare(b.date)
-        }
+        if (a.date !== b.date) return a.date.localeCompare(b.date)
 
         if ((a.sortTime || 99999) !== (b.sortTime || 99999)) {
             return (a.sortTime || 99999) - (b.sortTime || 99999)
@@ -286,6 +300,7 @@ function buildCalendarEvents({
 export default function Calendar() {
     const navigate = useNavigate()
     const [visibleDate, setVisibleDate] = useState(() => new Date())
+    const [selectedDate, setSelectedDate] = useState(null)
 
     const { activities, loading: activitiesLoading } = useActivities()
     const { activitySessions, loading: sessionsLoading } = useActivitySessions()
@@ -295,8 +310,7 @@ export default function Calendar() {
     const { preferences, loading: preferencesLoading } = usePreferences()
 
     const weekStartsOn = preferences?.week_starts_on || "Sunday"
-    const showActivitySessions =
-        preferences?.show_activity_sessions !== false
+    const showActivitySessions = preferences?.show_activity_sessions !== false
 
     const calendarDays = useMemo(
         () => getCalendarDays(visibleDate, weekStartsOn),
@@ -327,14 +341,13 @@ export default function Calendar() {
 
     const eventsByDate = useMemo(() => {
         return events.reduce((grouped, event) => {
-            if (!grouped[event.date]) {
-                grouped[event.date] = []
-            }
-
+            if (!grouped[event.date]) grouped[event.date] = []
             grouped[event.date].push(event)
             return grouped
         }, {})
     }, [events])
+
+    const selectedEvents = selectedDate ? eventsByDate[selectedDate] || [] : []
 
     function goToPreviousMonth() {
         setVisibleDate(current => {
@@ -356,7 +369,7 @@ export default function Calendar() {
         setVisibleDate(new Date())
     }
 
-    function handleEventClick(event) {
+    function handleViewEvent(event) {
         if (event.type === "activity" || event.type === "session") {
             navigate("/activities")
             return
@@ -426,27 +439,15 @@ export default function Calendar() {
                 </div>
 
                 <div className="card-actions">
-                    <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={goToPreviousMonth}
-                    >
+                    <button type="button" className="secondary-button" onClick={goToPreviousMonth}>
                         Previous
                     </button>
 
-                    <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={goToCurrentMonth}
-                    >
+                    <button type="button" className="secondary-button" onClick={goToCurrentMonth}>
                         Today
                     </button>
 
-                    <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={goToNextMonth}
-                    >
+                    <button type="button" className="secondary-button" onClick={goToNextMonth}>
                         Next
                     </button>
                 </div>
@@ -475,12 +476,12 @@ export default function Calendar() {
                             const isToday = day.dateString === todayString
 
                             return (
-                                <div
-                                    className={`calendar-day ${day.isCurrentMonth
-                                        ? ""
-                                        : "calendar-day-muted"
+                                <button
+                                    className={`calendar-day calendar-day-button ${day.isCurrentMonth ? "" : "calendar-day-muted"
                                         } ${isToday ? "calendar-day-today" : ""}`}
                                     key={day.dateString}
+                                    type="button"
+                                    onClick={() => setSelectedDate(day.dateString)}
                                 >
                                     <div className="calendar-day-number">
                                         {day.date.getDate()}
@@ -488,21 +489,16 @@ export default function Calendar() {
 
                                     <div className="calendar-events">
                                         {dayEvents.slice(0, 4).map(event => (
-                                            <button
+                                            <div
                                                 className="calendar-event"
                                                 key={event.id}
-                                                type="button"
                                                 title={[event.title, event.subtitle]
                                                     .filter(Boolean)
                                                     .join(" • ")}
-                                                onClick={() => handleEventClick(event)}
                                             >
                                                 <span>{event.icon}</span>
-
-                                                <strong>
-                                                    {event.title}
-                                                </strong>
-                                            </button>
+                                                <strong>{event.title}</strong>
+                                            </div>
                                         ))}
 
                                         {dayEvents.length > 4 && (
@@ -511,12 +507,75 @@ export default function Calendar() {
                                             </small>
                                         )}
                                     </div>
-                                </div>
+                                </button>
                             )
                         })}
                     </div>
                 )}
             </section>
+
+            {selectedDate && (
+                <div
+                    className="calendar-modal-backdrop"
+                    role="presentation"
+                    onClick={() => setSelectedDate(null)}
+                >
+                    <section
+                        className="calendar-detail-sheet"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Calendar day details"
+                        onClick={event => event.stopPropagation()}
+                    >
+                        <div className="calendar-detail-header">
+                            <div>
+                                <p className="card-kicker">Calendar Details</p>
+                                <h3>{formatFullDate(selectedDate)}</h3>
+                            </div>
+
+                            <button
+                                className="secondary-button"
+                                type="button"
+                                onClick={() => setSelectedDate(null)}
+                            >
+                                Close
+                            </button>
+                        </div>
+
+                        {selectedEvents.length === 0 ? (
+                            <p className="dashboard-empty">
+                                Nothing scheduled for this day.
+                            </p>
+                        ) : (
+                            <div className="calendar-detail-list">
+                                {selectedEvents.map(event => (
+                                    <div className="calendar-detail-row" key={event.id}>
+                                        <span className="calendar-detail-icon">
+                                            {event.icon}
+                                        </span>
+
+                                        <div>
+                                            <strong>{event.title}</strong>
+
+                                            {event.subtitle && <p>{event.subtitle}</p>}
+
+                                            {event.location && <small>{event.location}</small>}
+                                        </div>
+
+                                        <button
+                                            className="secondary-button"
+                                            type="button"
+                                            onClick={() => handleViewEvent(event)}
+                                        >
+                                            View
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+                </div>
+            )}
         </div>
     )
 }
