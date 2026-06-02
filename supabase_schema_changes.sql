@@ -1031,3 +1031,77 @@ rename to "Household members can insert household preferences";
 alter policy "Household members can update preferences"
 on household_preferences
 rename to "Household members can update household preferences";
+
+-- ADD CALENDAR EVENTS TABLE
+
+create table if not exists calendar_events (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references auth.users(id) on delete cascade,
+    household_id uuid not null references households(id) on delete cascade,
+
+    title text not null,
+    event_type text default 'Important Date',
+    start_date date not null,
+    end_date date,
+    start_time time,
+    end_time time,
+    location text,
+    notes text,
+
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+alter table calendar_events enable row level security;
+
+create policy "Users can view household calendar events"
+on calendar_events
+for select
+using (
+    household_id in (
+        select household_id
+        from household_members
+        where user_id = auth.uid()
+    )
+);
+
+create policy "Users can create household calendar events"
+on calendar_events
+for insert
+with check (
+    household_id in (
+        select household_id
+        from household_members
+        where user_id = auth.uid()
+    )
+    and user_id = auth.uid()
+);
+
+create policy "Users can update household calendar events"
+on calendar_events
+for update
+using (
+    household_id in (
+        select household_id
+        from household_members
+        where user_id = auth.uid()
+    )
+)
+with check (
+    household_id in (
+        select household_id
+        from household_members
+        where user_id = auth.uid()
+    )
+);
+
+create policy "Users can delete household calendar events"
+on calendar_events
+for delete
+using (
+    household_id in (
+        select household_id
+        from household_members
+        where user_id = auth.uid()
+    )
+);

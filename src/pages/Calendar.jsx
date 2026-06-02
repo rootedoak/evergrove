@@ -8,6 +8,13 @@ import useTrips from "../hooks/useTrips"
 import useActivitySessions from "../hooks/useActivitySessions"
 import usePreferences from "../hooks/usePreferences"
 
+import useCalendarEvents from "../hooks/useCalendarEvents"
+
+import {
+    createCalendarEvent,
+    deleteCalendarEvent
+} from "../services/calendarEventService"
+
 import { deleteActivity } from "../services/activityService"
 import { deleteActivitySession } from "../services/activitySessionService"
 import { deleteSchoolItem } from "../services/schoolService"
@@ -134,6 +141,7 @@ function buildCalendarEvents({
     schoolItems,
     familyMembers,
     trips,
+    calendarEvents,
     visibleDate,
     showActivitySessions
 }) {
@@ -317,6 +325,39 @@ function buildCalendarEvents({
         }
     })
 
+    calendarEvents.forEach(event => {
+        if (!event.start_date) return
+
+        const startDate = createLocalDate(event.start_date)
+        const endDate = createLocalDate(
+            event.end_date || event.start_date
+        )
+
+        const currentDate = new Date(startDate)
+
+        while (currentDate <= endDate) {
+            events.push({
+                id: `calendar-event-${event.id}-${currentDate.toISOString()}`,
+                type: "calendar_event",
+                sourceType: "calendar_event",
+                sourceId: event.id,
+                canDelete: true,
+                date: formatDateParts(
+                    currentDate.getFullYear(),
+                    currentDate.getMonth() + 1,
+                    currentDate.getDate()
+                ),
+                icon: "📌",
+                title: event.title,
+                subtitle: event.event_type || "Calendar Event",
+                location: event.location || "",
+                sortTime: getMinutesFromTime(event.start_time)
+            })
+
+            currentDate.setDate(currentDate.getDate() + 1)
+        }
+    })
+
     familyMembers.forEach(member => {
         const date = getBirthdayDateForMonth(member, visibleDate)
         if (!date) return
@@ -351,12 +392,32 @@ export default function Calendar() {
     const [visibleDate, setVisibleDate] = useState(() => new Date())
     const [selectedDate, setSelectedDate] = useState(null)
 
+    const [showCalendarEventForm, setShowCalendarEventForm] = useState(false)
+    const [savingCalendarEvent, setSavingCalendarEvent] = useState(false)
+
+    const [calendarEventForm, setCalendarEventForm] = useState({
+        title: "",
+        event_type: "Important Date",
+        start_date: "",
+        end_date: "",
+        start_time: "",
+        end_time: "",
+        location: "",
+        notes: ""
+    })
+
     const { activities, loading: activitiesLoading } = useActivities()
     const { activitySessions, loading: sessionsLoading } = useActivitySessions()
     const { schoolItems } = useSchoolItems()
     const { familyMembers } = useFamilyMembers()
     const { trips } = useTrips()
     const { preferences, loading: preferencesLoading } = usePreferences()
+
+    const {
+        calendarEvents,
+        loading: calendarEventsLoading,
+        refreshCalendarEvents
+    } = useCalendarEvents()
 
     const weekStartsOn = preferences?.week_starts_on || "Sunday"
     const showActivitySessions = preferences?.show_activity_sessions !== false
@@ -374,6 +435,7 @@ export default function Calendar() {
                 schoolItems,
                 familyMembers,
                 trips,
+                calendarEvents,
                 visibleDate,
                 showActivitySessions
             }),
@@ -383,6 +445,7 @@ export default function Calendar() {
             schoolItems,
             familyMembers,
             trips,
+            calendarEvents,
             visibleDate,
             showActivitySessions
         ]
@@ -439,6 +502,53 @@ export default function Calendar() {
         }
     }
 
+    function updateCalendarEventForm(field, value) {
+        setCalendarEventForm(current => ({
+            ...current,
+            [field]: value
+        }))
+    }
+
+    function resetCalendarEventForm(date = selectedDate) {
+        setCalendarEventForm({
+            title: "",
+            event_type: "Important Date",
+            start_date: date || "",
+            end_date: "",
+            start_time: "",
+            end_time: "",
+            location: "",
+            notes: ""
+        })
+    }
+
+    async function handleCreateCalendarEvent(event) {
+        event.preventDefault()
+        setSavingCalendarEvent(true)
+
+        try {
+            await createCalendarEvent({
+                title: calendarEventForm.title.trim(),
+                event_type: calendarEventForm.event_type,
+                start_date: calendarEventForm.start_date || selectedDate,
+                end_date: calendarEventForm.end_date || null,
+                start_time: calendarEventForm.start_time || null,
+                end_time: calendarEventForm.end_time || null,
+                location: calendarEventForm.location.trim() || null,
+                notes: calendarEventForm.notes.trim() || null
+            })
+
+            await refreshCalendarEvents()
+            resetCalendarEventForm()
+            setShowCalendarEventForm(false)
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not create calendar event.")
+        } finally {
+            setSavingCalendarEvent(false)
+        }
+    }
+
     async function handleDeleteCalendarEvent(event) {
         const confirmed = window.confirm(
             `Delete "${event.title}"? This cannot be undone.`
@@ -463,6 +573,11 @@ export default function Calendar() {
                 await deleteTrip(event.sourceId)
             }
 
+            if (event.sourceType === "calendar_event") {
+                await deleteCalendarEvent(event.sourceId)
+                await refreshCalendarEvents()
+            }
+
             setSelectedDate(null)
             window.location.reload()
         } catch (error) {
@@ -471,7 +586,12 @@ export default function Calendar() {
         }
     }
 
-    const loading = activitiesLoading || sessionsLoading || preferencesLoading
+    const loading =
+        activitiesLoading ||
+        sessionsLoading ||
+        preferencesLoading ||
+        calendarEventsLoading
+
     const todayString = getTodayString()
 
     const weekdayLabels =
@@ -578,7 +698,11 @@ export default function Calendar() {
                                             } ${isToday ? "calendar-day-today" : ""}`}
                                         key={day.dateString}
                                         type="button"
-                                        onClick={() => setSelectedDate(day.dateString)}
+                                        onClick={() => {
+                                            setSelectedDate(day.dateString)
+                                            setShowCalendarEventForm(false)
+                                            resetCalendarEventForm(day.dateString)
+                                        }}
                                     >
                                         <div className="calendar-day-number">
                                             {day.date.getDate()}
@@ -640,6 +764,144 @@ export default function Calendar() {
                             </button>
                         </div>
 
+                        {showCalendarEventForm && (
+                            <form
+                                className="card form-card"
+                                onSubmit={handleCreateCalendarEvent}
+                                style={{ marginBottom: "1rem" }}
+                            >
+                                <h4>Add Calendar Event</h4>
+
+                                <div className="form-grid">
+                                    <label>
+                                        Title
+                                        <input
+                                            required
+                                            value={calendarEventForm.title}
+                                            onChange={event =>
+                                                updateCalendarEventForm(
+                                                    "title",
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+
+                                    <label>
+                                        Type
+                                        <select
+                                            value={calendarEventForm.event_type}
+                                            onChange={event =>
+                                                updateCalendarEventForm(
+                                                    "event_type",
+                                                    event.target.value
+                                                )
+                                            }
+                                        >
+                                            <option>Important Date</option>
+                                            <option>Visitor</option>
+                                            <option>Family Event</option>
+                                            <option>Holiday</option>
+                                            <option>Reminder</option>
+                                            <option>Other</option>
+                                        </select>
+                                    </label>
+
+                                    <label>
+                                        Start Date
+                                        <input
+                                            type="date"
+                                            value={calendarEventForm.start_date}
+                                            onChange={event =>
+                                                updateCalendarEventForm(
+                                                    "start_date",
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+
+                                    <label>
+                                        End Date
+                                        <input
+                                            type="date"
+                                            value={calendarEventForm.end_date}
+                                            onChange={event =>
+                                                updateCalendarEventForm(
+                                                    "end_date",
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+
+                                    <label>
+                                        Start Time
+                                        <input
+                                            type="time"
+                                            value={calendarEventForm.start_time}
+                                            onChange={event =>
+                                                updateCalendarEventForm(
+                                                    "start_time",
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+
+                                    <label>
+                                        End Time
+                                        <input
+                                            type="time"
+                                            value={calendarEventForm.end_time}
+                                            onChange={event =>
+                                                updateCalendarEventForm(
+                                                    "end_time",
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+
+                                    <label className="full-width">
+                                        Location
+                                        <input
+                                            value={calendarEventForm.location}
+                                            onChange={event =>
+                                                updateCalendarEventForm(
+                                                    "location",
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+
+                                    <label className="full-width">
+                                        Notes
+                                        <textarea
+                                            rows="3"
+                                            value={calendarEventForm.notes}
+                                            onChange={event =>
+                                                updateCalendarEventForm(
+                                                    "notes",
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+
+                                    <button
+                                        className="primary-button full-width"
+                                        type="submit"
+                                        disabled={savingCalendarEvent}
+                                    >
+                                        {savingCalendarEvent
+                                            ? "Saving..."
+                                            : "Save Calendar Event"}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
                         {selectedEvents.length === 0 ? (
                             <p className="dashboard-empty">
                                 Nothing scheduled for this day.
@@ -685,7 +947,21 @@ export default function Calendar() {
                         )}
                     </section>
 
-                    <div className="calendar-detail-add-actions">
+                    <div
+                        className="calendar-detail-add-actions"
+                        onClick={event => event.stopPropagation()}
+                    >
+                        <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={() => {
+                                setShowCalendarEventForm(current => !current)
+                                resetCalendarEventForm(selectedDate)
+                            }}
+                        >
+                            {showCalendarEventForm ? "Cancel Event" : "+ Calendar Event"}
+                        </button>
+
                         <button
                             className="secondary-button"
                             type="button"
