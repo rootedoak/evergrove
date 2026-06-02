@@ -3633,3 +3633,67 @@ a {
   color: var(--text);
   font-weight: 700;
 }
+
+.trip-command-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 1rem;
+  align-items: start;
+}
+
+.trip-command-expanded {
+  grid-column: 1 / -1;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.trip-plans-panel {
+  width: 100%;
+}
+
+.trip-plan-groups {
+  display: grid;
+  gap: 1rem;
+}
+
+.trip-plan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.trip-plan-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.trip-plan-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--background);
+}
+
+.trip-plan-card strong {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.trip-plan-card p {
+  margin-top: 0.35rem;
+}
+
+.trip-plan-delete {
+  flex-shrink: 0;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.85rem;
+}

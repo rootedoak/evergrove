@@ -282,19 +282,39 @@ function buildCalendarEvents({
             .filter(Boolean)
             .join(", ")
 
-        events.push({
-            id: `trip-${trip.id}`,
-            type: "trip",
-            sourceType: "trip",
-            sourceId: trip.id,
-            canDelete: true,
-            date: getDateOnly(trip.start_date),
-            icon: "🚗",
-            title: trip.name,
-            subtitle: attendees || trip.destination || "Trip",
-            location: trip.destination || "",
-            sortTime: 99999
-        })
+        const startDate = createLocalDate(trip.start_date)
+        const endDate = createLocalDate(
+            trip.end_date || trip.start_date
+        )
+
+        const currentDate = new Date(startDate)
+
+        while (currentDate <= endDate) {
+            events.push({
+                id: `trip-${trip.id}-${currentDate.toISOString()}`,
+                type: "trip",
+                sourceType: "trip",
+                sourceId: trip.id,
+                canDelete: true,
+                date: formatDateParts(
+                    currentDate.getFullYear(),
+                    currentDate.getMonth() + 1,
+                    currentDate.getDate()
+                ),
+                icon: "🚗",
+                title: trip.name,
+                subtitle:
+                    attendees ||
+                    trip.destination ||
+                    "Trip",
+                location: trip.destination || "",
+                sortTime: 99999
+            })
+
+            currentDate.setDate(
+                currentDate.getDate() + 1
+            )
+        }
     })
 
     familyMembers.forEach(member => {

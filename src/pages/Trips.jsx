@@ -3,7 +3,16 @@ import { useNavigate } from "react-router-dom"
 
 import { getFamilyMembers } from "../services/familyService"
 import { createTask } from "../services/taskService"
-import { createTrip, deleteTrip } from "../services/tripService"
+import {
+    createTrip,
+    deleteTrip,
+    updateTrip
+} from "../services/tripService"
+import {
+    createTripPlan,
+    deleteTripPlan,
+    getTripPlans
+} from "../services/tripPlanService"
 
 import useTasks from "../hooks/useTasks"
 import useTrips from "../hooks/useTrips"
@@ -15,6 +24,21 @@ const initialForm = {
     end_date: "",
     notes: ""
 }
+
+const initialPlanForm = {
+    title: "",
+    category: "Other",
+    notes: ""
+}
+
+const planCategories = [
+    "Food",
+    "Activity",
+    "Lodging",
+    "Travel",
+    "Packing",
+    "Other"
+]
 
 function createLocalDate(dateString) {
     if (!dateString) return null
@@ -44,6 +68,17 @@ function getDaysUntil(dateString) {
     const target = createLocalDate(dateString)
 
     return Math.round((target - today) / (1000 * 60 * 60 * 24))
+}
+
+function getCountdownLabel(trip) {
+    const daysUntil = getDaysUntil(trip.start_date)
+
+    if (daysUntil === null) return "Date TBD"
+    if (daysUntil < 0) return "Past trip"
+    if (daysUntil === 0) return "Starts today"
+    if (daysUntil === 1) return "Starts tomorrow"
+
+    return `${daysUntil} days away`
 }
 
 function formatDate(dateString) {
@@ -107,6 +142,16 @@ function sortTrips(trips) {
     })
 }
 
+function normalizeTrip(trip) {
+    return {
+        name: trip.name || "",
+        destination: trip.destination || "",
+        start_date: trip.start_date || "",
+        end_date: trip.end_date || "",
+        notes: trip.notes || ""
+    }
+}
+
 function TripSection({
     title,
     subtitle,
@@ -145,9 +190,16 @@ export default function Trips() {
     const [familyMembers, setFamilyMembers] = useState([])
     const [showForm, setShowForm] = useState(false)
     const [saving, setSaving] = useState(false)
+    const [editingTripId, setEditingTripId] = useState(null)
 
     const [form, setForm] = useState(initialForm)
     const [selectedMembers, setSelectedMembers] = useState([])
+
+    const [expandedTripId, setExpandedTripId] = useState(null)
+    const [tripPlansByTripId, setTripPlansByTripId] = useState({})
+    const [loadingPlansForTripId, setLoadingPlansForTripId] = useState(null)
+    const [planForm, setPlanForm] = useState(initialPlanForm)
+    const [savingPlan, setSavingPlan] = useState(false)
 
     const groupedTrips = useMemo(() => {
         return groupTrips(sortTrips(trips))
@@ -183,26 +235,93 @@ export default function Trips() {
         return tasks.filter(task => task.trip_id === tripId)
     }
 
+    function getChecklistProgress(trip) {
+        const checklistTasks = getTripChecklistTasks(trip.id)
+        const completeCount = checklistTasks.filter(
+            task => task.status === "complete"
+        ).length
+
+        return {
+            total: checklistTasks.length,
+            complete: completeCount,
+            open: checklistTasks.length - completeCount
+        }
+    }
+
+    function resetForm() {
+        setForm({ ...initialForm })
+        setSelectedMembers([])
+        setEditingTripId(null)
+        setShowForm(false)
+    }
+
+    function startAddTrip() {
+        setForm({ ...initialForm })
+        setSelectedMembers([])
+        setEditingTripId(null)
+        setShowForm(true)
+    }
+
+    function startEditTrip(trip) {
+        setForm(normalizeTrip(trip))
+        setSelectedMembers(
+            trip.trip_family_members
+                ?.map(attendee => attendee.family_member_id)
+                .filter(Boolean) || []
+        )
+        setEditingTripId(trip.id)
+        setShowForm(true)
+        window.scrollTo({ top: 0, behavior: "smooth" })
+    }
+
+    async function loadTripPlans(tripId) {
+        setLoadingPlansForTripId(tripId)
+
+        try {
+            const plans = await getTripPlans(tripId)
+
+            setTripPlansByTripId(current => ({
+                ...current,
+                [tripId]: plans
+            }))
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not load trip plans.")
+        } finally {
+            setLoadingPlansForTripId(null)
+        }
+    }
+
+    async function toggleExpandedTrip(tripId) {
+        setExpandedTripId(current => current === tripId ? null : tripId)
+
+        if (!tripPlansByTripId[tripId]) {
+            await loadTripPlans(tripId)
+        }
+
+        setPlanForm({ ...initialPlanForm })
+    }
+
     async function handleSubmit(event) {
         event.preventDefault()
         setSaving(true)
 
+        const payload = {
+            name: form.name.trim(),
+            destination: form.destination.trim() || null,
+            start_date: form.start_date || null,
+            end_date: form.end_date || null,
+            notes: form.notes.trim() || null
+        }
+
         try {
-            await createTrip(
-                {
-                    name: form.name.trim(),
-                    destination: form.destination.trim() || null,
-                    start_date: form.start_date,
-                    end_date: form.end_date || null,
-                    notes: form.notes.trim() || null
-                },
-                selectedMembers
-            )
+            if (editingTripId) {
+                await updateTrip(editingTripId, payload, selectedMembers)
+            } else {
+                await createTrip(payload, selectedMembers)
+            }
 
-            setForm({ ...initialForm })
-            setSelectedMembers([])
-            setShowForm(false)
-
+            resetForm()
             await refreshTrips()
         } catch (error) {
             console.error(error)
@@ -267,17 +386,179 @@ export default function Trips() {
         navigate(`/tasks?tripId=${trip.id}`)
     }
 
+    async function handleCreatePlan(event, trip) {
+        event.preventDefault()
+
+        if (!planForm.title.trim()) return
+
+        setSavingPlan(true)
+
+        try {
+            await createTripPlan({
+                trip_id: trip.id,
+                title: planForm.title.trim(),
+                category: planForm.category,
+                notes: planForm.notes.trim() || null,
+                status: "idea"
+            })
+
+            setPlanForm({ ...initialPlanForm })
+            await loadTripPlans(trip.id)
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not add plan.")
+        } finally {
+            setSavingPlan(false)
+        }
+    }
+
+    async function handleDeletePlan(plan) {
+        if (!window.confirm(`Delete "${plan.title}"?`)) return
+
+        try {
+            await deleteTripPlan(plan.id)
+            await loadTripPlans(plan.trip_id)
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not delete plan.")
+        }
+    }
+
+    function renderTripPlans(trip) {
+        const plans = tripPlansByTripId[trip.id] || []
+        const groupedPlans = planCategories.reduce((map, category) => {
+            map[category] = plans.filter(plan => plan.category === category)
+            return map
+        }, {})
+
+        return (
+            <div className="trip-plans-panel">
+                <div className="trip-section-header">
+                    <div>
+                        <h4>Ideas & Plans</h4>
+                        <p>Restaurants, activities, lodging ideas, packing notes, and loose plans.</p>
+                    </div>
+
+                    <span>{plans.length}</span>
+                </div>
+
+                {loadingPlansForTripId === trip.id ? (
+                    <p>Loading plans...</p>
+                ) : plans.length === 0 ? (
+                    <p className="dashboard-empty">No ideas or plans added yet.</p>
+                ) : (
+                    <div className="trip-plan-groups">
+                        {planCategories.map(category => {
+                            const categoryPlans = groupedPlans[category] || []
+
+                            if (categoryPlans.length === 0) return null
+
+                            return (
+                                <div className="trip-plan-group" key={category}>
+                                    <p className="card-kicker">{category}</p>
+
+                                    <div className="trip-plan-card-grid">
+                                        {categoryPlans.map(plan => (
+                                            <div className="trip-plan-card" key={plan.id}>
+                                                <div>
+                                                    <p className="card-kicker">{plan.category}</p>
+                                                    <strong>{plan.title}</strong>
+
+                                                    {plan.notes && <p>{plan.notes}</p>}
+                                                </div>
+
+                                                <button
+                                                    className="danger-button trip-plan-delete"
+                                                    type="button"
+                                                    onClick={() => handleDeletePlan(plan)}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                )}
+
+                <form
+                    className="form-grid"
+                    onSubmit={event => handleCreatePlan(event, trip)}
+                    style={{ marginTop: "1rem" }}
+                >
+                    <label>
+                        Plan / Idea
+                        <input
+                            value={planForm.title}
+                            onChange={event =>
+                                setPlanForm({
+                                    ...planForm,
+                                    title: event.target.value
+                                })
+                            }
+                            placeholder="Ohana breakfast, aquarium, hotel pool..."
+                            required
+                        />
+                    </label>
+
+                    <label>
+                        Category
+                        <select
+                            value={planForm.category}
+                            onChange={event =>
+                                setPlanForm({
+                                    ...planForm,
+                                    category: event.target.value
+                                })
+                            }
+                        >
+                            {planCategories.map(category => (
+                                <option key={category} value={category}>
+                                    {category}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+
+                    <label className="full-width">
+                        Notes
+                        <textarea
+                            rows="2"
+                            value={planForm.notes}
+                            onChange={event =>
+                                setPlanForm({
+                                    ...planForm,
+                                    notes: event.target.value
+                                })
+                            }
+                        />
+                    </label>
+
+                    <button
+                        className="primary-button full-width"
+                        type="submit"
+                        disabled={savingPlan}
+                    >
+                        {savingPlan ? "Adding..." : "+ Add Plan"}
+                    </button>
+                </form>
+            </div>
+        )
+    }
+
     function renderTripRow(trip) {
-        const checklistTasks = getTripChecklistTasks(trip.id)
-        const hasChecklist = checklistTasks.length > 0
-        const openChecklistCount = checklistTasks.filter(
-            task => task.status !== "complete"
-        ).length
+        const checklist = getChecklistProgress(trip)
+        const hasChecklist = checklist.total > 0
 
         const attendees = trip.trip_family_members
             ?.map(attendee => attendee.family_members?.name)
             .filter(Boolean)
             .join(", ")
+
+        const plans = tripPlansByTripId[trip.id] || []
+        const isExpanded = expandedTripId === trip.id
 
         return (
             <div className="trip-command-row" key={trip.id}>
@@ -291,31 +572,45 @@ export default function Trips() {
                         {trip.destination ? ` • ${trip.destination}` : ""}
                     </p>
 
-                    {attendees && <small>{attendees}</small>}
+                    <small>{getCountdownLabel(trip)}</small>
 
+                    {attendees && <small>{attendees}</small>}
                     {trip.notes && <small>{trip.notes}</small>}
+
                 </div>
 
                 <div className="trip-command-status">
                     {hasChecklist ? (
                         <span className="status-pill status-neutral">
-                            Checklist • {openChecklistCount} open
+                            Checklist • {checklist.complete}/{checklist.total} complete
                         </span>
                     ) : (
                         <span className="status-pill status-muted">
                             No checklist
                         </span>
                     )}
+
+                    <span className="status-pill status-muted">
+                        Plans • {plans.length}
+                    </span>
                 </div>
 
                 <div className="trip-command-actions">
+                    <button
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => toggleExpandedTrip(trip.id)}
+                    >
+                        {isExpanded ? "Hide Plans" : "Plans"}
+                    </button>
+
                     {hasChecklist ? (
                         <button
                             className="secondary-button"
                             type="button"
                             onClick={() => handleViewChecklist(trip)}
                         >
-                            View Checklist
+                            Checklist
                         </button>
                     ) : (
                         <button
@@ -328,6 +623,14 @@ export default function Trips() {
                     )}
 
                     <button
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => startEditTrip(trip)}
+                    >
+                        Edit
+                    </button>
+
+                    <button
                         className="danger-button"
                         type="button"
                         onClick={() => handleDelete(trip)}
@@ -335,6 +638,11 @@ export default function Trips() {
                         Delete
                     </button>
                 </div>
+                {isExpanded && (
+                    <div className="trip-command-expanded">
+                        {renderTripPlans(trip)}
+                    </div>
+                )}
             </div>
         )
     }
@@ -356,11 +664,10 @@ export default function Trips() {
                     type="button"
                     className="primary-button"
                     onClick={() => {
-                        setShowForm(current => !current)
-
-                        if (!showForm) {
-                            setForm({ ...initialForm })
-                            setSelectedMembers([])
+                        if (showForm) {
+                            resetForm()
+                        } else {
+                            startAddTrip()
                         }
                     }}
                 >
@@ -370,7 +677,7 @@ export default function Trips() {
 
             {showForm && (
                 <section className="card form-card">
-                    <h3>Add Trip</h3>
+                    <h3>{editingTripId ? "Edit Trip" : "Add Trip"}</h3>
 
                     <form className="form-grid" onSubmit={handleSubmit}>
                         <label>
@@ -413,7 +720,6 @@ export default function Trips() {
                                         start_date: event.target.value
                                     })
                                 }
-                                required
                             />
                         </label>
 
@@ -477,7 +783,11 @@ export default function Trips() {
                             type="submit"
                             disabled={saving}
                         >
-                            {saving ? "Saving..." : "Save Trip"}
+                            {saving
+                                ? "Saving..."
+                                : editingTripId
+                                    ? "Save Changes"
+                                    : "Save Trip"}
                         </button>
                     </form>
                 </section>

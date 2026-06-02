@@ -885,3 +885,41 @@ add column if not exists shopping_category_order text[] default array[
 
 alter table shopping_lists
 add column if not exists updated_at timestamp with time zone default now();
+
+-- ADD TRIP PLANS TABLE
+
+create table if not exists trip_plans (
+    id uuid primary key default gen_random_uuid(),
+    trip_id uuid not null references trips(id) on delete cascade,
+    user_id uuid not null references auth.users(id) on delete cascade,
+    title text not null,
+    category text default 'Other',
+    notes text,
+    status text default 'idea',
+    sort_order integer default 0,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+alter table trip_plans enable row level security;
+
+create policy "Users can view their own trip plans"
+on trip_plans
+for select
+using (auth.uid() = user_id);
+
+create policy "Users can create their own trip plans"
+on trip_plans
+for insert
+with check (auth.uid() = user_id);
+
+create policy "Users can update their own trip plans"
+on trip_plans
+for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "Users can delete their own trip plans"
+on trip_plans
+for delete
+using (auth.uid() = user_id);

@@ -1085,6 +1085,21 @@ Goals:
 - Notify when list generated
 - Shared shopping coordination
 
+---
+
+## UI-001
+Shared Page Header Component  
+Status: Backlog
+
+### Goals
+- Create reusable PageHeader component
+- Standardize label, title, description, and action button layout
+- Replace duplicated headers across core pages
+- Apply to Tasks, Meals, Shopping, Calendar, Family, Activities, Trips, School, Documents, and Settings
+- Improve visual consistency and reduce repeated JSX
+
+---
+
 ### Notes
 - Current Home buttons navigate to Tasks and Activities.
 - Future version should open lightweight modal forms instead.
