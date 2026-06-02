@@ -7,7 +7,6 @@ import useFamilyMembers from "../hooks/useFamilyMembers"
 import useTrips from "../hooks/useTrips"
 import useActivitySessions from "../hooks/useActivitySessions"
 import usePreferences from "../hooks/usePreferences"
-
 import useCalendarEvents from "../hooks/useCalendarEvents"
 
 import {
@@ -15,8 +14,11 @@ import {
     deleteCalendarEvent
 } from "../services/calendarEventService"
 
+import { createTask } from "../services/taskService"
+import { createActivity } from "../services/activityService"
 import { deleteActivity } from "../services/activityService"
 import { deleteActivitySession } from "../services/activitySessionService"
+import { createSchoolItem } from "../services/schoolService"
 import { deleteSchoolItem } from "../services/schoolService"
 import { deleteTrip } from "../services/tripService"
 
@@ -406,8 +408,38 @@ export default function Calendar() {
         notes: ""
     })
 
+    const [showTaskForm, setShowTaskForm] = useState(false)
+    const [savingTask, setSavingTask] = useState(false)
+
+    const [taskForm, setTaskForm] = useState({
+        title: "",
+        description: ""
+    })
+
     const { activities, loading: activitiesLoading } = useActivities()
     const { activitySessions, loading: sessionsLoading } = useActivitySessions()
+
+    const [showActivityForm, setShowActivityForm] = useState(false)
+    const [savingActivity, setSavingActivity] = useState(false)
+
+    const [activityForm, setActivityForm] = useState({
+        name: "",
+        family_member_id: "",
+        location: "",
+        start_time: "",
+        end_time: ""
+    })
+
+    const [showSchoolItemForm, setShowSchoolItemForm] = useState(false)
+    const [savingSchoolItem, setSavingSchoolItem] = useState(false)
+
+    const [schoolItemForm, setSchoolItemForm] = useState({
+        title: "",
+        family_member_id: "",
+        category: "School",
+        notes: ""
+    })
+
     const { schoolItems } = useSchoolItems()
     const { familyMembers } = useFamilyMembers()
     const { trips } = useTrips()
@@ -549,6 +581,110 @@ export default function Calendar() {
         }
     }
 
+    function resetTaskForm() {
+        setTaskForm({
+            title: "",
+            description: ""
+        })
+    }
+
+    async function handleCreateTask(event) {
+        event.preventDefault()
+        setSavingTask(true)
+
+        try {
+            await createTask({
+                title: taskForm.title.trim(),
+                description: taskForm.description.trim() || null,
+                due_date: selectedDate,
+                status: "open"
+            })
+
+            resetTaskForm()
+            setShowTaskForm(false)
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not create task.")
+        } finally {
+            setSavingTask(false)
+        }
+    }
+
+    function resetActivityForm() {
+        setActivityForm({
+            name: "",
+            family_member_id: "",
+            location: "",
+            start_time: "",
+            end_time: ""
+        })
+    }
+
+    async function handleCreateActivity(event) {
+        event.preventDefault()
+        setSavingActivity(true)
+
+        try {
+            await createActivity({
+                name: activityForm.name.trim(),
+                family_member_id:
+                    activityForm.family_member_id || null,
+                location:
+                    activityForm.location.trim() || null,
+                start_date: selectedDate,
+                end_date: selectedDate,
+                start_time:
+                    activityForm.start_time || null,
+                end_time:
+                    activityForm.end_time || null
+            })
+
+            resetActivityForm()
+            setShowActivityForm(false)
+
+            window.location.reload()
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not create activity.")
+        } finally {
+            setSavingActivity(false)
+        }
+    }
+
+    function resetSchoolItemForm() {
+        setSchoolItemForm({
+            title: "",
+            family_member_id: "",
+            category: "School",
+            notes: ""
+        })
+    }
+
+    async function handleCreateSchoolItem(event) {
+        event.preventDefault()
+        setSavingSchoolItem(true)
+
+        try {
+            await createSchoolItem({
+                title: schoolItemForm.title.trim(),
+                family_member_id:
+                    schoolItemForm.family_member_id || null,
+                category: schoolItemForm.category,
+                due_date: selectedDate,
+                notes: schoolItemForm.notes.trim() || null
+            })
+
+            resetSchoolItemForm()
+            setShowSchoolItemForm(false)
+            window.location.reload()
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not create school item.")
+        } finally {
+            setSavingSchoolItem(false)
+        }
+    }
+
     async function handleDeleteCalendarEvent(event) {
         const confirmed = window.confirm(
             `Delete "${event.title}"? This cannot be undone.`
@@ -638,7 +774,6 @@ export default function Calendar() {
                         </Link>
                     </div>
                 </div>
-
             </header>
 
             <section className="card calendar-card">
@@ -677,64 +812,64 @@ export default function Calendar() {
                     </div>
                 </div>
 
-                {
-                    loading ? (
-                        <p>Loading calendar...</p>
-                    ) : (
-                        <div className="calendar-grid">
-                            {weekdayLabels.map(day => (
-                                <div className="calendar-weekday" key={day}>
-                                    {day}
-                                </div>
-                            ))}
+                {loading ? (
+                    <p>Loading calendar...</p>
+                ) : (
+                    <div className="calendar-grid">
+                        {weekdayLabels.map(day => (
+                            <div className="calendar-weekday" key={day}>
+                                {day}
+                            </div>
+                        ))}
 
-                            {calendarDays.map(day => {
-                                const dayEvents = eventsByDate[day.dateString] || []
-                                const isToday = day.dateString === todayString
+                        {calendarDays.map(day => {
+                            const dayEvents = eventsByDate[day.dateString] || []
+                            const isToday = day.dateString === todayString
 
-                                return (
-                                    <button
-                                        className={`calendar-day calendar-day-button ${day.isCurrentMonth ? "" : "calendar-day-muted"
-                                            } ${isToday ? "calendar-day-today" : ""}`}
-                                        key={day.dateString}
-                                        type="button"
-                                        onClick={() => {
-                                            setSelectedDate(day.dateString)
-                                            setShowCalendarEventForm(false)
-                                            resetCalendarEventForm(day.dateString)
-                                        }}
-                                    >
-                                        <div className="calendar-day-number">
-                                            {day.date.getDate()}
-                                        </div>
+                            return (
+                                <button
+                                    className={`calendar-day calendar-day-button ${day.isCurrentMonth ? "" : "calendar-day-muted"
+                                        } ${isToday ? "calendar-day-today" : ""}`}
+                                    key={day.dateString}
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedDate(day.dateString)
+                                        setShowCalendarEventForm(false)
+                                        setShowTaskForm(false)
+                                        resetCalendarEventForm(day.dateString)
+                                        resetTaskForm()
+                                    }}
+                                >
+                                    <div className="calendar-day-number">
+                                        {day.date.getDate()}
+                                    </div>
 
-                                        <div className="calendar-events">
-                                            {dayEvents.slice(0, 4).map(event => (
-                                                <div
-                                                    className="calendar-event"
-                                                    key={event.id}
-                                                    title={[event.title, event.subtitle]
-                                                        .filter(Boolean)
-                                                        .join(" • ")}
-                                                >
-                                                    <span>{event.icon}</span>
-                                                    <strong>{event.title}</strong>
-                                                </div>
-                                            ))}
+                                    <div className="calendar-events">
+                                        {dayEvents.slice(0, 4).map(event => (
+                                            <div
+                                                className="calendar-event"
+                                                key={event.id}
+                                                title={[event.title, event.subtitle]
+                                                    .filter(Boolean)
+                                                    .join(" • ")}
+                                            >
+                                                <span>{event.icon}</span>
+                                                <strong>{event.title}</strong>
+                                            </div>
+                                        ))}
 
-                                            {dayEvents.length > 4 && (
-                                                <small>
-                                                    +{dayEvents.length - 4} more
-                                                </small>
-                                            )}
-                                        </div>
-                                    </button>
-                                )
-                            })}
-                        </div>
-                    )
-                }
-            </section >
+                                        {dayEvents.length > 4 && (
+                                            <small>
+                                                +{dayEvents.length - 4} more
+                                            </small>
+                                        )}
+                                    </div>
+                                </button>
+                            )
+                        })}
+                    </div>
+                )}
+            </section>
 
             {selectedDate && (
                 <div
@@ -902,6 +1037,254 @@ export default function Calendar() {
                                 </div>
                             </form>
                         )}
+
+                        {showTaskForm && (
+                            <form
+                                className="card form-card"
+                                onSubmit={handleCreateTask}
+                                style={{ marginBottom: "1rem" }}
+                            >
+                                <h4>Add Task</h4>
+
+                                <div className="form-grid">
+                                    <label className="full-width">
+                                        Task
+                                        <input
+                                            required
+                                            value={taskForm.title}
+                                            onChange={event =>
+                                                setTaskForm({
+                                                    ...taskForm,
+                                                    title: event.target.value
+                                                })
+                                            }
+                                            placeholder="Buy snacks, call hotel, submit form..."
+                                        />
+                                    </label>
+
+                                    <label className="full-width">
+                                        Notes
+                                        <textarea
+                                            rows="3"
+                                            value={taskForm.description}
+                                            onChange={event =>
+                                                setTaskForm({
+                                                    ...taskForm,
+                                                    description: event.target.value
+                                                })
+                                            }
+                                        />
+                                    </label>
+
+                                    <button
+                                        className="primary-button full-width"
+                                        type="submit"
+                                        disabled={savingTask}
+                                    >
+                                        {savingTask ? "Saving..." : "Save Task"}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        {showActivityForm && (
+                            <form
+                                className="card form-card"
+                                onSubmit={handleCreateActivity}
+                                style={{ marginBottom: "1rem" }}
+                            >
+                                <h4>Add Activity</h4>
+
+                                <div className="form-grid">
+                                    <label>
+                                        Activity
+                                        <input
+                                            required
+                                            value={activityForm.name}
+                                            onChange={event =>
+                                                setActivityForm({
+                                                    ...activityForm,
+                                                    name: event.target.value
+                                                })
+                                            }
+                                        />
+                                    </label>
+
+                                    <label>
+                                        Family Member
+                                        <select
+                                            value={activityForm.family_member_id}
+                                            onChange={event =>
+                                                setActivityForm({
+                                                    ...activityForm,
+                                                    family_member_id:
+                                                        event.target.value
+                                                })
+                                            }
+                                        >
+                                            <option value="">
+                                                Select Family Member
+                                            </option>
+
+                                            {familyMembers.map(member => (
+                                                <option
+                                                    key={member.id}
+                                                    value={member.id}
+                                                >
+                                                    {member.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>
+
+                                    <label>
+                                        Start Time
+                                        <input
+                                            type="time"
+                                            value={activityForm.start_time}
+                                            onChange={event =>
+                                                setActivityForm({
+                                                    ...activityForm,
+                                                    start_time:
+                                                        event.target.value
+                                                })
+                                            }
+                                        />
+                                    </label>
+
+                                    <label>
+                                        End Time
+                                        <input
+                                            type="time"
+                                            value={activityForm.end_time}
+                                            onChange={event =>
+                                                setActivityForm({
+                                                    ...activityForm,
+                                                    end_time:
+                                                        event.target.value
+                                                })
+                                            }
+                                        />
+                                    </label>
+
+                                    <label className="full-width">
+                                        Location
+                                        <input
+                                            value={activityForm.location}
+                                            onChange={event =>
+                                                setActivityForm({
+                                                    ...activityForm,
+                                                    location:
+                                                        event.target.value
+                                                })
+                                            }
+                                        />
+                                    </label>
+
+                                    <button
+                                        className="primary-button full-width"
+                                        type="submit"
+                                        disabled={savingActivity}
+                                    >
+                                        {savingActivity
+                                            ? "Saving..."
+                                            : "Save Activity"}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        {showSchoolItemForm && (
+                            <form
+                                className="card form-card"
+                                onSubmit={handleCreateSchoolItem}
+                                style={{ marginBottom: "1rem" }}
+                            >
+                                <h4>Add School Item</h4>
+
+                                <div className="form-grid">
+                                    <label>
+                                        Title
+                                        <input
+                                            required
+                                            value={schoolItemForm.title}
+                                            onChange={event =>
+                                                setSchoolItemForm({
+                                                    ...schoolItemForm,
+                                                    title: event.target.value
+                                                })
+                                            }
+                                            placeholder="Field trip form, picture day, project due..."
+                                        />
+                                    </label>
+
+                                    <label>
+                                        Family Member
+                                        <select
+                                            value={schoolItemForm.family_member_id}
+                                            onChange={event =>
+                                                setSchoolItemForm({
+                                                    ...schoolItemForm,
+                                                    family_member_id: event.target.value
+                                                })
+                                            }
+                                        >
+                                            <option value="">No family member selected</option>
+
+                                            {familyMembers.map(member => (
+                                                <option key={member.id} value={member.id}>
+                                                    {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
+                                                    {member.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>
+
+                                    <label>
+                                        Category
+                                        <select
+                                            value={schoolItemForm.category}
+                                            onChange={event =>
+                                                setSchoolItemForm({
+                                                    ...schoolItemForm,
+                                                    category: event.target.value
+                                                })
+                                            }
+                                        >
+                                            <option>School</option>
+                                            <option>Form</option>
+                                            <option>Deadline</option>
+                                            <option>Event</option>
+                                            <option>Reminder</option>
+                                            <option>Other</option>
+                                        </select>
+                                    </label>
+
+                                    <label className="full-width">
+                                        Notes
+                                        <textarea
+                                            rows="3"
+                                            value={schoolItemForm.notes}
+                                            onChange={event =>
+                                                setSchoolItemForm({
+                                                    ...schoolItemForm,
+                                                    notes: event.target.value
+                                                })
+                                            }
+                                        />
+                                    </label>
+
+                                    <button
+                                        className="primary-button full-width"
+                                        type="submit"
+                                        disabled={savingSchoolItem}
+                                    >
+                                        {savingSchoolItem ? "Saving..." : "Save School Item"}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
                         {selectedEvents.length === 0 ? (
                             <p className="dashboard-empty">
                                 Nothing scheduled for this day.
@@ -956,7 +1339,9 @@ export default function Calendar() {
                             type="button"
                             onClick={() => {
                                 setShowCalendarEventForm(current => !current)
+                                setShowTaskForm(false)
                                 resetCalendarEventForm(selectedDate)
+                                resetTaskForm()
                             }}
                         >
                             {showCalendarEventForm ? "Cancel Event" : "+ Calendar Event"}
@@ -965,36 +1350,52 @@ export default function Calendar() {
                         <button
                             className="secondary-button"
                             type="button"
-                            onClick={() =>
-                                navigate(`/tasks?dueDate=${selectedDate}`)
-                            }
+                            onClick={() => {
+                                setShowTaskForm(current => !current)
+                                setShowCalendarEventForm(false)
+                                resetTaskForm()
+                            }}
                         >
-                            + Task
+                            {showTaskForm ? "Cancel Task" : "+ Task"}
                         </button>
 
                         <button
                             className="secondary-button"
                             type="button"
-                            onClick={() =>
-                                navigate(`/activities?startDate=${selectedDate}`)
-                            }
+                            onClick={() => {
+                                setShowActivityForm(current => !current)
+
+                                setShowCalendarEventForm(false)
+                                setShowTaskForm(false)
+
+                                resetActivityForm()
+                            }}
                         >
-                            + Activity
+                            {showActivityForm
+                                ? "Cancel Activity"
+                                : "+ Activity"}
                         </button>
 
                         <button
                             className="secondary-button"
                             type="button"
-                            onClick={() =>
-                                navigate(`/school?dueDate=${selectedDate}`)
-                            }
+                            onClick={() => {
+                                setShowSchoolItemForm(current => !current)
+
+                                setShowCalendarEventForm(false)
+                                setShowTaskForm(false)
+                                setShowActivityForm(false)
+
+                                resetSchoolItemForm()
+                            }}
                         >
-                            + School Item
+                            {showSchoolItemForm
+                                ? "Cancel School Item"
+                                : "+ School Item"}
                         </button>
                     </div>
                 </div>
-            )
-            }
-        </div >
+            )}
+        </div>
     )
 }
