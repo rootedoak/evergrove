@@ -11,6 +11,8 @@ import { useNavigate } from "react-router-dom"
 import { completeTask, createTask } from "../services/taskService"
 import { markRegistrationTaskCreated } from "../services/activityService"
 
+import useCalendarEvents from "../hooks/useCalendarEvents"
+
 import FamilyTimelineCard from "../components/FamilyTimelineCard"
 
 import { getTaskSuggestions } from "../utils/taskSuggestions"
@@ -252,24 +254,79 @@ function getSchoolEvents(schoolItems) {
         }))
 }
 
-function getTripEvents(trips) {
-    return trips
-        .filter(trip => trip.start_date)
-        .map(trip => {
-            const attendees = trip.trip_family_members
-                ?.map(attendee => attendee.family_members?.name)
-                .filter(Boolean)
-                .join(", ")
+function getCalendarEventEvents(calendarEvents) {
+    return calendarEvents.flatMap(event => {
+        if (!event.start_date) return []
 
-            return {
-                id: `trip-${trip.id}-start`,
-                date: getDateOnly(trip.start_date),
+        const events = []
+        const startDate = createLocalDate(event.start_date)
+        const endDate = createLocalDate(event.end_date || event.start_date)
+        const currentDate = new Date(startDate)
+
+        while (currentDate <= endDate) {
+            events.push({
+                id: `calendar-event-${event.id}-${formatDateParts(
+                    currentDate.getFullYear(),
+                    currentDate.getMonth() + 1,
+                    currentDate.getDate()
+                )}`,
+                date: formatDateParts(
+                    currentDate.getFullYear(),
+                    currentDate.getMonth() + 1,
+                    currentDate.getDate()
+                ),
+                icon: "📌",
+                title: event.title,
+                subtitle: event.event_type || "Calendar Event",
+                detail: event.location || "",
+                time_label: formatTimeRange(event.start_time, event.end_time),
+                start_time: event.start_time,
+                end_time: event.end_time,
+                sort_time: getMinutesFromTime(event.start_time)
+            })
+
+            currentDate.setDate(currentDate.getDate() + 1)
+        }
+
+        return events
+    })
+}
+
+function getTripEvents(trips) {
+    return trips.flatMap(trip => {
+        if (!trip.start_date) return []
+
+        const attendees = trip.trip_family_members
+            ?.map(attendee => attendee.family_members?.name)
+            .filter(Boolean)
+            .join(", ")
+
+        const events = []
+        const startDate = createLocalDate(trip.start_date)
+        const endDate = createLocalDate(trip.end_date || trip.start_date)
+        const currentDate = new Date(startDate)
+
+        while (currentDate <= endDate) {
+            const date = formatDateParts(
+                currentDate.getFullYear(),
+                currentDate.getMonth() + 1,
+                currentDate.getDate()
+            )
+
+            events.push({
+                id: `trip-${trip.id}-${date}`,
+                date,
                 icon: "🚗",
                 title: trip.name,
                 subtitle: attendees || trip.destination || "Trip",
                 sort_time: 99999
-            }
-        })
+            })
+
+            currentDate.setDate(currentDate.getDate() + 1)
+        }
+
+        return events
+    })
 }
 
 function groupEventsByDate(events) {
@@ -390,6 +447,11 @@ export default function Dashboard() {
     const dashboardWindowDays = Number(preferences?.dashboard_window_days || 7)
     const timelineDays = Number(preferences?.timeline_window_days || 90)
 
+    const {
+        calendarEvents,
+        loading: calendarEventsLoading
+    } = useCalendarEvents()
+
     const navigate = useNavigate()
 
     const showBirthdays = preferences?.show_birthdays !== false
@@ -408,6 +470,7 @@ export default function Dashboard() {
         ...(showActivitySessions ? getActivitySessionEvents(activitySessions) : []),
         ...(showSchoolItems ? getSchoolEvents(schoolItems) : []),
         ...(showTrips ? getTripEvents(trips) : []),
+        ...getCalendarEventEvents(calendarEvents),
         ...(showBirthdays ? getBirthdayEvents(familyMembers) : [])
     ]
 
@@ -455,7 +518,8 @@ export default function Dashboard() {
         loading ||
         tasksLoading ||
         preferencesLoading ||
-        activitySessionsLoading
+        activitySessionsLoading ||
+        calendarEventsLoading
 
     async function handleCreateSuggestedTask(suggestion) {
         try {
@@ -682,6 +746,7 @@ export default function Dashboard() {
                     familyMembers={showBirthdays ? familyMembers : []}
                     trips={showTrips ? trips : []}
                     activitySessions={showActivitySessions ? activitySessions : []}
+                    calendarEvents={calendarEvents}
                     timelineDays={timelineDays}
                 />
             </div>

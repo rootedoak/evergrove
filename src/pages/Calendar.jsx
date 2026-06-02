@@ -529,6 +529,32 @@ export default function Calendar() {
             return
         }
 
+        if (event.type === "calendar_event") {
+            setShowCalendarEventForm(true)
+            setShowTaskForm(false)
+            setShowActivityForm(false)
+            setShowSchoolItemForm(false)
+
+            const existingEvent = calendarEvents.find(
+                calendarEvent => calendarEvent.id === event.sourceId
+            )
+
+            if (existingEvent) {
+                setCalendarEventForm({
+                    title: existingEvent.title || "",
+                    event_type: existingEvent.event_type || "Important Date",
+                    start_date: existingEvent.start_date || selectedDate,
+                    end_date: existingEvent.end_date || "",
+                    start_time: existingEvent.start_time || "",
+                    end_time: existingEvent.end_time || "",
+                    location: existingEvent.location || "",
+                    notes: existingEvent.notes || ""
+                })
+            }
+
+            return
+        }
+
         if (event.type === "birthday") {
             navigate("/family")
         }
@@ -1313,6 +1339,8 @@ export default function Calendar() {
                                             >
                                                 Manage
                                             </button>
+
+
 
                                             {event.canDelete && (
                                                 <button

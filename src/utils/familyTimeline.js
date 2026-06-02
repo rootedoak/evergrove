@@ -99,7 +99,8 @@ export function buildFamilyTimeline(
     familyMembers = [],
     trips = [],
     timelineDays = 90,
-    activitySessions = []
+    activitySessions = [],
+    calendarEvents = []
 ) {
     const events = []
 
@@ -240,15 +241,53 @@ export function buildFamilyTimeline(
             .filter(Boolean)
             .join(", ")
 
-        if (trip.start_date) {
+        if (!trip.start_date) return
+
+        const startDate = createLocalDate(trip.start_date)
+        const endDate = createLocalDate(
+            trip.end_date || trip.start_date
+        )
+
+        const currentDate = new Date(startDate)
+
+        while (currentDate <= endDate) {
             events.push({
-                id: `trip-${trip.id}-start`,
-                date: trip.start_date,
+                id: `trip-${trip.id}-${toDateStringLocal(currentDate)}`,
+                date: toDateStringLocal(currentDate),
                 icon: "🚗",
-                title: `${trip.name} starts`,
+                title: trip.name,
                 subtitle: attendees || trip.destination || "",
-                event_type: "trip_start"
+                event_type: "trip"
             })
+
+            currentDate.setDate(currentDate.getDate() + 1)
+        }
+    })
+
+    calendarEvents.forEach(event => {
+        if (!event.start_date) return
+
+        const startDate = createLocalDate(event.start_date)
+        const endDate = createLocalDate(
+            event.end_date || event.start_date
+        )
+
+        const currentDate = new Date(startDate)
+
+        while (currentDate <= endDate) {
+            events.push({
+                id: `calendar-event-${event.id}-${toDateStringLocal(currentDate)}`,
+                date: toDateStringLocal(currentDate),
+                icon: "📌",
+                title: event.title,
+                subtitle:
+                    event.event_type ||
+                    event.location ||
+                    "Calendar Event",
+                event_type: "calendar_event"
+            })
+
+            currentDate.setDate(currentDate.getDate() + 1)
         }
     })
 

@@ -29,6 +29,7 @@ export default function FamilyTimelineCard({
     familyMembers = [],
     trips = [],
     activitySessions = [],
+    calendarEvents = [],
     timelineDays = 90
 }) {
     const timeline = buildFamilyTimeline(
@@ -38,7 +39,8 @@ export default function FamilyTimelineCard({
         familyMembers,
         trips,
         timelineDays,
-        activitySessions
+        activitySessions,
+        calendarEvents
     ).slice(0, 15)
 
     return (
