@@ -276,6 +276,50 @@ export default function Meals() {
             return
         }
 
+        if (
+            !window.confirm(
+                "Generate random meals for all empty days this week?"
+            )
+        ) {
+            return
+        }
+
+        const emptyDays = weekDays.filter(day => {
+            const plansForDay = weekMealPlans[day.dateValue] || []
+            return plansForDay.length === 0
+        })
+
+        if (emptyDays.length === 0) {
+            alert("This week is already fully planned.")
+            return
+        }
+
+        const shuffledMeals = [...meals].sort(
+            () => Math.random() - 0.5
+        )
+
+        for (let index = 0; index < emptyDays.length; index += 1) {
+            const meal =
+                shuffledMeals[index % shuffledMeals.length]
+
+            await createMealPlan({
+                meal,
+                plannedDate: emptyDays[index].dateValue,
+                notes: "",
+                planType: "home",
+                restaurantName: ""
+            })
+        }
+
+        await loadData()
+    }
+
+    async function handleGenerateWeek() {
+        if (meals.length === 0) {
+            alert("Add a few saved meals first.")
+            return
+        }
+
         const emptyDays = weekDays.filter(day => {
             const plansForDay = weekMealPlans[day.dateValue] || []
             return plansForDay.length === 0
