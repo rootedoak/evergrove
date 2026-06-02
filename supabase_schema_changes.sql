@@ -1012,3 +1012,22 @@ on user_display_preferences
 for update
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
+
+-- RENAME USER PREFERENCE TO HOUSEHOLD
+
+alter table user_preferences
+rename to household_preferences;
+
+-- RLS FOR HOUSEHOLD PREFERENCES
+
+alter policy "Household members can view preferences"
+on household_preferences
+rename to "Household members can view household preferences";
+
+alter policy "Household members can insert preferences"
+on household_preferences
+rename to "Household members can insert household preferences";
+
+alter policy "Household members can update preferences"
+on household_preferences
+rename to "Household members can update household preferences";

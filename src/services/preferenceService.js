@@ -47,7 +47,7 @@ function pickFields(source, fields) {
 
 async function getHouseholdPreferences(userId, householdId) {
     const { data, error } = await supabase
-        .from("user_preferences")
+        .from("household_preferences")
         .select("*")
         .eq("household_id", householdId)
         .maybeSingle()
@@ -56,7 +56,7 @@ async function getHouseholdPreferences(userId, householdId) {
     if (data) return data
 
     const { data: created, error: createError } = await supabase
-        .from("user_preferences")
+        .from("household_preferences")
         .insert([
             {
                 user_id: userId,
@@ -121,7 +121,7 @@ export async function updatePreferences(updates) {
 
     if (Object.keys(householdUpdates).length > 0) {
         const { data, error } = await supabase
-            .from("user_preferences")
+            .from("household_preferences")
             .update({
                 ...householdUpdates,
                 updated_at: new Date().toISOString()
