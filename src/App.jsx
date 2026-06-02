@@ -11,6 +11,7 @@ import {
   Repeat,
   School,
   Settings,
+  ShoppingCart,
   User,
   Users,
   UtensilsCrossed,
@@ -34,6 +35,7 @@ import CalendarPage from "./pages/Calendar"
 import Trips from "./pages/Trips"
 import Profile from "./pages/Profile"
 import Meals from "./pages/Meals"
+import ShoppingLists from "./pages/ShoppingLists"
 
 import "./App.css"
 
@@ -42,6 +44,7 @@ const navItems = [
   { to: "/calendar", icon: CalendarDays, label: "Calendar" },
   { to: "/tasks", icon: ClipboardList, label: "Tasks" },
   { to: "/meals", icon: UtensilsCrossed, label: "Meals" },
+  { to: "/shopping", icon: ShoppingCart, label: "Shopping" },
   { to: "/family", icon: Users, label: "Family" },
   { to: "/documents", icon: FolderOpen, label: "Documents" },
   { to: "/profile", icon: Settings, label: "Settings" }
@@ -136,6 +139,7 @@ function AppLayout() {
           <Route path="/school" element={<SchoolHub />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/meals" element={<Meals />} />
+          <Route path="/shopping" element={<ShoppingLists />} />
           <Route path="/routines" element={<Routines />} />
           <Route path="/reminders" element={<Reminders />} />
           <Route path="/documents" element={<Documents />} />

@@ -201,6 +201,14 @@ export async function createMealPlan({ meal, plannedDate, notes, planType = "hom
 export async function deleteMealPlan(id) {
     const { household } = await getUserAndHousehold()
 
+    const { error: groceryError } = await supabase
+        .from("grocery_items")
+        .delete()
+        .eq("source_meal_plan_id", id)
+        .eq("household_id", household.id)
+
+    if (groceryError) throw groceryError
+
     const { error } = await supabase
         .from("meal_plans")
         .delete()
@@ -212,7 +220,7 @@ export async function deleteMealPlan(id) {
     return true
 }
 
-export async function getGroceryItems() {
+export async function getGroceryItems({ startDate, endDate } = {}) {
     const { household } = await getUserAndHousehold()
 
     const { data, error } = await supabase
@@ -231,7 +239,21 @@ export async function getGroceryItems() {
         .order("name", { ascending: true })
 
     if (error) throw error
-    return data || []
+
+    const items = data || []
+
+    if (!startDate || !endDate) {
+        return items
+    }
+
+    return items.filter(item => {
+        if (!item.source_meal_plan_id) return true
+
+        const plannedDate = item.meal_plans?.planned_date
+        if (!plannedDate) return false
+
+        return plannedDate >= startDate && plannedDate <= endDate
+    })
 }
 
 export async function createGroceryItem({ name, quantity, category }) {

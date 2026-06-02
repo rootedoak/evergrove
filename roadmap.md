@@ -765,14 +765,14 @@ Reduces manual categorization effort.
 ---
 
 #### MLP-015 — Grocery Cleanup
-**Status:** Planned
+**Status:** Complete
 
 Automatically remove generated grocery items when a meal plan is deleted.
 
-Goals:
-- Prevent orphaned grocery items
-- Keep grocery list synchronized
-- Preserve manually-added grocery items
+Completed:
+- Meal plan deletion removes generated grocery items
+- Manual grocery items remain untouched
+- Grocery list stays synchronized with meal plans
 
 ---
 
@@ -901,17 +901,29 @@ Recommend meals based on:
 ---
 
 #### MLP-021 — Random Weekly Meal Generator
-**Status:** Planned
+**Status:** Complete
 
 Generate a week of meals using the saved meal library.
 
-Features:
-- Randomly fill empty days in the current week
-- Use only saved home meals
-- Avoid duplicate meals when possible
-- Generate grocery items automatically
-- Skip days that already have a meal planned
-- Leave restaurant nights untouched
+Completed:
+- Fills empty days only
+- Uses saved meals
+- Preserves existing plans
+- Preserves restaurant nights
+- Automatically generates grocery items
+- Confirmation prompt before generation
+
+---
+
+#### MLP-022 — Week-Based Grocery Lists
+**Status:** Complete
+
+Limit grocery lists to the selected planning week.
+
+Completed:
+- Grocery list follows selected week
+- Future weeks do not pollute current shopping
+- Grocery planning remains synchronized with weekly meal plans
 
 ---
 
@@ -927,6 +939,153 @@ Status: Backlog
 - Refresh dashboard after save
 - Keep full Tasks and Activities pages for advanced editing
 - Support fast parent-friendly entry without leaving the dashboard
+
+# Shopping Lists (SHOP)
+
+### ✅ Completed
+
+#### SHOP-001 — Shopping Lists Foundation
+**Status:** Complete
+
+Create and manage shared household shopping lists.
+
+Completed:
+- Shopping list creation
+- Shopping list deletion
+- Shopping list archiving
+- Household sharing
+- Household security model
+
+---
+
+#### SHOP-002 — Shopping List Items
+**Status:** Complete
+
+Manage shopping list contents.
+
+Completed:
+- Add items
+- Delete items
+- Check off items
+- Categorize items
+- Track completion status
+
+---
+
+#### SHOP-003 — Meal Planner Integration
+**Status:** Complete
+
+Generate shopping lists directly from meal planning.
+
+Completed:
+- Generate shopping list from weekly grocery list
+- Preserve categories
+- Preserve quantities
+- Automatically navigate to Shopping page
+- Shared household visibility
+
+---
+
+#### SHOP-004 — Duplicate Prevention
+**Status:** Complete
+
+Prevent duplicate shopping lists from being generated.
+
+Completed:
+- Detect existing shopping list for week
+- Prevent duplicate creation
+- Reuse existing shopping workflow
+
+---
+
+### 🚧 Planned
+
+#### SHOP-005 — Shopping Progress Dashboard
+**Status:** Planned
+
+Enhance shopping list summary.
+
+Goals:
+- Remaining items
+- Completed items
+- Percent complete
+- Progress indicator
+
+---
+
+#### SHOP-006 — Mobile Shopping Mode
+**Status:** Planned
+
+Create a grocery-store-friendly experience.
+
+Goals:
+- Large tap targets
+- Simplified layout
+- Focused shopping view
+- Mobile-first design
+
+---
+
+#### SHOP-007 — Shopping Completion Workflow
+**Status:** Planned
+
+Support finishing shopping trips.
+
+Goals:
+- Mark shopping complete
+- Auto archive option
+- Shopping history
+
+---
+
+### 📋 Backlog
+
+#### SHOP-008 — Reopen Archived Lists
+**Status:** Backlog
+
+Goals:
+- Restore archived shopping lists
+- Recover accidentally archived lists
+
+---
+
+#### SHOP-009 — Shopping Dashboard Widget
+**Status:** Backlog
+
+Goals:
+- Home dashboard shopping card
+- Remaining item count
+- Quick link to active list
+
+---
+
+#### SHOP-010 — Smart Shopping Categories
+**Status:** Backlog
+
+Goals:
+- Auto-categorize grocery items
+- Reuse meal planner category intelligence
+- Improve shopping organization
+
+---
+
+#### SHOP-011 — Shopping History & Trends
+**Status:** Backlog
+
+Goals:
+- Most purchased items
+- Shopping frequency
+- Household shopping insights
+
+---
+
+#### SHOP-012 — Shared Shopping Notifications
+**Status:** Backlog
+
+Goals:
+- Notify household when shopping completed
+- Notify when list generated
+- Shared shopping coordination
 
 ### Notes
 - Current Home buttons navigate to Tasks and Activities.

@@ -741,3 +741,129 @@ add column if not exists plan_type text default 'home';
 
 alter table meal_plans
 add column if not exists restaurant_name text;
+
+-- ADD SHOPPING LIST TABLES
+
+create table if not exists shopping_lists (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  household_id uuid not null,
+  title text not null,
+  status text default 'active',
+  source_week_start date,
+  source_week_end date,
+  created_at timestamp with time zone default now(),
+  archived_at timestamp with time zone
+);
+
+create table if not exists shopping_list_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  household_id uuid not null,
+  shopping_list_id uuid not null references shopping_lists(id) on delete cascade,
+  name text not null,
+  quantity text,
+  category text,
+  checked boolean default false,
+  source_grocery_item_ids uuid[],
+  created_at timestamp with time zone default now()
+);
+
+alter table shopping_lists enable row level security;
+alter table shopping_list_items enable row level security;
+
+create policy "Users can view household shopping lists"
+on shopping_lists for select
+using (
+  household_id in (
+    select household_id
+    from family_members
+    where user_id = auth.uid()
+  )
+);
+
+create policy "Users can insert household shopping lists"
+on shopping_lists for insert
+with check (
+  user_id = auth.uid()
+  and household_id in (
+    select household_id
+    from family_members
+    where user_id = auth.uid()
+  )
+);
+
+create policy "Users can update household shopping lists"
+on shopping_lists for update
+using (
+  household_id in (
+    select household_id
+    from family_members
+    where user_id = auth.uid()
+  )
+)
+with check (
+  household_id in (
+    select household_id
+    from family_members
+    where user_id = auth.uid()
+  )
+);
+
+create policy "Users can delete household shopping lists"
+on shopping_lists for delete
+using (
+  household_id in (
+    select household_id
+    from family_members
+    where user_id = auth.uid()
+  )
+);
+
+create policy "Users can view household shopping list items"
+on shopping_list_items for select
+using (
+  household_id in (
+    select household_id
+    from family_members
+    where user_id = auth.uid()
+  )
+);
+
+create policy "Users can insert household shopping list items"
+on shopping_list_items for insert
+with check (
+  user_id = auth.uid()
+  and household_id in (
+    select household_id
+    from family_members
+    where user_id = auth.uid()
+  )
+);
+
+create policy "Users can update household shopping list items"
+on shopping_list_items for update
+using (
+  household_id in (
+    select household_id
+    from family_members
+    where user_id = auth.uid()
+  )
+)
+with check (
+  household_id in (
+    select household_id
+    from family_members
+    where user_id = auth.uid()
+  )
+);
+
+create policy "Users can delete household shopping list items"
+on shopping_list_items for delete
+using (
+  household_id in (
+    select household_id
+    from family_members
+    where user_id = auth.uid()
+  )
+);

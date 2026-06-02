@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import {
     Check,
     ChevronLeft,
@@ -20,6 +21,7 @@ import {
     getMeals,
     toggleGroceryItem
 } from "../services/mealService"
+import { createShoppingList } from "../services/shoppingService"
 
 function toDateInputValue(date) {
     return [
@@ -57,6 +59,8 @@ function formatDateLabel(date) {
 }
 
 export default function Meals() {
+    const navigate = useNavigate()
+
     const [meals, setMeals] = useState([])
     const [mealPlans, setMealPlans] = useState([])
     const [groceryItems, setGroceryItems] = useState([])
@@ -93,10 +97,21 @@ export default function Meals() {
             setLoading(true)
             setError("")
 
+            const currentWeekDays = Array.from({ length: 7 }, (_, index) => {
+                const date = addDays(weekStart, index)
+
+                return {
+                    dateValue: toDateInputValue(date)
+                }
+            })
+
             const [mealsData, plansData, groceriesData] = await Promise.all([
                 getMeals(),
                 getMealPlans(),
-                getGroceryItems()
+                getGroceryItems({
+                    startDate: currentWeekDays[0].dateValue,
+                    endDate: currentWeekDays[6].dateValue
+                })
             ])
 
             setMeals(mealsData)
@@ -112,7 +127,7 @@ export default function Meals() {
 
     useEffect(() => {
         loadData()
-    }, [])
+    }, [weekStart])
 
     const weekDays = useMemo(() => {
         return Array.from({ length: 7 }, (_, index) => {
@@ -299,8 +314,7 @@ export default function Meals() {
         )
 
         for (let index = 0; index < emptyDays.length; index += 1) {
-            const meal =
-                shuffledMeals[index % shuffledMeals.length]
+            const meal = shuffledMeals[index % shuffledMeals.length]
 
             await createMealPlan({
                 meal,
@@ -314,37 +328,33 @@ export default function Meals() {
         await loadData()
     }
 
-    async function handleGenerateWeek() {
-        if (meals.length === 0) {
-            alert("Add a few saved meals first.")
+    async function handleGenerateShoppingList() {
+        if (consolidatedGroceryItems.length === 0) {
+            alert("No grocery items found for this week.")
             return
         }
 
-        const emptyDays = weekDays.filter(day => {
-            const plansForDay = weekMealPlans[day.dateValue] || []
-            return plansForDay.length === 0
+        const startDate = weekDays[0].dateValue
+        const endDate = weekDays[6].dateValue
+        const title = `Week of ${weekDays[0].dateLabel} Groceries`
+
+        const shoppingList = await createShoppingList({
+            title,
+            sourceWeekStart: startDate,
+            sourceWeekEnd: endDate,
+            items: consolidatedGroceryItems.map(item => ({
+                name: item.name,
+                quantity: item.quantity,
+                category: item.category,
+                source_grocery_item_ids: item.items.map(sourceItem => sourceItem.id)
+            }))
         })
 
-        if (emptyDays.length === 0) {
-            alert("This week is already fully planned.")
-            return
+        if (shoppingList.alreadyExists) {
+            alert("A shopping list already exists for this week.")
         }
 
-        const shuffledMeals = [...meals].sort(() => Math.random() - 0.5)
-
-        for (let index = 0; index < emptyDays.length; index += 1) {
-            const meal = shuffledMeals[index % shuffledMeals.length]
-
-            await createMealPlan({
-                meal,
-                plannedDate: emptyDays[index].dateValue,
-                notes: "",
-                planType: "home",
-                restaurantName: ""
-            })
-        }
-
-        await loadData()
+        navigate("/shopping")
     }
 
     async function handleCreateMeal(event) {
@@ -460,15 +470,15 @@ export default function Meals() {
                         <p>Plan home meals and restaurant nights across the week.</p>
                     </div>
 
-                    <button
-                        className="secondary-button"
-                        type="button"
-                        onClick={handleGenerateWeek}
-                    >
-                        Generate Week
-                    </button>
-
                     <div className="button-row">
+                        <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={handleGenerateWeek}
+                        >
+                            Generate Week
+                        </button>
+
                         <button
                             className="secondary-button"
                             type="button"
@@ -630,7 +640,17 @@ export default function Meals() {
                         <h3>Grocery List</h3>
                         <p>Generated from planned home meals, grouped by category.</p>
                     </div>
-                    <ShoppingCart size={20} />
+
+                    <div className="button-row">
+                        <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={handleGenerateShoppingList}
+                        >
+                            <ShoppingCart size={16} />
+                            Generate Shopping List
+                        </button>
+                    </div>
                 </div>
 
                 <div className="grocery-layout">
