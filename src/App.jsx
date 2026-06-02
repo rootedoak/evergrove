@@ -13,6 +13,7 @@ import {
   Settings,
   User,
   Users,
+  UtensilsCrossed,
   X
 } from "lucide-react"
 
@@ -32,6 +33,7 @@ import Routines from "./pages/Routines"
 import CalendarPage from "./pages/Calendar"
 import Trips from "./pages/Trips"
 import Profile from "./pages/Profile"
+import Meals from "./pages/Meals"
 
 import "./App.css"
 
@@ -39,6 +41,7 @@ const navItems = [
   { to: "/", icon: Home, label: "Home", end: true },
   { to: "/calendar", icon: CalendarDays, label: "Calendar" },
   { to: "/tasks", icon: ClipboardList, label: "Tasks" },
+  { to: "/meals", icon: UtensilsCrossed, label: "Meals" },
   { to: "/family", icon: Users, label: "Family" },
   { to: "/documents", icon: FolderOpen, label: "Documents" },
   { to: "/profile", icon: Settings, label: "Settings" }
@@ -132,6 +135,7 @@ function AppLayout() {
           <Route path="/activities" element={<Activities />} />
           <Route path="/school" element={<SchoolHub />} />
           <Route path="/tasks" element={<Tasks />} />
+          <Route path="/meals" element={<Meals />} />
           <Route path="/routines" element={<Routines />} />
           <Route path="/reminders" element={<Reminders />} />
           <Route path="/documents" element={<Documents />} />

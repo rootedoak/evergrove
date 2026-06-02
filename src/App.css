@@ -3019,3 +3019,488 @@ a {
 .calendar-today-button:hover {
   background: var(--card);
 }
+
+.page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.page-header h2 {
+  color: var(--text);
+  font-size: 2rem;
+  line-height: 1.1;
+  margin: 0.25rem 0;
+}
+
+.page-header p {
+  color: var(--muted);
+  max-width: 42rem;
+}
+
+.eyebrow {
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.hero-panel {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.hero-panel h3,
+.stat-panel h3,
+.section-heading h3 {
+  color: var(--text);
+  margin: 0.25rem 0;
+}
+
+.panel-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 1rem;
+  display: grid;
+  place-items: center;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 16rem;
+  gap: 1rem;
+}
+
+.stat-panel {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 1rem;
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  color: var(--primary);
+}
+
+.section-heading p,
+.muted-text {
+  color: var(--muted);
+}
+
+.form-stack,
+.list-stack,
+.ingredient-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.two-column-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.three-column-form {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr 1fr;
+  gap: 0.75rem;
+}
+
+.ingredient-row {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr 0.7fr auto;
+  gap: 0.75rem;
+}
+
+.form-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 0.85rem;
+  padding: 0.8rem 0.9rem;
+  font: inherit;
+}
+
+.form-input::placeholder {
+  color: var(--muted);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.list-stack {
+  margin-top: 1rem;
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.row-grow {
+  flex: 1;
+}
+
+.row-title {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.row-title.completed {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.row-subtitle {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.icon-danger-button,
+.check-button {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--muted);
+  border-radius: 0.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.icon-danger-button:hover {
+  color: var(--danger);
+  border-color: rgba(185, 28, 28, 0.25);
+}
+
+.check-button.checked {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.button-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.meal-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.meal-card {
+  background: var(--panel-soft);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.meal-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.meal-card h4 {
+  color: var(--text);
+  margin: 0;
+}
+
+.meal-card p,
+.meal-description,
+.ingredient-list {
+  color: var(--muted);
+}
+
+.meal-description {
+  margin-top: 0.75rem;
+}
+
+.ingredient-list {
+  margin: 0.75rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+}
+
+.error-banner {
+  border: 1px solid rgba(185, 28, 28, 0.15);
+  background: rgba(185, 28, 28, 0.05);
+  color: var(--danger);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+@media (max-width: 900px) {
+
+  .dashboard-grid,
+  .content-grid,
+  .three-column-form,
+  .ingredient-row {
+    grid-template-columns: 1fr;
+  }
+
+  .meal-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.weekly-meal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.weekly-meal-day {
+  background: var(--panel-soft);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  min-height: 8rem;
+  overflow: hidden;
+}
+
+.weekly-meal-day-header {
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem;
+  background: var(--panel);
+}
+
+.weekly-meal-day-header p {
+  color: var(--text);
+  font-weight: 700;
+  margin: 0;
+}
+
+.weekly-meal-day-header span {
+  color: var(--muted);
+  font-size: 0.825rem;
+}
+
+.weekly-meal-day-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.empty-day-text {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.weekly-meal-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  padding: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.meal-card-grid.compact {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 1100px) {
+  .weekly-meal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .weekly-meal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.weekly-meal-card {
+  align-items: flex-start;
+}
+
+.weekly-meal-card .row-title {
+  font-size: 0.65rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.weekly-meal-card .icon-danger-button {
+  flex: 0 0 auto;
+}
+
+@media (min-width: 1101px) {
+  .weekly-meal-card {
+    flex-direction: column;
+  }
+
+  .weekly-meal-card .icon-danger-button {
+    align-self: flex-end;
+  }
+}
+
+.grocery-layout {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.75fr) minmax(22rem, 1.25fr);
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.grocery-form {
+  margin-top: 1rem;
+}
+
+.grocery-list-stack {
+  margin-top: 0;
+}
+
+.saved-meals-panel {
+  width: 100%;
+}
+
+.saved-meal-main-fields {
+  grid-template-columns: 1.3fr 0.7fr 2fr;
+}
+
+.ingredient-table {
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  overflow: hidden;
+  background: var(--panel-soft);
+}
+
+.ingredient-table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted-strong);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ingredient-table .ingredient-stack {
+  padding: 0.75rem;
+}
+
+.ingredient-table .ingredient-row {
+  grid-template-columns: 2fr 1fr 1fr auto;
+}
+
+@media (max-width: 900px) {
+
+  .grocery-layout,
+  .saved-meal-main-fields,
+  .ingredient-table-header,
+  .ingredient-table .ingredient-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ingredient-table-header {
+    display: none;
+  }
+}
+
+.consolidated-grocery-row {
+  align-items: flex-start;
+}
+
+.used-in-list {
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.used-in-list p {
+  margin: 0 0 0.2rem;
+  font-weight: 700;
+  color: var(--muted-strong);
+}
+
+.used-in-list ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.grocery-category-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.grocery-category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.grocery-category-header h4 {
+  color: var(--text);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.grocery-category-header span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.quick-add-area {
+  margin-top: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.85rem;
+}
+
+.quick-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}

@@ -667,3 +667,77 @@ on user_preferences
 for update
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
+
+-- ADD MEALS TABLE
+
+create table meals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  household_id uuid,
+  name text not null,
+  description text,
+  category text,
+  created_at timestamp with time zone default now()
+);
+
+-- ADDS MEAL INGREDIENTS TABLE
+
+create table meal_ingredients (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  household_id uuid,
+  meal_id uuid references meals(id) on delete cascade,
+  name text not null,
+  quantity text,
+  category text,
+  created_at timestamp with time zone default now()
+);
+
+-- ADDS MEAL PLANS
+
+create table meal_plans (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  household_id uuid,
+  meal_id uuid references meals(id) on delete set null,
+  planned_date date not null,
+  meal_name text not null,
+  notes text,
+  created_at timestamp with time zone default now()
+);
+
+-- ADDS GROCERY ITEMS
+
+create table grocery_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  household_id uuid,
+  name text not null,
+  quantity text,
+  category text,
+  source_meal_plan_id uuid references meal_plans(id) on delete cascade,
+  checked boolean default false,
+  created_at timestamp with time zone default now()
+);
+
+-- ADD HOUSEHOLD ID TO MEALS
+
+alter table meals
+add column if not exists household_id uuid;
+
+alter table meal_ingredients
+add column if not exists household_id uuid;
+
+alter table meal_plans
+add column if not exists household_id uuid;
+
+alter table grocery_items
+add column if not exists household_id uuid;
+
+-- ADD PLAN TYPE TO MEALS
+
+alter table meal_plans
+add column if not exists plan_type text default 'home';
+
+alter table meal_plans
+add column if not exists restaurant_name text;

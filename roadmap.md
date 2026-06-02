@@ -624,6 +624,280 @@ Status: Active Backlog
 - Identify UI friction from real family usage
 - Clean up any leftover user-scoped service logic
 
+## Meal Planner (MLP)
+
+### ✅ Completed
+
+#### MLP-001 — Meal Library
+**Status:** Complete
+
+Create and manage reusable meals with:
+- Name
+- Category
+- Description
+- Ingredients
+- Quantities
+- Grocery categories
+
+---
+
+#### MLP-002 — Weekly Meal Planner
+**Status:** Complete
+
+Plan meals by day with:
+- Weekly calendar view
+- Previous/Next week navigation
+- Dinner Tonight support
+- Meal plan deletion
+
+---
+
+#### MLP-003 — Grocery List Generation
+**Status:** Complete
+
+Automatically create grocery items when meals are added to the weekly plan.
+
+---
+
+#### MLP-004 — Household Sharing
+**Status:** Complete
+
+Meal planning is shared across the household:
+- Meals
+- Meal Plans
+- Grocery Lists
+
+Uses household_id architecture.
+
+---
+
+#### MLP-005 — Grocery Consolidation
+**Status:** Complete
+
+Consolidate duplicate ingredients into a single grocery entry.
+
+Example:
+
+Ground Beef
+
+Used In:
+- Taco Night
+- Burger Night
+- Spaghetti Night
+
+---
+
+#### MLP-006 — Dashboard Dinner Widget
+**Status:** Complete
+
+Display tonight's planned dinner on the Family Command Center dashboard.
+
+---
+
+#### MLP-007 — Quick Add To Week
+**Status:** Complete
+
+Add meals directly from the Saved Meals section.
+
+Features:
+- One-click Add To Week button
+- Select date
+- Optional notes
+- Automatically generates grocery items
+- Eliminates need to use planner form
+
+---
+
+#### MLP-014 — Restaurant Nights
+**Status:** Complete
+
+Support planning nights out as part of the weekly meal schedule.
+
+Features:
+- Home meals
+- Restaurant nights
+- Dashboard support
+- Weekly planner support
+- Notes support
+- No grocery generation
+
+Examples:
+- Chick-fil-A
+- Pizza Pickup
+- Date Night
+- Leftovers / Fend For Yourself
+
+---
+
+### 🚧 Planned
+
+#### MLP-008 — Meal Templates
+**Status:** Planned
+
+Create reusable weekly meal schedules.
+
+Examples:
+- Taco Tuesday
+- Pizza Friday
+- Breakfast For Dinner
+- Slow Cooker Sunday
+
+One-click meal planning.
+
+---
+
+#### MLP-009 — Smart Grocery Categories
+**Status:** Planned
+
+Automatically categorize ingredients.
+
+Examples:
+- Ground Beef → Meat
+- Chicken Breast → Meat
+- Milk → Dairy
+- Cheese → Dairy
+- Lettuce → Produce
+- Tomatoes → Produce
+- Taco Shells → Pantry
+
+Reduces manual categorization effort.
+
+---
+
+#### MLP-015 — Grocery Cleanup
+**Status:** Planned
+
+Automatically remove generated grocery items when a meal plan is deleted.
+
+Goals:
+- Prevent orphaned grocery items
+- Keep grocery list synchronized
+- Preserve manually-added grocery items
+
+---
+
+#### MLP-016 — Dashboard Meal Summary
+**Status:** Planned
+
+Enhance Dashboard meal widget.
+
+Display:
+- Tonight's dinner
+- Grocery items remaining
+- Planned meals this week
+
+Compact dashboard-friendly format.
+
+---
+
+### 📋 Backlog
+
+#### MLP-010 — Drag & Drop Weekly Planner
+**Status:** Backlog
+
+Allow meals to be moved between days via drag-and-drop.
+
+Examples:
+- Move Taco Night from Tuesday to Thursday
+- Reorder meals across the week
+- Mobile-friendly touch support
+
+Priority: High
+Complexity: Medium
+
+---
+
+#### MLP-011 — Grocery Shopping Mode
+**Status:** Backlog
+
+Dedicated shopping experience.
+
+Features:
+- Category sections
+- Collapse completed items
+- Large touch-friendly checkboxes
+- Mobile optimized shopping view
+
+---
+
+#### MLP-012 — Pantry Awareness
+**Status:** Backlog
+
+Exclude ingredients already on hand.
+
+Examples:
+- Inventory integration
+- Shopping recommendations
+- Reorder suggestions
+- Low inventory alerts
+
+---
+
+#### MLP-013 — Meal History & Favorites
+**Status:** Backlog
+
+Track:
+- Most cooked meals
+- Favorite meals
+- Recently used meals
+- Last cooked date
+
+Provide recommendations based on usage.
+
+---
+
+#### MLP-017 — Restaurant Favorites
+**Status:** Backlog
+
+Maintain a household restaurant list.
+
+Features:
+- Favorite restaurants
+- Cuisine type
+- Notes
+- Kids eat free nights
+- Date night options
+
+Integrates with Restaurant Nights.
+
+---
+
+#### MLP-018 — Meal Budget Tracking
+**Status:** Backlog
+
+Track estimated meal costs.
+
+Features:
+- Cost per meal
+- Weekly meal budget
+- Restaurant spending
+- Grocery spending trends
+
+---
+
+#### MLP-019 — Leftovers Management
+**Status:** Backlog
+
+Support leftover planning.
+
+Examples:
+- Cook once, eat twice
+- Planned leftover nights
+- Reduced grocery generation
+- Waste reduction
+
+---
+
+#### MLP-020 — AI Meal Suggestions
+**Status:** Backlog
+
+Recommend meals based on:
+- Family favorites
+- Existing pantry inventory
+- Upcoming weather
+- Grocery list contents
+- Seasonal preferences
+
 ---
 
 ## HOME-001

@@ -5,6 +5,7 @@ import useFamilyMembers from "../hooks/useFamilyMembers"
 import useTrips from "../hooks/useTrips"
 import usePreferences from "../hooks/usePreferences"
 import useActivitySessions from "../hooks/useActivitySessions"
+import useMeals from "../hooks/useMeals"
 
 import { useNavigate } from "react-router-dom"
 import { completeTask, createTask } from "../services/taskService"
@@ -375,6 +376,8 @@ export default function Dashboard() {
         loading: activitySessionsLoading
     } = useActivitySessions()
 
+    const { dinnerTonight, loading: mealsLoading } = useMeals()
+
     const todayString = getTodayString()
     const dashboardWindowDays = Number(preferences?.dashboard_window_days || 7)
     const timelineDays = Number(preferences?.timeline_window_days || 90)
@@ -545,6 +548,31 @@ export default function Dashboard() {
                             <TodayEventRow key={item.id} item={item} />
                         ))}
                     </div>
+                )}
+            </HomeSection>
+
+            <HomeSection
+                eyebrow="Dinner"
+                title="Tonight's Dinner"
+            >
+                {mealsLoading ? (
+                    <EmptyState>Loading dinner...</EmptyState>
+                ) : dinnerTonight ? (
+                    <div className="home-check-list">
+                        <div className="home-check-row">
+                            <span className="home-check-circle" />
+
+                            <div>
+                                <strong>{dinnerTonight.meal_name}</strong>
+
+                                {dinnerTonight.notes && (
+                                    <p>{dinnerTonight.notes}</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <EmptyState>No dinner planned tonight.</EmptyState>
                 )}
             </HomeSection>
 
