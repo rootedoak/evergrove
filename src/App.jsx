@@ -13,7 +13,6 @@ import {
   Settings,
   ShoppingCart,
   User,
-  Users,
   UtensilsCrossed,
   X
 } from "lucide-react"
@@ -23,8 +22,8 @@ import { runFamilyAutomation } from "./utils/runFamilyAutomation"
 import usePreferences from "./hooks/usePreferences"
 
 import Login from "./pages/Login"
-import Dashboard from "./pages/Dashboard"
 import Family from "./pages/Family"
+import Dashboard from "./pages/Dashboard"
 import Activities from "./pages/Activities"
 import Tasks from "./pages/Tasks"
 import Reminders from "./pages/Reminders"
@@ -45,7 +44,6 @@ const navItems = [
   { to: "/tasks", icon: ClipboardList, label: "Tasks" },
   { to: "/meals", icon: UtensilsCrossed, label: "Meals" },
   { to: "/shopping", icon: ShoppingCart, label: "Shopping" },
-  { to: "/family", icon: Users, label: "Family" },
   { to: "/documents", icon: FolderOpen, label: "Documents" },
   { to: "/profile", icon: Settings, label: "Settings" }
 ]
@@ -134,7 +132,7 @@ function AppLayout() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/family" element={<Family />} />
+          <Route path="/settings/family" element={<Family />} />
           <Route path="/activities" element={<Activities />} />
           <Route path="/school" element={<SchoolHub />} />
           <Route path="/tasks" element={<Tasks />} />

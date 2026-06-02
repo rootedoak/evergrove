@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { supabase } from "../lib/supabase"
 import {
     getPreferences,
@@ -48,11 +49,12 @@ function PreferenceToggle({ label, checked, onChange }) {
     )
 }
 
-function SettingsSection({ title, subtitle, children }) {
+function SettingsSection({ title, scope, subtitle, children }) {
     return (
         <section className="settings-command-section">
             <div className="settings-section-header">
                 <div>
+                    <p className="card-kicker">{scope}</p>
                     <h3>{title}</h3>
                     {subtitle && <p>{subtitle}</p>}
                 </div>
@@ -66,6 +68,7 @@ function SettingsSection({ title, subtitle, children }) {
 }
 
 export default function Profile() {
+    const navigate = useNavigate()
     const [user, setUser] = useState(null)
     const [preferences, setPreferences] = useState(initialPreferences)
     const [loading, setLoading] = useState(true)
@@ -86,7 +89,11 @@ export default function Profile() {
                     ...initialPreferences,
                     ...savedPreferences,
                     dashboard_window_days: String(savedPreferences.dashboard_window_days ?? 7),
-                    timeline_window_days: String(savedPreferences.timeline_window_days ?? 90)
+                    timeline_window_days: String(savedPreferences.timeline_window_days ?? 90),
+                    shopping_category_order:
+                        savedPreferences.shopping_category_order?.length
+                            ? savedPreferences.shopping_category_order
+                            : defaultShoppingCategoryOrder
                 })
             } catch (error) {
                 console.error(error)
@@ -171,12 +178,20 @@ export default function Profile() {
                 shopping_category_order: preferences.shopping_category_order
             })
 
-            setPreferences({
-                ...initialPreferences,
+            setPreferences(current => ({
+                ...current,
                 ...savedPreferences,
-                dashboard_window_days: String(savedPreferences.dashboard_window_days ?? 7),
-                timeline_window_days: String(savedPreferences.timeline_window_days ?? 90)
-            })
+                dashboard_window_days: String(
+                    savedPreferences.dashboard_window_days ??
+                    current.dashboard_window_days ??
+                    7
+                ),
+                timeline_window_days: String(
+                    savedPreferences.timeline_window_days ??
+                    current.timeline_window_days ??
+                    90
+                )
+            }))
 
             alert("Preferences saved.")
         } catch (error) {
@@ -199,10 +214,10 @@ export default function Profile() {
             <header className="calendar-header settings-command-header">
                 <div>
                     <p className="dashboard-household-name">Settings</p>
-                    <h2>Household Settings</h2>
+                    <h2>Settings Hub</h2>
 
                     <p className="settings-header-summary">
-                        Manage account, household, dashboard, calendar, and reminder preferences.
+                        Manage shared household settings and your personal Evergrove preferences.
                     </p>
                 </div>
 
@@ -217,8 +232,11 @@ export default function Profile() {
 
             <section className="card settings-account-card">
                 <div>
-                    <p className="card-kicker">Account</p>
+                    <p className="card-kicker">Personal user setting</p>
                     <h3>{user?.email || "Loading account..."}</h3>
+                    <p>
+                        Account access and sign-in are specific to you.
+                    </p>
                 </div>
 
                 <p>
@@ -233,8 +251,9 @@ export default function Profile() {
             ) : (
                 <form className="card settings-command-card" onSubmit={handleSavePreferences}>
                     <SettingsSection
-                        title="Household"
-                        subtitle="The name and local timezone used across Evergrove."
+                        title="Household Settings"
+                        scope="Shared household setting"
+                        subtitle="These settings are shared by everyone connected to this household."
                     >
                         <div className="form-grid">
                             <label>
@@ -262,12 +281,88 @@ export default function Profile() {
                                     <option value="America/Los_Angeles">Pacific Time</option>
                                 </select>
                             </label>
+
+                            <label>
+                                Week Starts On
+                                <select
+                                    value={preferences.week_starts_on}
+                                    onChange={event =>
+                                        updatePreference("week_starts_on", event.target.value)
+                                    }
+                                >
+                                    <option value="Sunday">Sunday</option>
+                                    <option value="Monday">Monday</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div className="settings-save-row">
+                            <button
+                                type="button"
+                                className="secondary-button"
+                                onClick={() => navigate("/settings/family")}
+                            >
+                                Manage Family Members
+                            </button>
                         </div>
                     </SettingsSection>
 
                     <SettingsSection
-                        title="Dashboard"
-                        subtitle="Control what appears on the Family Command Center."
+                        title="Shopping Categories"
+                        scope="Shared household setting"
+                        subtitle="This category order is shared across household shopping lists."
+                    >
+                        <div className="settings-category-list">
+                            {preferences.shopping_category_order.map((category, index) => (
+                                <div key={category} className="settings-category-row">
+                                    <span>{category}</span>
+
+                                    <div className="button-row">
+                                        <button
+                                            className="secondary-button"
+                                            type="button"
+                                            onClick={() => moveShoppingCategory(index, -1)}
+                                            disabled={index === 0}
+                                        >
+                                            Up
+                                        </button>
+
+                                        <button
+                                            className="secondary-button"
+                                            type="button"
+                                            onClick={() => moveShoppingCategory(index, 1)}
+                                            disabled={
+                                                index === preferences.shopping_category_order.length - 1
+                                            }
+                                        >
+                                            Down
+                                        </button>
+
+                                        <button
+                                            className="danger-button"
+                                            type="button"
+                                            onClick={() => removeShoppingCategory(category)}
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={addShoppingCategory}
+                        >
+                            Add Category
+                        </button>
+                    </SettingsSection>
+
+                    <SettingsSection
+                        title="Personal Dashboard"
+                        scope="Personal user setting"
+                        subtitle="These settings only affect your own dashboard view."
                     >
                         <div className="form-grid">
                             <label>
@@ -333,77 +428,9 @@ export default function Profile() {
                     </SettingsSection>
 
                     <SettingsSection
-                        title="Calendar"
-                        subtitle="Choose how the family calendar is displayed."
-                    >
-                        <div className="form-grid">
-                            <label>
-                                Week Starts On
-                                <select
-                                    value={preferences.week_starts_on}
-                                    onChange={event =>
-                                        updatePreference("week_starts_on", event.target.value)
-                                    }
-                                >
-                                    <option value="Sunday">Sunday</option>
-                                    <option value="Monday">Monday</option>
-                                </select>
-                            </label>
-                        </div>
-                    </SettingsSection>
-
-                    <SettingsSection
-                        title="Shopping Categories"
-                        subtitle="Set the order categories appear in shopping lists. Match this to the store layout you usually shop."
-                    >
-                        <div className="settings-category-list">
-                            {preferences.shopping_category_order.map((category, index) => (
-                                <div key={category} className="settings-category-row">
-                                    <span>{category}</span>
-
-                                    <div className="button-row">
-                                        <button
-                                            className="secondary-button"
-                                            type="button"
-                                            onClick={() => moveShoppingCategory(index, -1)}
-                                            disabled={index === 0}
-                                        >
-                                            Up
-                                        </button>
-
-                                        <button
-                                            className="secondary-button"
-                                            type="button"
-                                            onClick={() => moveShoppingCategory(index, 1)}
-                                            disabled={index === preferences.shopping_category_order.length - 1}
-                                        >
-                                            Down
-                                        </button>
-
-                                        <button
-                                            className="danger-button"
-                                            type="button"
-                                            onClick={() => removeShoppingCategory(category)}
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <button
-                            className="secondary-button"
-                            type="button"
-                            onClick={addShoppingCategory}
-                        >
-                            Add Category
-                        </button>
-                    </SettingsSection>
-
-                    <SettingsSection
-                        title="Reminders"
-                        subtitle="Choose which reminder types Evergrove should surface."
+                        title="Personal Reminders"
+                        scope="Personal user setting"
+                        subtitle="These reminder preferences only affect your account."
                     >
                         <div className="settings-toggle-grid">
                             <PreferenceToggle
