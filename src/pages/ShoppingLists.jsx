@@ -22,6 +22,7 @@ export default function ShoppingLists() {
     const [error, setError] = useState("")
     const [selectedListId, setSelectedListId] = useState("")
     const [newListTitle, setNewListTitle] = useState("")
+    const [shoppingMode, setShoppingMode] = useState(false)
     const [itemForm, setItemForm] = useState({
         name: "",
         quantity: "",
@@ -52,37 +53,66 @@ export default function ShoppingLists() {
         loadData()
     }, [])
 
+    const sortedShoppingLists = useMemo(() => {
+        return [...shoppingLists].sort((a, b) => {
+            if (a.status !== b.status) {
+                return a.status === "active" ? -1 : 1
+            }
+
+            return new Date(b.created_at || 0) - new Date(a.created_at || 0)
+        })
+    }, [shoppingLists])
+
     const selectedList = useMemo(() => {
         return shoppingLists.find(list => list.id === selectedListId)
     }, [shoppingLists, selectedListId])
 
+    const selectedItems = selectedList?.shopping_list_items || []
+
+    const openItemCount = selectedItems.filter(item => !item.checked).length
+    const completedItemCount = selectedItems.filter(item => item.checked).length
+    const totalItemCount = openItemCount + completedItemCount
+
+    const completionPercentage =
+        totalItemCount === 0
+            ? 0
+            : Math.round((completedItemCount / totalItemCount) * 100)
+
     const itemsByCategory = useMemo(() => {
         const groups = {}
 
-            ; (selectedList?.shopping_list_items || []).forEach(item => {
-                const category = item.category?.trim() || "Uncategorized"
+        selectedItems.forEach(item => {
+            const category = item.category?.trim() || "Uncategorized"
 
-                if (!groups[category]) {
-                    groups[category] = []
-                }
+            if (!groups[category]) {
+                groups[category] = []
+            }
 
-                groups[category].push(item)
-            })
+            groups[category].push(item)
+        })
 
         return Object.entries(groups).sort(([categoryA], [categoryB]) => {
             if (categoryA === "Uncategorized") return 1
             if (categoryB === "Uncategorized") return -1
             return categoryA.localeCompare(categoryB)
         })
-    }, [selectedList])
+    }, [selectedItems])
 
-    const openItemCount = (selectedList?.shopping_list_items || []).filter(
-        item => !item.checked
-    ).length
+    function getListStats(list) {
+        const items = list.shopping_list_items || []
+        const remaining = items.filter(item => !item.checked).length
+        const completed = items.filter(item => item.checked).length
+        const total = remaining + completed
+        const percent =
+            total === 0 ? 0 : Math.round((completed / total) * 100)
 
-    const completedItemCount = (selectedList?.shopping_list_items || []).filter(
-        item => item.checked
-    ).length
+        return {
+            remaining,
+            completed,
+            total,
+            percent
+        }
+    }
 
     async function handleCreateList(event) {
         event.preventDefault()
@@ -120,6 +150,24 @@ export default function ShoppingLists() {
         await loadData()
     }
 
+    async function handleArchiveSelectedList() {
+        if (!selectedList?.id) return
+
+        await archiveShoppingList(selectedList.id)
+        setShoppingMode(false)
+        await loadData()
+    }
+
+    async function handleDeleteSelectedList() {
+        if (!selectedList?.id) return
+        if (!window.confirm("Delete this shopping list?")) return
+
+        await deleteShoppingList(selectedList.id)
+        setSelectedListId("")
+        setShoppingMode(false)
+        await loadData()
+    }
+
     if (loading) {
         return <p className="muted-text">Loading shopping lists...</p>
     }
@@ -147,10 +195,29 @@ export default function ShoppingLists() {
                     <div>
                         <p className="eyebrow">Selected List</p>
                         <h3>{selectedList?.title || "No shopping list yet"}</h3>
-                        <p className="muted-text">
-                            {openItemCount} remaining
-                            {selectedList ? ` • ${completedItemCount} completed` : ""}
-                        </p>
+
+                        {selectedList ? (
+                            <div>
+                                <p className="muted-text">
+                                    {openItemCount} remaining • {completedItemCount} completed
+                                </p>
+
+                                <div className="shopping-progress-bar">
+                                    <div
+                                        className="shopping-progress-fill"
+                                        style={{ width: `${completionPercentage}%` }}
+                                    />
+                                </div>
+
+                                <p className="muted-text">
+                                    {completionPercentage}% complete
+                                </p>
+                            </div>
+                        ) : (
+                            <p className="muted-text">
+                                Create or select a shopping list.
+                            </p>
+                        )}
                     </div>
                 </section>
 
@@ -165,111 +232,132 @@ export default function ShoppingLists() {
                 </section>
             </div>
 
-            <section className="panel">
-                <div className="section-heading">
-                    <div>
-                        <h3>Create Shopping List</h3>
-                        <p>Start a new household shopping list.</p>
+            {!shoppingMode && (
+                <section className="panel">
+                    <div className="section-heading">
+                        <div>
+                            <h3>Create Shopping List</h3>
+                            <p>Start a new household shopping list.</p>
+                        </div>
+                        <ShoppingCart size={20} />
                     </div>
-                    <ShoppingCart size={20} />
-                </div>
 
-                <form onSubmit={handleCreateList} className="form-stack">
-                    <div className="two-column-form">
-                        <input
-                            className="form-input"
-                            value={newListTitle}
-                            onChange={event => setNewListTitle(event.target.value)}
-                            placeholder="Example: Weekly Groceries"
-                        />
+                    <form onSubmit={handleCreateList} className="form-stack">
+                        <div className="two-column-form">
+                            <input
+                                className="form-input"
+                                value={newListTitle}
+                                onChange={event => setNewListTitle(event.target.value)}
+                                placeholder="Example: Weekly Groceries"
+                            />
 
-                        <button className="primary-button" type="submit">
-                            <Plus size={16} />
-                            Create List
-                        </button>
-                    </div>
-                </form>
-            </section>
+                            <button className="primary-button" type="submit">
+                                <Plus size={16} />
+                                Create List
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            )}
 
             {shoppingLists.length > 0 ? (
                 <section className="panel">
                     <div className="section-heading">
                         <div>
-                            <h3>Shopping Lists</h3>
-                            <p>Select a list on the left, then manage its items on the right.</p>
+                            <h3>{shoppingMode ? "Shopping Mode" : "Shopping Lists"}</h3>
+                            <p>
+                                {shoppingMode
+                                    ? "Tap items as you shop."
+                                    : "Select a list on the left, then manage its items on the right."}
+                            </p>
                         </div>
 
                         <div className="button-row">
                             <button
-                                className="secondary-button"
+                                className={shoppingMode ? "primary-button" : "secondary-button"}
                                 type="button"
-                                onClick={async () => {
-                                    if (!selectedList?.id) return
-                                    await archiveShoppingList(selectedList.id)
-                                    await loadData()
-                                }}
+                                onClick={() => setShoppingMode(!shoppingMode)}
+                                disabled={!selectedList}
                             >
-                                <Archive size={16} />
-                                Archive
+                                Shopping Mode
                             </button>
 
-                            <button
-                                className="secondary-button"
-                                type="button"
-                                onClick={async () => {
-                                    if (!selectedList?.id) return
-                                    if (!window.confirm("Delete this shopping list?")) return
-                                    await deleteShoppingList(selectedList.id)
-                                    setSelectedListId("")
-                                    await loadData()
-                                }}
-                            >
-                                <Trash2 size={16} />
-                                Delete
-                            </button>
+                            {!shoppingMode && (
+                                <>
+                                    <button
+                                        className="secondary-button"
+                                        type="button"
+                                        onClick={handleArchiveSelectedList}
+                                        disabled={!selectedList}
+                                    >
+                                        <Archive size={16} />
+                                        Archive
+                                    </button>
+
+                                    <button
+                                        className="secondary-button"
+                                        type="button"
+                                        onClick={handleDeleteSelectedList}
+                                        disabled={!selectedList}
+                                    >
+                                        <Trash2 size={16} />
+                                        Delete
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
 
-                    <div className="shopping-master-detail">
-                        <div className="shopping-list-sidebar">
-                            {shoppingLists.map(list => {
-                                const remainingCount = (list.shopping_list_items || []).filter(
-                                    item => !item.checked
-                                ).length
+                    <div className={shoppingMode ? "shopping-mode-layout" : "shopping-master-detail"}>
+                        {!shoppingMode && (
+                            <div className="shopping-list-sidebar">
+                                {sortedShoppingLists.map(list => {
+                                    const stats = getListStats(list)
+                                    const isSelected = list.id === selectedListId
 
-                                const completedCount = (list.shopping_list_items || []).filter(
-                                    item => item.checked
-                                ).length
+                                    return (
+                                        <button
+                                            key={list.id}
+                                            type="button"
+                                            onClick={() => setSelectedListId(list.id)}
+                                            className={
+                                                isSelected
+                                                    ? "shopping-list-card selected"
+                                                    : "shopping-list-card"
+                                            }
+                                        >
+                                            <div>
+                                                <p className="row-title">{list.title}</p>
 
-                                const isSelected = list.id === selectedListId
+                                                <p className="row-subtitle">
+                                                    {stats.remaining} remaining
+                                                    {stats.completed > 0
+                                                        ? ` • ${stats.completed} done`
+                                                        : ""}
+                                                </p>
 
-                                return (
-                                    <button
-                                        key={list.id}
-                                        type="button"
-                                        onClick={() => setSelectedListId(list.id)}
-                                        className={isSelected ? "shopping-list-card selected" : "shopping-list-card"}
-                                    >
-                                        <div>
-                                            <p className="row-title">
-                                                {list.title}
-                                            </p>
+                                                <div className="shopping-progress-bar">
+                                                    <div
+                                                        className="shopping-progress-fill"
+                                                        style={{ width: `${stats.percent}%` }}
+                                                    />
+                                                </div>
 
-                                            <p className="row-subtitle">
-                                                {remainingCount} remaining
-                                                {completedCount > 0 ? ` • ${completedCount} done` : ""}
-                                            </p>
+                                                <p className="muted-text">
+                                                    {stats.percent}% complete
+                                                </p>
 
-                                            {list.status === "archived" && (
-                                                <span className="shopping-list-status">
-                                                    Archived
-                                                </span>
-                                            )}
-                                        </div>
-                                    </button>
-                                )
-                            })}
-                        </div>
+                                                {list.status === "archived" && (
+                                                    <span className="shopping-list-status">
+                                                        Archived
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        )}
 
                         <div className="shopping-list-detail">
                             {selectedList ? (
@@ -278,47 +366,73 @@ export default function ShoppingLists() {
                                         <div>
                                             <p className="eyebrow">Current List</p>
                                             <h3>{selectedList.title}</h3>
+
                                             <p className="muted-text">
                                                 {openItemCount} remaining • {completedItemCount} completed
+                                            </p>
+
+                                            <div className="shopping-progress-bar">
+                                                <div
+                                                    className="shopping-progress-fill"
+                                                    style={{ width: `${completionPercentage}%` }}
+                                                />
+                                            </div>
+
+                                            <p className="muted-text">
+                                                {completionPercentage}% complete
                                             </p>
                                         </div>
                                     </div>
 
-                                    <form onSubmit={handleCreateItem} className="form-stack shopping-item-form">
-                                        <div className="three-column-form">
-                                            <input
-                                                className="form-input"
-                                                value={itemForm.name}
-                                                onChange={event =>
-                                                    setItemForm({ ...itemForm, name: event.target.value })
-                                                }
-                                                placeholder="Item"
-                                            />
+                                    {!shoppingMode && (
+                                        <form
+                                            onSubmit={handleCreateItem}
+                                            className="form-stack shopping-item-form"
+                                        >
+                                            <div className="three-column-form">
+                                                <input
+                                                    className="form-input"
+                                                    value={itemForm.name}
+                                                    onChange={event =>
+                                                        setItemForm({
+                                                            ...itemForm,
+                                                            name: event.target.value
+                                                        })
+                                                    }
+                                                    placeholder="Item"
+                                                />
 
-                                            <input
-                                                className="form-input"
-                                                value={itemForm.quantity}
-                                                onChange={event =>
-                                                    setItemForm({ ...itemForm, quantity: event.target.value })
-                                                }
-                                                placeholder="Quantity"
-                                            />
+                                                <input
+                                                    className="form-input"
+                                                    value={itemForm.quantity}
+                                                    onChange={event =>
+                                                        setItemForm({
+                                                            ...itemForm,
+                                                            quantity: event.target.value
+                                                        })
+                                                    }
+                                                    placeholder="Quantity"
+                                                />
 
-                                            <input
-                                                className="form-input"
-                                                value={itemForm.category}
-                                                onChange={event =>
-                                                    setItemForm({ ...itemForm, category: event.target.value })
-                                                }
-                                                placeholder="Category"
-                                            />
-                                        </div>
+                                                <input
+                                                    className="form-input"
+                                                    value={itemForm.category}
+                                                    onChange={event =>
+                                                        setItemForm({
+                                                            ...itemForm,
+                                                            category: event.target.value
+                                                        })
+                                                    }
+                                                    placeholder="Category"
+                                                />
+                                            </div>
 
-                                        <button className="secondary-button" type="submit">
-                                            <Plus size={16} />
-                                            Add Item
-                                        </button>
-                                    </form>
+                                            <button className="secondary-button" type="submit">
+                                                <Plus size={16} />
+                                                Add Item
+                                            </button>
+                                        </form>
+                                    )}
 
                                     <div className="list-stack grocery-list-stack">
                                         {itemsByCategory.length === 0 ? (
@@ -327,21 +441,39 @@ export default function ShoppingLists() {
                                             </p>
                                         ) : (
                                             itemsByCategory.map(([category, items]) => (
-                                                <div key={category} className="grocery-category-group">
+                                                <div
+                                                    key={category}
+                                                    className="grocery-category-group"
+                                                >
                                                     <div className="grocery-category-header">
                                                         <h4>{category}</h4>
                                                         <span>
-                                                            {items.length} item{items.length === 1 ? "" : "s"}
+                                                            {items.length} item
+                                                            {items.length === 1 ? "" : "s"}
                                                         </span>
                                                     </div>
 
                                                     {items.map(item => (
-                                                        <div key={item.id} className="list-row consolidated-grocery-row">
+                                                        <div
+                                                            key={item.id}
+                                                            className={
+                                                                shoppingMode
+                                                                    ? "list-row consolidated-grocery-row shopping-mode-item"
+                                                                    : "list-row consolidated-grocery-row"
+                                                            }
+                                                        >
                                                             <button
-                                                                className={item.checked ? "check-button checked" : "check-button"}
+                                                                className={
+                                                                    item.checked
+                                                                        ? "check-button checked"
+                                                                        : "check-button"
+                                                                }
                                                                 type="button"
                                                                 onClick={async () => {
-                                                                    await toggleShoppingListItem(item.id, !item.checked)
+                                                                    await toggleShoppingListItem(
+                                                                        item.id,
+                                                                        !item.checked
+                                                                    )
                                                                     await loadData()
                                                                 }}
                                                             >
@@ -349,22 +481,32 @@ export default function ShoppingLists() {
                                                             </button>
 
                                                             <div className="row-grow">
-                                                                <p className={item.checked ? "row-title completed" : "row-title"}>
-                                                                    {item.quantity ? `${item.quantity} ` : ""}
+                                                                <p
+                                                                    className={
+                                                                        item.checked
+                                                                            ? "row-title completed"
+                                                                            : "row-title"
+                                                                    }
+                                                                >
+                                                                    {item.quantity
+                                                                        ? `${item.quantity} `
+                                                                        : ""}
                                                                     {item.name}
                                                                 </p>
                                                             </div>
 
-                                                            <button
-                                                                className="icon-danger-button"
-                                                                type="button"
-                                                                onClick={async () => {
-                                                                    await deleteShoppingListItem(item.id)
-                                                                    await loadData()
-                                                                }}
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </button>
+                                                            {!shoppingMode && (
+                                                                <button
+                                                                    className="icon-danger-button"
+                                                                    type="button"
+                                                                    onClick={async () => {
+                                                                        await deleteShoppingListItem(item.id)
+                                                                        await loadData()
+                                                                    }}
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>

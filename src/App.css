@@ -3579,3 +3579,35 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+.shopping-progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.shopping-progress-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.25s ease;
+}
+
+.shopping-mode-layout {
+  display: block;
+}
+
+.shopping-mode-item {
+  min-height: 72px;
+  padding: 0.75rem;
+}
+
+.shopping-mode-item .check-button {
+  width: 36px;
+  height: 36px;
+}
+
+.shopping-mode-item .row-title {
+  font-size: 1rem;
+}
