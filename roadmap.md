@@ -900,6 +900,21 @@ Recommend meals based on:
 
 ---
 
+#### MLP-021 — Random Weekly Meal Generator
+**Status:** Planned
+
+Generate a week of meals using the saved meal library.
+
+Features:
+- Randomly fill empty days in the current week
+- Use only saved home meals
+- Avoid duplicate meals when possible
+- Generate grocery items automatically
+- Skip days that already have a meal planned
+- Leave restaurant nights untouched
+
+---
+
 ## HOME-001
 Quick Add Modals  
 Status: Backlog

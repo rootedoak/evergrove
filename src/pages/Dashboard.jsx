@@ -333,7 +333,15 @@ function TaskRow({ task, onComplete }) {
             />
 
             <div>
-                <strong>{task.title}</strong>
+                <strong>
+                    {task.visibility === "private" && (
+                        <span className="home-private-lock" title="Private task">
+                            🔒
+                        </span>
+                    )}
+
+                    {task.title}
+                </strong>
 
                 <p>
                     {task.family_members?.name || "Task"}
