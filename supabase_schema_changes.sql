@@ -923,3 +923,92 @@ create policy "Users can delete their own trip plans"
 on trip_plans
 for delete
 using (auth.uid() = user_id);
+
+-- USE HOUSEHOLD IDS AND NOT USER ID
+
+drop policy if exists "Users can view own preferences" on user_preferences;
+drop policy if exists "Users can insert own preferences" on user_preferences;
+drop policy if exists "Users can update own preferences" on user_preferences;
+drop policy if exists "Users can delete own preferences" on user_preferences;
+
+create policy "Household members can view preferences"
+on user_preferences
+for select
+using (
+  household_id in (
+    select household_id
+    from household_members
+    where user_id = auth.uid()
+  )
+);
+
+create policy "Household members can insert preferences"
+on user_preferences
+for insert
+with check (
+  household_id in (
+    select household_id
+    from household_members
+    where user_id = auth.uid()
+  )
+);
+
+create policy "Household members can update preferences"
+on user_preferences
+for update
+using (
+  household_id in (
+    select household_id
+    from household_members
+    where user_id = auth.uid()
+  )
+)
+with check (
+  household_id in (
+    select household_id
+    from household_members
+    where user_id = auth.uid()
+  )
+);
+
+-- CREATE USER DISPLAY PREFERENCES (user_preferences is now household preferences)
+
+create table if not exists user_display_preferences (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references auth.users(id) on delete cascade,
+    dashboard_window_days integer default 7,
+    timeline_window_days integer default 90,
+    birthday_reminders boolean default true,
+    trip_reminders boolean default true,
+    activity_reminders boolean default true,
+    school_reminders boolean default true,
+    task_reminders boolean default true,
+    show_birthdays boolean default true,
+    show_trips boolean default true,
+    show_school_items boolean default true,
+    show_activity_sessions boolean default true,
+    show_suggested_tasks boolean default true,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
+create unique index if not exists user_display_preferences_user_id_key
+on user_display_preferences(user_id);
+
+alter table user_display_preferences enable row level security;
+
+create policy "Users can view own display preferences"
+on user_display_preferences
+for select
+using (user_id = auth.uid());
+
+create policy "Users can insert own display preferences"
+on user_display_preferences
+for insert
+with check (user_id = auth.uid());
+
+create policy "Users can update own display preferences"
+on user_display_preferences
+for update
+using (user_id = auth.uid())
+with check (user_id = auth.uid());
