@@ -80,6 +80,10 @@ export default function ShoppingLists() {
         item => !item.checked
     ).length
 
+    const completedItemCount = (selectedList?.shopping_list_items || []).filter(
+        item => item.checked
+    ).length
+
     async function handleCreateList(event) {
         event.preventDefault()
 
@@ -141,10 +145,11 @@ export default function ShoppingLists() {
                     </div>
 
                     <div>
-                        <p className="eyebrow">Active List</p>
+                        <p className="eyebrow">Selected List</p>
                         <h3>{selectedList?.title || "No shopping list yet"}</h3>
                         <p className="muted-text">
-                            {openItemCount} item{openItemCount === 1 ? "" : "s"} remaining
+                            {openItemCount} remaining
+                            {selectedList ? ` • ${completedItemCount} completed` : ""}
                         </p>
                     </div>
                 </section>
@@ -186,12 +191,12 @@ export default function ShoppingLists() {
                 </form>
             </section>
 
-            {shoppingLists.length > 0 && (
+            {shoppingLists.length > 0 ? (
                 <section className="panel">
                     <div className="section-heading">
                         <div>
-                            <h3>Current List</h3>
-                            <p>Select a list and check items off as you shop.</p>
+                            <h3>Shopping Lists</h3>
+                            <p>Select a list on the left, then manage its items on the right.</p>
                         </div>
 
                         <div className="button-row">
@@ -225,99 +230,161 @@ export default function ShoppingLists() {
                         </div>
                     </div>
 
-                    <select
-                        className="form-input"
-                        value={selectedListId}
-                        onChange={event => setSelectedListId(event.target.value)}
-                    >
-                        {shoppingLists.map(list => (
-                            <option key={list.id} value={list.id}>
-                                {list.title} {list.status === "archived" ? "(Archived)" : ""}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="shopping-master-detail">
+                        <div className="shopping-list-sidebar">
+                            {shoppingLists.map(list => {
+                                const remainingCount = (list.shopping_list_items || []).filter(
+                                    item => !item.checked
+                                ).length
 
-                    <form onSubmit={handleCreateItem} className="form-stack shopping-item-form">
-                        <div className="three-column-form">
-                            <input
-                                className="form-input"
-                                value={itemForm.name}
-                                onChange={event =>
-                                    setItemForm({ ...itemForm, name: event.target.value })
-                                }
-                                placeholder="Item"
-                            />
+                                const completedCount = (list.shopping_list_items || []).filter(
+                                    item => item.checked
+                                ).length
 
-                            <input
-                                className="form-input"
-                                value={itemForm.quantity}
-                                onChange={event =>
-                                    setItemForm({ ...itemForm, quantity: event.target.value })
-                                }
-                                placeholder="Quantity"
-                            />
+                                const isSelected = list.id === selectedListId
 
-                            <input
-                                className="form-input"
-                                value={itemForm.category}
-                                onChange={event =>
-                                    setItemForm({ ...itemForm, category: event.target.value })
-                                }
-                                placeholder="Category"
-                            />
+                                return (
+                                    <button
+                                        key={list.id}
+                                        type="button"
+                                        onClick={() => setSelectedListId(list.id)}
+                                        className={isSelected ? "shopping-list-card selected" : "shopping-list-card"}
+                                    >
+                                        <div>
+                                            <p className="row-title">
+                                                {list.title}
+                                            </p>
+
+                                            <p className="row-subtitle">
+                                                {remainingCount} remaining
+                                                {completedCount > 0 ? ` • ${completedCount} done` : ""}
+                                            </p>
+
+                                            {list.status === "archived" && (
+                                                <span className="shopping-list-status">
+                                                    Archived
+                                                </span>
+                                            )}
+                                        </div>
+                                    </button>
+                                )
+                            })}
                         </div>
 
-                        <button className="secondary-button" type="submit">
-                            <Plus size={16} />
-                            Add Item
-                        </button>
-                    </form>
-
-                    <div className="list-stack grocery-list-stack">
-                        {itemsByCategory.map(([category, items]) => (
-                            <div key={category} className="grocery-category-group">
-                                <div className="grocery-category-header">
-                                    <h4>{category}</h4>
-                                    <span>
-                                        {items.length} item{items.length === 1 ? "" : "s"}
-                                    </span>
-                                </div>
-
-                                {items.map(item => (
-                                    <div key={item.id} className="list-row consolidated-grocery-row">
-                                        <button
-                                            className={item.checked ? "check-button checked" : "check-button"}
-                                            type="button"
-                                            onClick={async () => {
-                                                await toggleShoppingListItem(item.id, !item.checked)
-                                                await loadData()
-                                            }}
-                                        >
-                                            {item.checked && <Check size={14} />}
-                                        </button>
-
-                                        <div className="row-grow">
-                                            <p className={item.checked ? "row-title completed" : "row-title"}>
-                                                {item.quantity ? `${item.quantity} ` : ""}
-                                                {item.name}
+                        <div className="shopping-list-detail">
+                            {selectedList ? (
+                                <>
+                                    <div className="shopping-detail-header">
+                                        <div>
+                                            <p className="eyebrow">Current List</p>
+                                            <h3>{selectedList.title}</h3>
+                                            <p className="muted-text">
+                                                {openItemCount} remaining • {completedItemCount} completed
                                             </p>
                                         </div>
-
-                                        <button
-                                            className="icon-danger-button"
-                                            type="button"
-                                            onClick={async () => {
-                                                await deleteShoppingListItem(item.id)
-                                                await loadData()
-                                            }}
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
                                     </div>
-                                ))}
-                            </div>
-                        ))}
+
+                                    <form onSubmit={handleCreateItem} className="form-stack shopping-item-form">
+                                        <div className="three-column-form">
+                                            <input
+                                                className="form-input"
+                                                value={itemForm.name}
+                                                onChange={event =>
+                                                    setItemForm({ ...itemForm, name: event.target.value })
+                                                }
+                                                placeholder="Item"
+                                            />
+
+                                            <input
+                                                className="form-input"
+                                                value={itemForm.quantity}
+                                                onChange={event =>
+                                                    setItemForm({ ...itemForm, quantity: event.target.value })
+                                                }
+                                                placeholder="Quantity"
+                                            />
+
+                                            <input
+                                                className="form-input"
+                                                value={itemForm.category}
+                                                onChange={event =>
+                                                    setItemForm({ ...itemForm, category: event.target.value })
+                                                }
+                                                placeholder="Category"
+                                            />
+                                        </div>
+
+                                        <button className="secondary-button" type="submit">
+                                            <Plus size={16} />
+                                            Add Item
+                                        </button>
+                                    </form>
+
+                                    <div className="list-stack grocery-list-stack">
+                                        {itemsByCategory.length === 0 ? (
+                                            <p className="muted-text">
+                                                No items on this list yet.
+                                            </p>
+                                        ) : (
+                                            itemsByCategory.map(([category, items]) => (
+                                                <div key={category} className="grocery-category-group">
+                                                    <div className="grocery-category-header">
+                                                        <h4>{category}</h4>
+                                                        <span>
+                                                            {items.length} item{items.length === 1 ? "" : "s"}
+                                                        </span>
+                                                    </div>
+
+                                                    {items.map(item => (
+                                                        <div key={item.id} className="list-row consolidated-grocery-row">
+                                                            <button
+                                                                className={item.checked ? "check-button checked" : "check-button"}
+                                                                type="button"
+                                                                onClick={async () => {
+                                                                    await toggleShoppingListItem(item.id, !item.checked)
+                                                                    await loadData()
+                                                                }}
+                                                            >
+                                                                {item.checked && <Check size={14} />}
+                                                            </button>
+
+                                                            <div className="row-grow">
+                                                                <p className={item.checked ? "row-title completed" : "row-title"}>
+                                                                    {item.quantity ? `${item.quantity} ` : ""}
+                                                                    {item.name}
+                                                                </p>
+                                                            </div>
+
+                                                            <button
+                                                                className="icon-danger-button"
+                                                                type="button"
+                                                                onClick={async () => {
+                                                                    await deleteShoppingListItem(item.id)
+                                                                    await loadData()
+                                                                }}
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="muted-text">
+                                    Select a shopping list to view details.
+                                </p>
+                            )}
+                        </div>
                     </div>
+                </section>
+            ) : (
+                <section className="panel">
+                    <p className="muted-text">
+                        No shopping lists yet. Create one above or generate one from the Meals page.
+                    </p>
                 </section>
             )}
         </div>

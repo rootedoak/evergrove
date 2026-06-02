@@ -3511,3 +3511,71 @@ a {
   font-size: 0.8rem;
   vertical-align: middle;
 }
+
+.shopping-master-detail {
+  display: grid;
+  grid-template-columns: 18rem 1fr;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.shopping-list-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.shopping-list-card {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 1rem;
+  padding: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.shopping-list-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.shopping-list-card.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.shopping-list-status {
+  display: inline-flex;
+  margin-top: 0.5rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+  background: var(--panel-soft);
+  color: var(--muted-strong);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.shopping-list-detail {
+  min-width: 0;
+}
+
+.shopping-detail-header {
+  margin-bottom: 1rem;
+}
+
+.shopping-detail-header h3 {
+  color: var(--text);
+  margin: 0.15rem 0;
+}
+
+.shopping-item-form {
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 900px) {
+  .shopping-master-detail {
+    grid-template-columns: 1fr;
+  }
+}
