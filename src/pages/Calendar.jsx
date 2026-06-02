@@ -11,6 +11,7 @@ import useCalendarEvents from "../hooks/useCalendarEvents"
 
 import {
     createCalendarEvent,
+    updateCalendarEvent,
     deleteCalendarEvent
 } from "../services/calendarEventService"
 
@@ -396,6 +397,7 @@ export default function Calendar() {
 
     const [showCalendarEventForm, setShowCalendarEventForm] = useState(false)
     const [savingCalendarEvent, setSavingCalendarEvent] = useState(false)
+    const [editingCalendarEventId, setEditingCalendarEventId] = useState(null)
 
     const [calendarEventForm, setCalendarEventForm] = useState({
         title: "",
@@ -540,6 +542,7 @@ export default function Calendar() {
             )
 
             if (existingEvent) {
+                setEditingCalendarEventId(existingEvent.id)
                 setCalendarEventForm({
                     title: existingEvent.title || "",
                     event_type: existingEvent.event_type || "Important Date",
@@ -568,6 +571,8 @@ export default function Calendar() {
     }
 
     function resetCalendarEventForm(date = selectedDate) {
+        setEditingCalendarEventId(null)
+
         setCalendarEventForm({
             title: "",
             event_type: "Important Date",
@@ -585,7 +590,7 @@ export default function Calendar() {
         setSavingCalendarEvent(true)
 
         try {
-            await createCalendarEvent({
+            const payload = {
                 title: calendarEventForm.title.trim(),
                 event_type: calendarEventForm.event_type,
                 start_date: calendarEventForm.start_date || selectedDate,
@@ -594,7 +599,13 @@ export default function Calendar() {
                 end_time: calendarEventForm.end_time || null,
                 location: calendarEventForm.location.trim() || null,
                 notes: calendarEventForm.notes.trim() || null
-            })
+            }
+
+            if (editingCalendarEventId) {
+                await updateCalendarEvent(editingCalendarEventId, payload)
+            } else {
+                await createCalendarEvent(payload)
+            }
 
             await refreshCalendarEvents()
             resetCalendarEventForm()
@@ -1058,7 +1069,9 @@ export default function Calendar() {
                                     >
                                         {savingCalendarEvent
                                             ? "Saving..."
-                                            : "Save Calendar Event"}
+                                            : editingCalendarEventId
+                                                ? "Update Calendar Event"
+                                                : "Save Calendar Event"}
                                     </button>
                                 </div>
                             </form>

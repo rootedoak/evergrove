@@ -57,3 +57,22 @@ export async function deleteCalendarEvent(id) {
 
     if (error) throw error
 }
+
+export async function updateCalendarEvent(id, updates) {
+    const household = await getCurrentHousehold()
+
+    const { data, error } = await supabase
+        .from("calendar_events")
+        .update({
+            ...updates,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", id)
+        .eq("household_id", household.id)
+        .select()
+        .single()
+
+    if (error) throw error
+
+    return data
+}
