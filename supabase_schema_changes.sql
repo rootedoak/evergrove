@@ -867,3 +867,21 @@ using (
     where user_id = auth.uid()
   )
 );
+
+-- ADD CATEGORY ORDER TO USER PREFERENCES
+
+alter table user_preferences
+add column if not exists shopping_category_order text[] default array[
+  'Produce',
+  'Meat',
+  'Dairy',
+  'Frozen',
+  'Pantry',
+  'Household',
+  'Uncategorized'
+];
+
+-- ADD TIMESTAMP TO SHOPPING LISTS
+
+alter table shopping_lists
+add column if not exists updated_at timestamp with time zone default now();

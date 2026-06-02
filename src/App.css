@@ -3611,3 +3611,25 @@ a {
 .shopping-mode-item .row-title {
   font-size: 1rem;
 }
+
+.settings-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.settings-category-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.75rem;
+  background: var(--panel-soft);
+}
+
+.settings-category-row span {
+  color: var(--text);
+  font-weight: 700;
+}

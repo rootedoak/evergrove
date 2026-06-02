@@ -41,12 +41,15 @@ export async function createShoppingList({
     title,
     sourceWeekStart,
     sourceWeekEnd,
-    items = []
+    items = [],
+    replaceExisting = false
 }) {
     const { user, household } = await getUserAndHousehold()
 
+    let existingList = null
+
     if (sourceWeekStart && sourceWeekEnd) {
-        const { data: existingList, error: existingError } = await supabase
+        const { data, error: existingError } = await supabase
             .from("shopping_lists")
             .select("*")
             .eq("household_id", household.id)
@@ -57,11 +60,67 @@ export async function createShoppingList({
 
         if (existingError) throw existingError
 
-        if (existingList) {
+        existingList = data
+
+        if (existingList && !replaceExisting) {
             return {
                 ...existingList,
                 alreadyExists: true
             }
+        }
+    }
+
+    const itemRowsForList = listId =>
+        items
+            .filter(item => item.name?.trim())
+            .map(item => ({
+                user_id: user.id,
+                household_id: household.id,
+                shopping_list_id: listId,
+                name: item.name.trim(),
+                quantity: item.quantity || "",
+                category: item.category || "Uncategorized",
+                checked: false,
+                source_grocery_item_ids: item.source_grocery_item_ids || []
+            }))
+
+    if (existingList && replaceExisting) {
+        const { error: deleteItemsError } = await supabase
+            .from("shopping_list_items")
+            .delete()
+            .eq("shopping_list_id", existingList.id)
+            .eq("household_id", household.id)
+
+        if (deleteItemsError) throw deleteItemsError
+
+        const { data: updatedList, error: updateError } = await supabase
+            .from("shopping_lists")
+            .update({
+                title,
+                source_week_start: sourceWeekStart || null,
+                source_week_end: sourceWeekEnd || null,
+                updated_at: new Date().toISOString()
+            })
+            .eq("id", existingList.id)
+            .eq("household_id", household.id)
+            .select()
+            .single()
+
+        if (updateError) throw updateError
+
+        const replacementRows = itemRowsForList(existingList.id)
+
+        if (replacementRows.length > 0) {
+            const { error: itemError } = await supabase
+                .from("shopping_list_items")
+                .insert(replacementRows)
+
+            if (itemError) throw itemError
+        }
+
+        return {
+            ...updatedList,
+            replacedExisting: true
         }
     }
 
@@ -80,18 +139,7 @@ export async function createShoppingList({
 
     if (listError) throw listError
 
-    const itemRows = items
-        .filter(item => item.name?.trim())
-        .map(item => ({
-            user_id: user.id,
-            household_id: household.id,
-            shopping_list_id: list.id,
-            name: item.name.trim(),
-            quantity: item.quantity || "",
-            category: item.category || "Uncategorized",
-            checked: false,
-            source_grocery_item_ids: item.source_grocery_item_ids || []
-        }))
+    const itemRows = itemRowsForList(list.id)
 
     if (itemRows.length > 0) {
         const { error: itemError } = await supabase

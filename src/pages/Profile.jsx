@@ -5,6 +5,16 @@ import {
     updatePreferences
 } from "../services/preferenceService"
 
+const defaultShoppingCategoryOrder = [
+    "Produce",
+    "Meat",
+    "Dairy",
+    "Frozen",
+    "Pantry",
+    "Household",
+    "Uncategorized"
+]
+
 const initialPreferences = {
     household_name: "My Family",
     timezone: "America/Chicago",
@@ -20,7 +30,8 @@ const initialPreferences = {
     show_trips: true,
     show_school_items: true,
     show_activity_sessions: true,
-    show_suggested_tasks: true
+    show_suggested_tasks: true,
+    shopping_category_order: defaultShoppingCategoryOrder
 }
 
 function PreferenceToggle({ label, checked, onChange }) {
@@ -95,6 +106,47 @@ export default function Profile() {
         }))
     }
 
+    function moveShoppingCategory(index, direction) {
+        const nextOrder = [...preferences.shopping_category_order]
+        const targetIndex = index + direction
+
+        if (targetIndex < 0 || targetIndex >= nextOrder.length) return
+
+        const [category] = nextOrder.splice(index, 1)
+        nextOrder.splice(targetIndex, 0, category)
+
+        updatePreference("shopping_category_order", nextOrder)
+    }
+
+    function addShoppingCategory() {
+        const category = window.prompt("Category name")
+        if (!category?.trim()) return
+
+        const cleanCategory = category.trim()
+
+        if (preferences.shopping_category_order.includes(cleanCategory)) {
+            alert("That category already exists.")
+            return
+        }
+
+        updatePreference("shopping_category_order", [
+            ...preferences.shopping_category_order,
+            cleanCategory
+        ])
+    }
+
+    function removeShoppingCategory(category) {
+        if (category === "Uncategorized") {
+            alert("Uncategorized cannot be removed.")
+            return
+        }
+
+        updatePreference(
+            "shopping_category_order",
+            preferences.shopping_category_order.filter(item => item !== category)
+        )
+    }
+
     async function handleSavePreferences(event) {
         event.preventDefault()
         setSaving(true)
@@ -115,7 +167,8 @@ export default function Profile() {
                 show_trips: preferences.show_trips,
                 show_school_items: preferences.show_school_items,
                 show_activity_sessions: preferences.show_activity_sessions,
-                show_suggested_tasks: preferences.show_suggested_tasks
+                show_suggested_tasks: preferences.show_suggested_tasks,
+                shopping_category_order: preferences.shopping_category_order
             })
 
             setPreferences({
@@ -297,6 +350,55 @@ export default function Profile() {
                                 </select>
                             </label>
                         </div>
+                    </SettingsSection>
+
+                    <SettingsSection
+                        title="Shopping Categories"
+                        subtitle="Set the order categories appear in shopping lists. Match this to the store layout you usually shop."
+                    >
+                        <div className="settings-category-list">
+                            {preferences.shopping_category_order.map((category, index) => (
+                                <div key={category} className="settings-category-row">
+                                    <span>{category}</span>
+
+                                    <div className="button-row">
+                                        <button
+                                            className="secondary-button"
+                                            type="button"
+                                            onClick={() => moveShoppingCategory(index, -1)}
+                                            disabled={index === 0}
+                                        >
+                                            Up
+                                        </button>
+
+                                        <button
+                                            className="secondary-button"
+                                            type="button"
+                                            onClick={() => moveShoppingCategory(index, 1)}
+                                            disabled={index === preferences.shopping_category_order.length - 1}
+                                        >
+                                            Down
+                                        </button>
+
+                                        <button
+                                            className="danger-button"
+                                            type="button"
+                                            onClick={() => removeShoppingCategory(category)}
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={addShoppingCategory}
+                        >
+                            Add Category
+                        </button>
                     </SettingsSection>
 
                     <SettingsSection

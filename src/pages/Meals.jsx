@@ -13,6 +13,7 @@ import {
     createGroceryItem,
     createMeal,
     createMealPlan,
+    updateMeal,
     deleteGroceryItem,
     deleteMeal,
     deleteMealPlan,
@@ -22,6 +23,17 @@ import {
     toggleGroceryItem
 } from "../services/mealService"
 import { createShoppingList } from "../services/shoppingService"
+import usePreferences from "../hooks/usePreferences"
+
+const defaultShoppingCategoryOrder = [
+    "Produce",
+    "Meat",
+    "Dairy",
+    "Frozen",
+    "Pantry",
+    "Household",
+    "Uncategorized"
+]
 
 function toDateInputValue(date) {
     return [
@@ -60,6 +72,12 @@ function formatDateLabel(date) {
 
 export default function Meals() {
     const navigate = useNavigate()
+    const { preferences } = usePreferences()
+
+    const shoppingCategoryOrder =
+        preferences?.shopping_category_order?.length
+            ? preferences.shopping_category_order
+            : defaultShoppingCategoryOrder
 
     const [meals, setMeals] = useState([])
     const [mealPlans, setMealPlans] = useState([])
@@ -67,6 +85,7 @@ export default function Meals() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
     const [weekStart, setWeekStart] = useState(getStartOfWeek(new Date()))
+    const [editingMealId, setEditingMealId] = useState(null)
     const [quickAddMealId, setQuickAddMealId] = useState(null)
     const [quickAddDate, setQuickAddDate] = useState(getTodayDate())
     const [quickAddNotes, setQuickAddNotes] = useState("")
@@ -215,11 +234,16 @@ export default function Meals() {
         })
 
         return Object.entries(groups).sort(([categoryA], [categoryB]) => {
-            if (categoryA === "Uncategorized") return 1
-            if (categoryB === "Uncategorized") return -1
+            const indexA = shoppingCategoryOrder.indexOf(categoryA)
+            const indexB = shoppingCategoryOrder.indexOf(categoryB)
+
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB
+            if (indexA !== -1) return -1
+            if (indexB !== -1) return 1
+
             return categoryA.localeCompare(categoryB)
         })
-    }, [consolidatedGroceryItems])
+    }, [consolidatedGroceryItems, shoppingCategoryOrder])
 
     function updateIngredient(index, field, value) {
         const nextIngredients = [...mealForm.ingredients]
@@ -258,6 +282,34 @@ export default function Meals() {
         })
     }
 
+    function startEditMeal(meal) {
+        setEditingMealId(meal.id)
+
+        setMealForm({
+            name: meal.name || "",
+            description: meal.description || "",
+            category: meal.category || "Dinner",
+            ingredients: meal.meal_ingredients?.length
+                ? meal.meal_ingredients.map(ingredient => ({
+                    name: ingredient.name || "",
+                    quantity: ingredient.quantity || "",
+                    category: ingredient.category || ""
+                }))
+                : [{ name: "", quantity: "", category: "" }]
+        })
+    }
+
+    function cancelEditMeal() {
+        setEditingMealId(null)
+
+        setMealForm({
+            name: "",
+            description: "",
+            category: "Dinner",
+            ingredients: [{ name: "", quantity: "", category: "" }]
+        })
+    }
+
     function startQuickAdd(meal) {
         setQuickAddMealId(meal.id)
         setQuickAddDate(getTodayDate())
@@ -291,11 +343,7 @@ export default function Meals() {
             return
         }
 
-        if (
-            !window.confirm(
-                "Generate random meals for all empty days this week?"
-            )
-        ) {
+        if (!window.confirm("Generate random meals for all empty days this week?")) {
             return
         }
 
@@ -309,9 +357,7 @@ export default function Meals() {
             return
         }
 
-        const shuffledMeals = [...meals].sort(
-            () => Math.random() - 0.5
-        )
+        const shuffledMeals = [...meals].sort(() => Math.random() - 0.5)
 
         for (let index = 0; index < emptyDays.length; index += 1) {
             const meal = shuffledMeals[index % shuffledMeals.length]
@@ -338,20 +384,37 @@ export default function Meals() {
         const endDate = weekDays[6].dateValue
         const title = `Week of ${weekDays[0].dateLabel} Groceries`
 
+        const items = consolidatedGroceryItems.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            category: item.category,
+            source_grocery_item_ids: item.items.map(sourceItem => sourceItem.id)
+        }))
+
         const shoppingList = await createShoppingList({
             title,
             sourceWeekStart: startDate,
             sourceWeekEnd: endDate,
-            items: consolidatedGroceryItems.map(item => ({
-                name: item.name,
-                quantity: item.quantity,
-                category: item.category,
-                source_grocery_item_ids: item.items.map(sourceItem => sourceItem.id)
-            }))
+            items
         })
 
         if (shoppingList.alreadyExists) {
-            alert("A shopping list already exists for this week.")
+            const shouldReplace = window.confirm(
+                "A shopping list already exists for this week. Replace it with the latest meal plan grocery list?"
+            )
+
+            if (!shouldReplace) {
+                navigate("/shopping")
+                return
+            }
+
+            await createShoppingList({
+                title,
+                sourceWeekStart: startDate,
+                sourceWeekEnd: endDate,
+                items,
+                replaceExisting: true
+            })
         }
 
         navigate("/shopping")
@@ -361,7 +424,13 @@ export default function Meals() {
         event.preventDefault()
         if (!mealForm.name.trim()) return
 
-        await createMeal(mealForm)
+        if (editingMealId) {
+            await updateMeal(editingMealId, mealForm)
+        } else {
+            await createMeal(mealForm)
+        }
+
+        setEditingMealId(null)
 
         setMealForm({
             name: "",
@@ -425,16 +494,20 @@ export default function Meals() {
     }
 
     return (
-        <div className="page-shell">
-            <div className="page-header">
+        <div className="tasks-command-page">
+            <header className="calendar-header">
                 <div>
-                    <p className="eyebrow">Evergrove</p>
-                    <h2>Meals</h2>
+                    <p className="dashboard-household-name">
+                        Meals
+                    </p>
+
+                    <h2>Meal Planning</h2>
+
                     <p>
                         Plan dinners, restaurant nights, and grocery shopping.
                     </p>
                 </div>
-            </div>
+            </header>
 
             {error && <div className="error-banner">{error}</div>}
 
@@ -674,14 +747,23 @@ export default function Meals() {
                                 placeholder="Quantity"
                             />
 
-                            <input
+                            <select
                                 className="form-input"
                                 value={groceryForm.category}
                                 onChange={event =>
-                                    setGroceryForm({ ...groceryForm, category: event.target.value })
+                                    setGroceryForm({
+                                        ...groceryForm,
+                                        category: event.target.value
+                                    })
                                 }
-                                placeholder="Category"
-                            />
+                            >
+                                <option value="">Category</option>
+                                {shoppingCategoryOrder.map(category => (
+                                    <option key={category} value={category}>
+                                        {category}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <button className="secondary-button" type="submit">
@@ -777,14 +859,22 @@ export default function Meals() {
                             placeholder="Meal name"
                         />
 
-                        <input
+                        <select
                             className="form-input"
                             value={mealForm.category}
                             onChange={event =>
-                                setMealForm({ ...mealForm, category: event.target.value })
+                                setMealForm({
+                                    ...mealForm,
+                                    category: event.target.value
+                                })
                             }
-                            placeholder="Category"
-                        />
+                        >
+                            <option value="Breakfast">Breakfast</option>
+                            <option value="Lunch">Lunch</option>
+                            <option value="Dinner">Dinner</option>
+                            <option value="Dessert">Dessert</option>
+                            <option value="Snack">Snack</option>
+                        </select>
 
                         <input
                             className="form-input"
@@ -825,14 +915,20 @@ export default function Meals() {
                                         placeholder="Quantity"
                                     />
 
-                                    <input
+                                    <select
                                         className="form-input"
                                         value={ingredient.category}
                                         onChange={event =>
                                             updateIngredient(index, "category", event.target.value)
                                         }
-                                        placeholder="Category"
-                                    />
+                                    >
+                                        <option value="">Category</option>
+                                        {shoppingCategoryOrder.map(category => (
+                                            <option key={category} value={category}>
+                                                {category}
+                                            </option>
+                                        ))}
+                                    </select>
 
                                     <button
                                         className="secondary-button"
@@ -853,8 +949,18 @@ export default function Meals() {
                         </button>
 
                         <button className="primary-button" type="submit">
-                            Save Meal
+                            {editingMealId ? "Update Meal" : "Save Meal"}
                         </button>
+
+                        {editingMealId && (
+                            <button
+                                className="secondary-button"
+                                type="button"
+                                onClick={cancelEditMeal}
+                            >
+                                Cancel Edit
+                            </button>
+                        )}
                     </div>
                 </form>
 
@@ -867,17 +973,27 @@ export default function Meals() {
                                     <p>{meal.category || "Dinner"}</p>
                                 </div>
 
-                                <button
-                                    className="icon-danger-button"
-                                    type="button"
-                                    onClick={async () => {
-                                        await deleteMeal(meal.id)
-                                        await loadData()
-                                    }}
-                                    aria-label="Delete meal"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
+                                <div className="button-row">
+                                    <button
+                                        className="secondary-button"
+                                        type="button"
+                                        onClick={() => startEditMeal(meal)}
+                                    >
+                                        Edit
+                                    </button>
+
+                                    <button
+                                        className="icon-danger-button"
+                                        type="button"
+                                        onClick={async () => {
+                                            await deleteMeal(meal.id)
+                                            await loadData()
+                                        }}
+                                        aria-label="Delete meal"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
                             </div>
 
                             {meal.description && (

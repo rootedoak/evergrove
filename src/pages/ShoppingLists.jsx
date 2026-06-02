@@ -6,6 +6,7 @@ import {
     ShoppingCart,
     Trash2
 } from "lucide-react"
+import usePreferences from "../hooks/usePreferences"
 import {
     archiveShoppingList,
     createShoppingList,
@@ -16,7 +17,24 @@ import {
     toggleShoppingListItem
 } from "../services/shoppingService"
 
+const defaultShoppingCategoryOrder = [
+    "Produce",
+    "Meat",
+    "Dairy",
+    "Frozen",
+    "Pantry",
+    "Household",
+    "Uncategorized"
+]
+
 export default function ShoppingLists() {
+    const { preferences } = usePreferences()
+
+    const shoppingCategoryOrder =
+        preferences?.shopping_category_order?.length
+            ? preferences.shopping_category_order
+            : defaultShoppingCategoryOrder
+
     const [shoppingLists, setShoppingLists] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
@@ -92,11 +110,16 @@ export default function ShoppingLists() {
         })
 
         return Object.entries(groups).sort(([categoryA], [categoryB]) => {
-            if (categoryA === "Uncategorized") return 1
-            if (categoryB === "Uncategorized") return -1
+            const indexA = shoppingCategoryOrder.indexOf(categoryA)
+            const indexB = shoppingCategoryOrder.indexOf(categoryB)
+
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB
+            if (indexA !== -1) return -1
+            if (indexB !== -1) return 1
+
             return categoryA.localeCompare(categoryB)
         })
-    }, [selectedItems])
+    }, [selectedItems, shoppingCategoryOrder])
 
     function getListStats(list) {
         const items = list.shopping_list_items || []
@@ -138,7 +161,7 @@ export default function ShoppingLists() {
             shoppingListId: selectedList.id,
             name: itemForm.name,
             quantity: itemForm.quantity,
-            category: itemForm.category
+            category: itemForm.category || "Uncategorized"
         })
 
         setItemForm({
@@ -173,16 +196,18 @@ export default function ShoppingLists() {
     }
 
     return (
-        <div className="page-shell">
-            <div className="page-header">
+        <div className="tasks-command-page">
+            <header className="calendar-header">
                 <div>
-                    <p className="eyebrow">Evergrove</p>
+                    <p className="dashboard-household-name">
+                        Shopping
+                    </p>
                     <h2>Shopping Lists</h2>
                     <p>
                         Build shared household shopping lists for groceries, errands, and weekly needs.
                     </p>
                 </div>
-            </div>
+            </header>
 
             {error && <div className="error-banner">{error}</div>}
 
@@ -414,7 +439,7 @@ export default function ShoppingLists() {
                                                     placeholder="Quantity"
                                                 />
 
-                                                <input
+                                                <select
                                                     className="form-input"
                                                     value={itemForm.category}
                                                     onChange={event =>
@@ -423,8 +448,14 @@ export default function ShoppingLists() {
                                                             category: event.target.value
                                                         })
                                                     }
-                                                    placeholder="Category"
-                                                />
+                                                >
+                                                    <option value="">Category</option>
+                                                    {shoppingCategoryOrder.map(category => (
+                                                        <option key={category} value={category}>
+                                                            {category}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
 
                                             <button className="secondary-button" type="submit">

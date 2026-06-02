@@ -998,14 +998,12 @@ Completed:
 
 ---
 
-### 🚧 Planned
-
 #### SHOP-005 — Shopping Progress Dashboard
-**Status:** Planned
+**Status:** Complete
 
 Enhance shopping list summary.
 
-Goals:
+Completed:
 - Remaining items
 - Completed items
 - Percent complete
@@ -1014,11 +1012,11 @@ Goals:
 ---
 
 #### SHOP-006 — Mobile Shopping Mode
-**Status:** Planned
+**Status:** Complete
 
 Create a grocery-store-friendly experience.
 
-Goals:
+Completed:
 - Large tap targets
 - Simplified layout
 - Focused shopping view
@@ -1027,11 +1025,11 @@ Goals:
 ---
 
 #### SHOP-007 — Shopping Completion Workflow
-**Status:** Planned
+**Status:** Complete
 
 Support finishing shopping trips.
 
-Goals:
+Completed:
 - Mark shopping complete
 - Auto archive option
 - Shopping history
