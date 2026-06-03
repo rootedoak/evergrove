@@ -3697,3 +3697,238 @@ a {
   padding: 0.4rem 0.65rem;
   font-size: 0.85rem;
 }
+
+/* About Page */
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.info-grid div {
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--card-background, #f8fafc);
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.info-grid strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+.info-grid p {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.card ol,
+.card ul {
+  margin-top: 0.75rem;
+  padding-left: 1.25rem;
+}
+
+.card li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.card h2 {
+  margin-bottom: 0.75rem;
+}
+
+.card p+p {
+  margin-top: 1rem;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.status-badge.beta {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* About Page */
+
+.about-page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding-bottom: 3rem;
+}
+
+.about-page .page-header {
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.about-page .page-header h1 {
+  color: #1f2937;
+}
+
+.about-page .page-description {
+  max-width: 760px;
+  color: #52637a;
+  line-height: 1.6;
+}
+
+.about-page .card {
+  text-align: left;
+  margin-bottom: 1rem;
+}
+
+.about-page .card h2 {
+  color: #1f2937;
+  margin-bottom: 0.75rem;
+}
+
+.about-page .card p,
+.about-page .card li {
+  color: #334155;
+  line-height: 1.6;
+}
+
+.about-page .info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.about-page .info-grid div {
+  padding: 1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.about-page .info-grid strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #475569;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.about-page .info-grid p {
+  margin: 0;
+  color: #334155;
+  font-weight: 700;
+}
+
+.about-page ol,
+.about-page ul {
+  padding-left: 1.25rem;
+  margin-top: 0.75rem;
+}
+
+.about-page li {
+  margin-bottom: 0.5rem;
+}
+
+.login-logo {
+  width: 100px;
+  height: 100px;
+  display: block;
+  margin: 0 auto 1rem;
+}
+
+.sidebar-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.home-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.visibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.member-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.visibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: fit-content;
+  margin-top: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.member-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.home-task-row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.home-task-row>div {
+  min-width: 0;
+}
+
+.home-task-row strong {
+  display: block;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.home-task-row p {
+  margin-bottom: 0.25rem;
+}

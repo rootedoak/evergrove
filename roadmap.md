@@ -1104,3 +1104,25 @@ Status: Backlog
 - Current Home buttons navigate to Tasks and Activities.
 - Future version should open lightweight modal forms instead.
 - This should wait until the UI modernization pass is stable.
+
+---
+
+## Backlog
+
+- Shared page header for Meals & Shopping
+- About page redesign
+- Household invitation workflow
+- Activity templates
+- Document vault
+- Mobile calendar improvements
+- Release notes system
+- Dynamic version/build tracking
+
+## Platform & Infrastructure
+
+- Shared page header for Meals & Shopping
+- Household invitation workflow
+- Dynamic version/build tracking
+- Centralized release management (config/releases.js)
+- Release notes system
+- About page redesign

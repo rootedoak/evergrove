@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import {
     Check,
     ChevronLeft,
@@ -72,6 +72,7 @@ function formatDateLabel(date) {
 
 export default function Meals() {
     const navigate = useNavigate()
+    const location = useLocation()
     const { preferences } = usePreferences()
 
     const shoppingCategoryOrder =
@@ -147,6 +148,19 @@ export default function Meals() {
     useEffect(() => {
         loadData()
     }, [weekStart])
+
+    useEffect(() => {
+        if (!location.state?.openMealPlanForm) return
+
+        setPlanForm(current => ({
+            ...current,
+            plannedDate: location.state?.selectedDate || getTodayDate()
+        }))
+
+        window.scrollTo({ top: 0, behavior: "smooth" })
+
+        navigate(location.pathname, { replace: true, state: {} })
+    }, [location, navigate])
 
     const weekDays = useMemo(() => {
         return Array.from({ length: 7 }, (_, index) => {

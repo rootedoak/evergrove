@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { useEffect, useMemo, useState } from "react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 
 import useActivities from "../hooks/useActivities"
 import useSchoolItems from "../hooks/useSchoolItems"
@@ -238,7 +238,7 @@ function buildCalendarEvents({
                 canDelete: true,
                 date: getDateOnly(activity.start_date),
                 icon: member?.avatar_emoji || "📅",
-                title: `${activity.name} starts`,
+                title: `${activity.name}`,
                 subtitle: [timeRange, member?.name]
                     .filter(Boolean)
                     .join(" • "),
@@ -261,7 +261,7 @@ function buildCalendarEvents({
                 canDelete: true,
                 date: getDateOnly(activity.end_date),
                 icon: "🏁",
-                title: `${activity.name} ends`,
+                title: `${activity.name}`,
                 subtitle: member?.name || "",
                 sortTime: 99999
             })
@@ -392,6 +392,7 @@ function buildCalendarEvents({
 
 export default function Calendar() {
     const navigate = useNavigate()
+    const location = useLocation()
     const [visibleDate, setVisibleDate] = useState(() => new Date())
     const [selectedDate, setSelectedDate] = useState(null)
 
@@ -415,7 +416,12 @@ export default function Calendar() {
 
     const [taskForm, setTaskForm] = useState({
         title: "",
-        description: ""
+        description: "",
+        due_date: "",
+        family_member_id: "",
+        activity_id: "",
+        status: "open",
+        visibility: "household"
     })
 
     const { activities, loading: activitiesLoading } = useActivities()
@@ -494,6 +500,31 @@ export default function Calendar() {
     }, [events])
 
     const selectedEvents = selectedDate ? eventsByDate[selectedDate] || [] : []
+
+    useEffect(() => {
+        const date = location.state?.selectedDate || getTodayString()
+
+        if (location.state?.openCalendarEventForm) {
+            setSelectedDate(date)
+            resetCalendarEventForm(date)
+            setShowCalendarEventForm(true)
+            setShowTaskForm(false)
+            setShowActivityForm(false)
+            setShowSchoolItemForm(false)
+            navigate(location.pathname, { replace: true, state: {} })
+            return
+        }
+
+        if (location.state?.openTaskForm) {
+            setSelectedDate(date)
+            resetTaskForm()
+            setShowTaskForm(true)
+            setShowCalendarEventForm(false)
+            setShowActivityForm(false)
+            setShowSchoolItemForm(false)
+            navigate(location.pathname, { replace: true, state: {} })
+        }
+    }, [location, navigate])
 
     function goToPreviousMonth() {
         setVisibleDate(current => {
@@ -618,10 +649,15 @@ export default function Calendar() {
         }
     }
 
-    function resetTaskForm() {
+    function resetTaskForm(date = selectedDate) {
         setTaskForm({
             title: "",
-            description: ""
+            description: "",
+            due_date: date || "",
+            family_member_id: "",
+            activity_id: "",
+            status: "open",
+            visibility: "household"
         })
     }
 
@@ -633,8 +669,11 @@ export default function Calendar() {
             await createTask({
                 title: taskForm.title.trim(),
                 description: taskForm.description.trim() || null,
-                due_date: selectedDate,
-                status: "open"
+                due_date: taskForm.due_date || selectedDate,
+                status: taskForm.status || "open",
+                family_member_id: taskForm.family_member_id || null,
+                activity_id: taskForm.activity_id || null,
+                visibility: taskForm.visibility || "household"
             })
 
             resetTaskForm()
@@ -1083,11 +1122,11 @@ export default function Calendar() {
                                 onSubmit={handleCreateTask}
                                 style={{ marginBottom: "1rem" }}
                             >
-                                <h4>Add Task</h4>
+                                <h4>Add To-Do</h4>
 
                                 <div className="form-grid">
-                                    <label className="full-width">
-                                        Task
+                                    <label>
+                                        Title
                                         <input
                                             required
                                             value={taskForm.title}
@@ -1099,6 +1138,79 @@ export default function Calendar() {
                                             }
                                             placeholder="Buy snacks, call hotel, submit form..."
                                         />
+                                    </label>
+
+                                    <label>
+                                        Due Date
+                                        <input
+                                            type="date"
+                                            value={taskForm.due_date}
+                                            onChange={event =>
+                                                setTaskForm({
+                                                    ...taskForm,
+                                                    due_date: event.target.value
+                                                })
+                                            }
+                                        />
+                                    </label>
+
+                                    <label>
+                                        Family Member
+                                        <select
+                                            value={taskForm.family_member_id}
+                                            onChange={event =>
+                                                setTaskForm({
+                                                    ...taskForm,
+                                                    family_member_id: event.target.value
+                                                })
+                                            }
+                                        >
+                                            <option value="">No family member selected</option>
+
+                                            {familyMembers.map(member => (
+                                                <option key={member.id} value={member.id}>
+                                                    {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
+                                                    {member.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>
+
+                                    <label>
+                                        Activity
+                                        <select
+                                            value={taskForm.activity_id}
+                                            onChange={event =>
+                                                setTaskForm({
+                                                    ...taskForm,
+                                                    activity_id: event.target.value
+                                                })
+                                            }
+                                        >
+                                            <option value="">No activity selected</option>
+
+                                            {activities.map(activity => (
+                                                <option key={activity.id} value={activity.id}>
+                                                    {activity.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>
+
+                                    <label>
+                                        Visibility
+                                        <select
+                                            value={taskForm.visibility}
+                                            onChange={event =>
+                                                setTaskForm({
+                                                    ...taskForm,
+                                                    visibility: event.target.value
+                                                })
+                                            }
+                                        >
+                                            <option value="household">Family task</option>
+                                            <option value="private">Private task</option>
+                                        </select>
                                     </label>
 
                                     <label className="full-width">
@@ -1120,7 +1232,7 @@ export default function Calendar() {
                                         type="submit"
                                         disabled={savingTask}
                                     >
-                                        {savingTask ? "Saving..." : "Save Task"}
+                                        {savingTask ? "Saving..." : "Save To-Do"}
                                     </button>
                                 </div>
                             </form>
@@ -1397,7 +1509,7 @@ export default function Calendar() {
                                 resetTaskForm()
                             }}
                         >
-                            {showTaskForm ? "Cancel Task" : "+ Task"}
+                            {showTaskForm ? "Cancel To-Do" : "+ To-Do"}
                         </button>
 
                         <button

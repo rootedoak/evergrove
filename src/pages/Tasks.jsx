@@ -164,7 +164,7 @@ function TaskRow({ task, familyMembers, onComplete, onEdit, onDelete }) {
                 type="button"
                 onClick={() => !isComplete && onComplete(task)}
                 disabled={isComplete}
-                aria-label={isComplete ? "Task complete" : "Complete task"}
+                aria-label={isComplete ? "To-Do complete" : "Complete To-Do"}
             >
                 {isComplete ? "✓" : ""}
             </button>
@@ -374,13 +374,13 @@ export default function Tasks() {
             <header className="calendar-header tasks-command-header">
                 <div>
                     <p className="dashboard-household-name">
-                        {tripId ? "Trip Checklist" : "Tasks"}
+                        {tripId ? "Trip Checklist" : "To-Do's"}
                     </p>
 
                     <h2>
                         {tripId
                             ? selectedTrip?.name || "Trip Checklist"
-                            : "Family Tasks"}
+                            : "Family To-Do's"}
                     </h2>
 
                     <p className="tasks-header-counts">
@@ -407,7 +407,7 @@ export default function Tasks() {
                         setShowForm(true)
                     }}
                 >
-                    {showForm ? "Cancel" : "+ Add Task"}
+                    {showForm ? "Cancel" : "+ Add To-Do"}
                 </button>
             </header>
 

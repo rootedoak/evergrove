@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
 import {
     Archive,
     Check,
@@ -28,6 +29,11 @@ const defaultShoppingCategoryOrder = [
 ]
 
 export default function ShoppingLists() {
+    const location = useLocation()
+    const navigate = useNavigate()
+    const createListRef = useRef(null)
+    const addItemRef = useRef(null)
+
     const { preferences } = usePreferences()
 
     const shoppingCategoryOrder =
@@ -70,6 +76,28 @@ export default function ShoppingLists() {
     useEffect(() => {
         loadData()
     }, [])
+
+    useEffect(() => {
+        if (!location.state?.openShoppingForm) return
+
+        setShoppingMode(false)
+
+        setTimeout(() => {
+            if (selectedListId) {
+                addItemRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                })
+            } else {
+                createListRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                })
+            }
+        }, 100)
+
+        navigate(location.pathname, { replace: true, state: {} })
+    }, [location, navigate, selectedListId])
 
     const sortedShoppingLists = useMemo(() => {
         return [...shoppingLists].sort((a, b) => {
@@ -258,7 +286,7 @@ export default function ShoppingLists() {
             </div>
 
             {!shoppingMode && (
-                <section className="panel">
+                <section className="panel" ref={createListRef}>
                     <div className="section-heading">
                         <div>
                             <h3>Create Shopping List</h3>
@@ -411,6 +439,7 @@ export default function ShoppingLists() {
 
                                     {!shoppingMode && (
                                         <form
+                                            ref={addItemRef}
                                             onSubmit={handleCreateItem}
                                             className="form-stack shopping-item-form"
                                         >

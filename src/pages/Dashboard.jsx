@@ -216,7 +216,7 @@ function getActivityEvents(activities, activitySessions = []) {
                 id: `${activity.id}-start`,
                 date: getDateOnly(activity.start_date),
                 icon: avatar,
-                title: `${activity.name} starts`,
+                title: `${activity.name}`,
                 subtitle: memberName,
                 detail: "",
                 time_label: timeRange,
@@ -231,7 +231,7 @@ function getActivityEvents(activities, activitySessions = []) {
                 id: `${activity.id}-end`,
                 date: getDateOnly(activity.end_date),
                 icon: avatar,
-                title: `${activity.name} ends`,
+                title: `${activity.name}`,
                 subtitle: memberName,
                 sort_time: 99999
             })
@@ -264,17 +264,15 @@ function getCalendarEventEvents(calendarEvents) {
         const currentDate = new Date(startDate)
 
         while (currentDate <= endDate) {
+            const date = formatDateParts(
+                currentDate.getFullYear(),
+                currentDate.getMonth() + 1,
+                currentDate.getDate()
+            )
+
             events.push({
-                id: `calendar-event-${event.id}-${formatDateParts(
-                    currentDate.getFullYear(),
-                    currentDate.getMonth() + 1,
-                    currentDate.getDate()
-                )}`,
-                date: formatDateParts(
-                    currentDate.getFullYear(),
-                    currentDate.getMonth() + 1,
-                    currentDate.getDate()
-                ),
+                id: `calendar-event-${event.id}-${date}`,
+                date,
                 icon: "📌",
                 title: event.title,
                 subtitle: event.event_type || "Calendar Event",
@@ -380,30 +378,31 @@ function TodayEventRow({ item }) {
 }
 
 function TaskRow({ task, onComplete }) {
+    const memberName = task.family_members?.name || "To-Do"
+    const initials = getInitials(memberName)
+
     return (
         <div className="home-task-row">
             <button
                 className="home-check-circle home-task-check"
                 type="button"
-                aria-label="Complete task"
+                aria-label="Complete To-Do"
                 onClick={() => onComplete(task)}
             />
 
-            <div>
-                <strong>
-                    {task.visibility === "private" && (
-                        <span className="home-private-lock" title="Private task">
-                            🔒
-                        </span>
-                    )}
+            <span className="member-avatar">
+                {initials || "TD"}
+            </span>
 
-                    {task.title}
-                </strong>
+            <div>
+                <strong>{task.title}</strong>
 
                 <p>
-                    {task.family_members?.name || "Task"}
+                    {memberName}
                     {task.due_date ? ` • ${formatDisplayDate(task.due_date)}` : ""}
                 </p>
+
+                <VisibilityBadge visibility={task.visibility} />
             </div>
         </div>
     )
@@ -426,6 +425,26 @@ function UpcomingEventRow({ item }) {
                 </p>
             </div>
         </div>
+    )
+}
+
+function getInitials(name = "") {
+    return name
+        .split(" ")
+        .filter(Boolean)
+        .map(part => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+}
+
+function VisibilityBadge({ visibility }) {
+    const isPrivate = visibility === "private"
+
+    return (
+        <span className="visibility-badge">
+            {isPrivate ? "🔒 Private" : "🏠 Household"}
+        </span>
     )
 }
 
@@ -537,7 +556,7 @@ export default function Dashboard() {
             await refreshTasks()
         } catch (error) {
             console.error(error)
-            alert(error.message || "Could not create task.")
+            alert(error.message || "Could not create to-do.")
         }
     }
 
@@ -547,7 +566,7 @@ export default function Dashboard() {
             await refreshTasks()
         } catch (error) {
             console.error(error)
-            alert(error.message || "Could not complete task.")
+            alert(error.message || "Could not complete to-do.")
         }
     }
 
@@ -572,23 +591,6 @@ export default function Dashboard() {
                     <p className="dashboard-powered-by">
                         Powered by Evergrove
                     </p>
-                    <div className="home-quick-actions">
-                        <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() => navigate("/tasks")}
-                        >
-                            + Task
-                        </button>
-
-                        <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() => navigate("/activities")}
-                        >
-                            + Activity
-                        </button>
-                    </div>
                 </div>
             </header>
 
@@ -604,6 +606,67 @@ export default function Dashboard() {
                     ))}
                 </div>
             )}
+
+            <div className="home-quick-actions">
+                <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() =>
+                        navigate("/calendar", {
+                            state: {
+                                openTaskForm: true,
+                                selectedDate: getTodayString()
+                            }
+                        })
+                    }
+                >
+                    + To-Do
+                </button>
+
+                <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() =>
+                        navigate("/calendar", {
+                            state: {
+                                openCalendarEventForm: true,
+                                selectedDate: getTodayString()
+                            }
+                        })
+                    }
+                >
+                    + Event
+                </button>
+
+                <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() =>
+                        navigate("/meals", {
+                            state: {
+                                openMealPlanForm: true,
+                                selectedDate: getTodayString()
+                            }
+                        })
+                    }
+                >
+                    + Meal
+                </button>
+
+                <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() =>
+                        navigate("/shopping", {
+                            state: {
+                                openShoppingForm: true
+                            }
+                        })
+                    }
+                >
+                    + Shopping
+                </button>
+            </div>
 
             <HomeSection
                 eyebrow="Today"
@@ -649,14 +712,14 @@ export default function Dashboard() {
             </HomeSection>
 
             <HomeSection
-                eyebrow="Tasks"
-                title="Open Tasks"
+                eyebrow="To-Do"
+                title="Open To-Do's"
                 count={openTasks.length}
             >
                 {tasksLoading ? (
-                    <EmptyState>Loading tasks...</EmptyState>
+                    <EmptyState>Loading to-do's...</EmptyState>
                 ) : openTasks.length === 0 ? (
-                    <EmptyState>No open tasks.</EmptyState>
+                    <EmptyState>No open to-do's.</EmptyState>
                 ) : (
                     <div className="home-check-list">
                         {openTasks.map(task => (
@@ -730,7 +793,7 @@ export default function Dashboard() {
                                     type="button"
                                     onClick={() => handleCreateSuggestedTask(suggestion)}
                                 >
-                                    Create Task
+                                    Create To-Do
                                 </button>
                             </div>
                         ))}

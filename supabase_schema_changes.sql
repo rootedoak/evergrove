@@ -1105,3 +1105,29 @@ using (
         where user_id = auth.uid()
     )
 );
+
+-- ADD FEEDBACK TABLE
+
+create table feedback (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid references auth.users(id) on delete cascade,
+    household_id uuid references households(id) on delete cascade,
+    type text not null default 'general',
+    message text not null,
+    status text not null default 'new',
+    created_at timestamptz not null default now()
+);
+
+alter table feedback enable row level security;
+
+create policy "Users can create household feedback"
+on feedback
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+create policy "Users can view their feedback"
+on feedback
+for select
+to authenticated
+using (auth.uid() = user_id);

@@ -1,4 +1,12 @@
 import { useEffect, useRef, useState } from "react"
+import logo from "./assets/evergrove-logo.svg"
+
+import {
+  APP_NAME,
+  APP_VERSION,
+  APP_STATUS
+} from "./config/appConfig"
+
 import { NavLink, Route, Routes } from "react-router-dom"
 import {
   Bell,
@@ -6,6 +14,7 @@ import {
   ClipboardList,
   FolderOpen,
   Home,
+  Info,
   Menu,
   Plane,
   Repeat,
@@ -35,17 +44,19 @@ import Trips from "./pages/Trips"
 import Profile from "./pages/Profile"
 import Meals from "./pages/Meals"
 import ShoppingLists from "./pages/ShoppingLists"
+import About from "./pages/About"
 
 import "./App.css"
 
 const navItems = [
   { to: "/", icon: Home, label: "Home", end: true },
   { to: "/calendar", icon: CalendarDays, label: "Calendar" },
-  { to: "/tasks", icon: ClipboardList, label: "Tasks" },
+  { to: "/tasks", icon: ClipboardList, label: "To-Do" },
   { to: "/meals", icon: UtensilsCrossed, label: "Meals" },
   { to: "/shopping", icon: ShoppingCart, label: "Shopping" },
   { to: "/documents", icon: FolderOpen, label: "Documents" },
-  { to: "/profile", icon: Settings, label: "Settings" }
+  { to: "/profile", icon: Settings, label: "Settings" },
+  { to: "/about", icon: Info, label: "About" }
 ]
 
 function NavItem({ to, icon: Icon, label, end, onClick }) {
@@ -93,7 +104,11 @@ function AppLayout() {
       <aside className={mobileNavOpen ? "sidebar open" : "sidebar"}>
         <div className="sidebar-top">
           <div className="brand sidebar-household-brand">
-            <div className="brand-mark">🏠</div>
+            <img
+              src={logo}
+              alt="Evergrove"
+              className="sidebar-logo"
+            />
 
             <div>
               <h1>{householdName}</h1>
@@ -125,7 +140,10 @@ function AppLayout() {
         </nav>
 
         <div className="sidebar-footer">
-          <p>Powered by Evergrove</p>
+          <p>{APP_NAME}</p>
+          <p>
+            v{APP_VERSION} {APP_STATUS}
+          </p>
         </div>
       </aside>
 
@@ -144,6 +162,7 @@ function AppLayout() {
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/trips" element={<Trips />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/about" element={<About />} />
         </Routes>
       </main>
     </div>
