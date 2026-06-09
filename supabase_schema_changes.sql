@@ -1131,3 +1131,101 @@ on feedback
 for select
 to authenticated
 using (auth.uid() = user_id);
+
+-- DUPLICATE RLS CLEANUP
+
+drop policy if exists "Users can view their meal plans" on meal_plans;
+drop policy if exists "Users can insert their meal plans" on meal_plans;
+drop policy if exists "Users can update their meal plans" on meal_plans;
+drop policy if exists "Users can delete their meal plans" on meal_plans;
+
+create policy "Household members can view meal plans"
+on meal_plans for select
+using (
+  household_id in (
+    select household_id from household_members where user_id = auth.uid()
+  )
+);
+
+create policy "Household members can insert meal plans"
+on meal_plans for insert
+with check (
+  household_id in (
+    select household_id from household_members where user_id = auth.uid()
+  )
+);
+
+create policy "Household members can update meal plans"
+on meal_plans for update
+using (
+  household_id in (
+    select household_id from household_members where user_id = auth.uid()
+  )
+)
+with check (
+  household_id in (
+    select household_id from household_members where user_id = auth.uid()
+  )
+);
+
+create policy "Household members can delete meal plans"
+on meal_plans for delete
+using (
+  household_id in (
+    select household_id from household_members where user_id = auth.uid()
+  )
+);
+
+drop policy if exists "Users can view their grocery items" on grocery_items;
+drop policy if exists "Users can insert their grocery items" on grocery_items;
+drop policy if exists "Users can update their grocery items" on grocery_items;
+drop policy if exists "Users can delete their grocery items" on grocery_items;
+
+create policy "Household members can view grocery items"
+on grocery_items for select
+using (
+  household_id in (
+    select household_id from household_members where user_id = auth.uid()
+  )
+);
+
+create policy "Household members can insert grocery items"
+on grocery_items for insert
+with check (
+  household_id in (
+    select household_id from household_members where user_id = auth.uid()
+  )
+);
+
+create policy "Household members can update grocery items"
+on grocery_items for update
+using (
+  household_id in (
+    select household_id from household_members where user_id = auth.uid()
+  )
+)
+with check (
+  household_id in (
+    select household_id from household_members where user_id = auth.uid()
+  )
+);
+
+create policy "Household members can delete grocery items"
+on grocery_items for delete
+using (
+  household_id in (
+    select household_id from household_members where user_id = auth.uid()
+  )
+);
+
+-- ADDITIONAL RLS CLEANUP
+
+drop policy if exists "Users can view their meals" on meals;
+drop policy if exists "Users can insert their meals" on meals;
+drop policy if exists "Users can update their meals" on meals;
+drop policy if exists "Users can delete their meals" on meals;
+
+drop policy if exists "Users can view their meal ingredients" on meal_ingredients;
+drop policy if exists "Users can insert their meal ingredients" on meal_ingredients;
+drop policy if exists "Users can update their meal ingredients" on meal_ingredients;
+drop policy if exists "Users can delete their meal ingredients" on meal_ingredients;
