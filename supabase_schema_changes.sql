@@ -1239,3 +1239,61 @@ add column if not exists is_favorite boolean not null default false;
 alter table meal_plans
 add column if not exists meal_category text,
 add column if not exists is_leftovers boolean not null default false;
+
+-- ADD REPEAT OPTION TO CALENDAR EVENTS
+
+alter table calendar_events
+add column if not exists repeats_yearly boolean not null default false;
+
+-- PERSONAL INBOX FOUNDATION
+
+create table if not exists personal_inbox_items (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+
+  title text not null,
+  message text,
+  item_type text not null default 'notification',
+
+  related_type text,
+  related_id uuid,
+
+  status text not null default 'unread',
+  due_date date,
+  remind_at timestamptz,
+
+  created_by uuid references auth.users(id),
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+
+create table if not exists personal_reminders (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+
+  title text not null,
+  notes text,
+  frequency text not null default 'once',
+  next_due date,
+  is_active boolean not null default true,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table personal_inbox_items enable row level security;
+alter table personal_reminders enable row level security;
+
+create policy "Users can manage their own inbox items"
+on personal_inbox_items
+for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "Users can manage their own reminders"
+on personal_reminders
+for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);

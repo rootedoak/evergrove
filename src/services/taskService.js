@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase"
 import { completeRoutine } from "./routineService"
+import { createTaskInboxNotification } from "./taskInboxNotificationService"
 
 async function getCurrentUser() {
     const {
@@ -99,19 +100,18 @@ export async function createTask(task) {
 
     if (error) throw error
 
+    await createTaskInboxNotification(data)
+
     return data
 }
 
 export async function updateTask(id, updates) {
-    const userId = await getCurrentUserId()
-
     const { data, error } = await supabase
         .from("tasks")
         .update(updates)
         .eq("id", id)
-        .eq("user_id", userId)
         .select()
-        .single()
+        .maybeSingle()
 
     if (error) throw error
 
@@ -119,13 +119,10 @@ export async function updateTask(id, updates) {
 }
 
 export async function deleteTask(id) {
-    const userId = await getCurrentUserId()
-
     const { error } = await supabase
         .from("tasks")
         .delete()
         .eq("id", id)
-        .eq("user_id", userId)
 
     if (error) throw error
 }

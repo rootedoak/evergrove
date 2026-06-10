@@ -27,6 +27,12 @@ const initialPreferences = {
     activity_reminders: true,
     school_reminders: true,
     task_reminders: true,
+    inbox_tasks: true,
+    inbox_activities: true,
+    inbox_school: true,
+    inbox_calendar: true,
+    inbox_trips: true,
+    inbox_reminders: true,
     show_birthdays: true,
     show_trips: true,
     show_school_items: true,
@@ -169,6 +175,12 @@ export default function Profile() {
                 trip_reminders: preferences.trip_reminders,
                 activity_reminders: preferences.activity_reminders,
                 school_reminders: preferences.school_reminders,
+                inbox_tasks: preferences.inbox_tasks,
+                inbox_activities: preferences.inbox_activities,
+                inbox_school: preferences.inbox_school,
+                inbox_calendar: preferences.inbox_calendar,
+                inbox_trips: preferences.inbox_trips,
+                inbox_reminders: preferences.inbox_reminders,
                 task_reminders: preferences.task_reminders,
                 show_birthdays: preferences.show_birthdays,
                 show_trips: preferences.show_trips,
@@ -461,6 +473,50 @@ export default function Profile() {
                                 label="Task reminders"
                                 checked={preferences.task_reminders}
                                 onChange={value => updatePreference("task_reminders", value)}
+                            />
+                        </div>
+                    </SettingsSection>
+
+                    <SettingsSection
+                        title="Inbox Notifications"
+                        scope="Personal user setting"
+                        subtitle="Choose which events appear in your Personal Inbox."
+                    >
+                        <div className="settings-toggle-grid">
+                            <PreferenceToggle
+                                label="To-Do notifications"
+                                checked={preferences.inbox_tasks}
+                                onChange={value => updatePreference("inbox_tasks", value)}
+                            />
+
+                            <PreferenceToggle
+                                label="Activity notifications"
+                                checked={preferences.inbox_activities}
+                                onChange={value => updatePreference("inbox_activities", value)}
+                            />
+
+                            <PreferenceToggle
+                                label="School notifications"
+                                checked={preferences.inbox_school}
+                                onChange={value => updatePreference("inbox_school", value)}
+                            />
+
+                            <PreferenceToggle
+                                label="Calendar notifications"
+                                checked={preferences.inbox_calendar}
+                                onChange={value => updatePreference("inbox_calendar", value)}
+                            />
+
+                            <PreferenceToggle
+                                label="Trip notifications"
+                                checked={preferences.inbox_trips}
+                                onChange={value => updatePreference("inbox_trips", value)}
+                            />
+
+                            <PreferenceToggle
+                                label="Reminder notifications"
+                                checked={preferences.inbox_reminders}
+                                onChange={value => updatePreference("inbox_reminders", value)}
                             />
                         </div>
                     </SettingsSection>

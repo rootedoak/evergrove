@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
+import { createTripInboxNotification } from "./tripInboxNotificationService"
 
 async function getCurrentUserId() {
     const {
@@ -68,6 +69,8 @@ export async function createTrip(trip, familyMemberIds = []) {
 
         if (attendeeError) throw attendeeError
     }
+
+    await createTripInboxNotification(data)
 
     return data
 }

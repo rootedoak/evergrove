@@ -15,6 +15,7 @@ import {
   FolderOpen,
   Home,
   Info,
+  Mail,
   Menu,
   Plane,
   Repeat,
@@ -45,11 +46,14 @@ import Profile from "./pages/Profile"
 import Meals from "./pages/Meals"
 import ShoppingLists from "./pages/ShoppingLists"
 import About from "./pages/About"
+import PersonalInbox from "./pages/PersonalInbox"
+import PersonalInboxEngine from "./components/PersonalInboxEngine"
 
 import "./App.css"
 
 const navItems = [
   { to: "/", icon: Home, label: "Home", end: true },
+  { to: "/personal-inbox", icon: Mail, label: "Inbox" },
   { to: "/calendar", icon: CalendarDays, label: "Calendar" },
   { to: "/tasks", icon: ClipboardList, label: "To-Do" },
   { to: "/meals", icon: UtensilsCrossed, label: "Meals" },
@@ -163,6 +167,7 @@ function AppLayout() {
           <Route path="/trips" element={<Trips />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/about" element={<About />} />
+          <Route path="/personal-inbox" element={<PersonalInbox />} />
         </Routes>
       </main>
     </div>
@@ -217,5 +222,10 @@ export default function App() {
     return <Login onLogin={() => { }} />
   }
 
-  return <AppLayout />
+  return (
+    <>
+      <PersonalInboxEngine />
+      <AppLayout />
+    </>
+  )
 }

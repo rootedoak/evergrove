@@ -111,6 +111,16 @@ function getBirthdayDateForMonth(member, visibleDate) {
     )
 }
 
+function getRecurringDateForYear(dateString, year) {
+    if (!dateString) return null
+
+    const [, month, day] = getDateOnly(dateString)
+        .split("-")
+        .map(Number)
+
+    return formatDateParts(year, month, day)
+}
+
 function getCalendarDays(visibleDate, weekStartsOn = "Sunday") {
     const year = visibleDate.getFullYear()
     const month = visibleDate.getMonth()
@@ -331,34 +341,46 @@ function buildCalendarEvents({
     calendarEvents.forEach(event => {
         if (!event.start_date) return
 
-        const startDate = createLocalDate(event.start_date)
-        const endDate = createLocalDate(
-            event.end_date || event.start_date
-        )
+        const yearsToRender = event.repeats_yearly
+            ? [visibleDate.getFullYear() - 1, visibleDate.getFullYear(), visibleDate.getFullYear() + 1]
+            : [null]
 
-        const currentDate = new Date(startDate)
+        yearsToRender.forEach(year => {
+            const startDateString = event.repeats_yearly
+                ? getRecurringDateForYear(event.start_date, year)
+                : event.start_date
 
-        while (currentDate <= endDate) {
-            events.push({
-                id: `calendar-event-${event.id}-${currentDate.toISOString()}`,
-                type: "calendar_event",
-                sourceType: "calendar_event",
-                sourceId: event.id,
-                canDelete: true,
-                date: formatDateParts(
-                    currentDate.getFullYear(),
-                    currentDate.getMonth() + 1,
-                    currentDate.getDate()
-                ),
-                icon: "📌",
-                title: event.title,
-                subtitle: event.event_type || "Calendar Event",
-                location: event.location || "",
-                sortTime: getMinutesFromTime(event.start_time)
-            })
+            const endDateString = event.repeats_yearly && event.end_date
+                ? getRecurringDateForYear(event.end_date, year)
+                : event.end_date || startDateString
 
-            currentDate.setDate(currentDate.getDate() + 1)
-        }
+            const startDate = createLocalDate(startDateString)
+            const endDate = createLocalDate(endDateString)
+
+            const currentDate = new Date(startDate)
+
+            while (currentDate <= endDate) {
+                events.push({
+                    id: `calendar-event-${event.id}-${year || "single"}-${currentDate.toISOString()}`,
+                    type: "calendar_event",
+                    sourceType: "calendar_event",
+                    sourceId: event.id,
+                    canDelete: true,
+                    date: formatDateParts(
+                        currentDate.getFullYear(),
+                        currentDate.getMonth() + 1,
+                        currentDate.getDate()
+                    ),
+                    icon: event.repeats_yearly ? "🔁" : "📌",
+                    title: event.title,
+                    subtitle: event.event_type || "Calendar Event",
+                    location: event.location || "",
+                    sortTime: getMinutesFromTime(event.start_time)
+                })
+
+                currentDate.setDate(currentDate.getDate() + 1)
+            }
+        })
     })
 
     familyMembers.forEach(member => {
@@ -405,6 +427,7 @@ export default function Calendar() {
         event_type: "Important Date",
         start_date: "",
         end_date: "",
+        repeats_yearly: false,
         start_time: "",
         end_time: "",
         location: "",
@@ -582,7 +605,8 @@ export default function Calendar() {
                     start_time: existingEvent.start_time || "",
                     end_time: existingEvent.end_time || "",
                     location: existingEvent.location || "",
-                    notes: existingEvent.notes || ""
+                    notes: existingEvent.notes || "",
+                    repeats_yearly: Boolean(existingEvent.repeats_yearly)
                 })
             }
 
@@ -612,7 +636,8 @@ export default function Calendar() {
             start_time: "",
             end_time: "",
             location: "",
-            notes: ""
+            notes: "",
+            repeats_yearly: false
         })
     }
 
@@ -629,7 +654,8 @@ export default function Calendar() {
                 start_time: calendarEventForm.start_time || null,
                 end_time: calendarEventForm.end_time || null,
                 location: calendarEventForm.location.trim() || null,
-                notes: calendarEventForm.notes.trim() || null
+                notes: calendarEventForm.notes.trim() || null,
+                repeats_yearly: calendarEventForm.repeats_yearly
             }
 
             if (editingCalendarEventId) {
@@ -1044,6 +1070,24 @@ export default function Calendar() {
                                                 )
                                             }
                                         />
+                                    </label>
+
+                                    <label>
+                                        Repeat
+                                        <div className="checkbox-row">
+                                            <input
+                                                type="checkbox"
+                                                checked={calendarEventForm.repeats_yearly}
+                                                onChange={event =>
+                                                    updateCalendarEventForm(
+                                                        "repeats_yearly",
+                                                        event.target.checked
+                                                    )
+                                                }
+                                            />
+
+                                            <span>Repeat every year</span>
+                                        </div>
                                     </label>
 
                                     <label>

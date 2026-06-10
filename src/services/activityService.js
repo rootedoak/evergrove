@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
+import { createActivityInboxNotification } from "./activityInboxNotificationService"
 
 async function getCurrentUserId() {
     const {
@@ -54,6 +55,8 @@ export async function createActivity(activity) {
         .single()
 
     if (error) throw error
+
+    await createActivityInboxNotification(data)
 
     return data
 }

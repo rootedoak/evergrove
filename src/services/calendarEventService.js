@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
+import { createCalendarEventInboxNotification } from "./calendarEventInboxNotificationService"
 
 async function getCurrentUserId() {
     const {
@@ -43,6 +44,9 @@ export async function createCalendarEvent(event) {
         .single()
 
     if (error) throw error
+
+    await createCalendarEventInboxNotification(data)
+
     return data
 }
 

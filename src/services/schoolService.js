@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
+import { createSchoolInboxNotification } from "./schoolInboxNotificationService"
 
 async function getCurrentUserId() {
     const {
@@ -52,6 +53,8 @@ export async function createSchoolItem(item) {
         .single()
 
     if (error) throw error
+
+    await createSchoolInboxNotification(data)
 
     return data
 }
