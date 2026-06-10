@@ -48,6 +48,7 @@ import ShoppingLists from "./pages/ShoppingLists"
 import About from "./pages/About"
 import PersonalInbox from "./pages/PersonalInbox"
 import PersonalInboxEngine from "./components/PersonalInboxEngine"
+import usePersonalInbox from "./hooks/usePersonalInbox"
 
 import "./App.css"
 
@@ -63,7 +64,7 @@ const navItems = [
   { to: "/about", icon: Info, label: "About" }
 ]
 
-function NavItem({ to, icon: Icon, label, end, onClick }) {
+function NavItem({ to, icon: Icon, label, end, onClick, badge }) {
   return (
     <NavLink
       to={to}
@@ -75,6 +76,12 @@ function NavItem({ to, icon: Icon, label, end, onClick }) {
     >
       <Icon size={18} />
       <span>{label}</span>
+
+      {badge > 0 && (
+        <span className="nav-inbox-badge">
+          {badge}
+        </span>
+      )}
     </NavLink>
   )
 }
@@ -82,6 +89,12 @@ function NavItem({ to, icon: Icon, label, end, onClick }) {
 function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const { preferences } = usePreferences()
+
+  const { items: inboxItems } = usePersonalInbox()
+
+  const unreadInboxCount = inboxItems.filter(
+    item => item.status === "unread"
+  ).length
 
   const householdName = preferences?.household_name || "My Household"
 
@@ -137,6 +150,11 @@ function AppLayout() {
               to={item.to}
               icon={item.icon}
               label={item.label}
+              badge={
+                item.to === "/personal-inbox"
+                  ? unreadInboxCount
+                  : 0
+              }
               end={item.end}
               onClick={() => setMobileNavOpen(false)}
             />
