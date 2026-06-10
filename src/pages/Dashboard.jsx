@@ -162,7 +162,7 @@ function getActivitySessionEvents(activitySessions) {
                 id: `activity-session-${session.id}`,
                 date: getDateOnly(session.session_date),
                 icon: member?.avatar_emoji || "📅",
-                title: activity?.name || "Activity Session",
+                title: activity?.event_name || activity?.name || "Activity session",
                 subtitle: member?.name || "",
                 detail: session.location || "",
                 time_label: timeRange,

@@ -175,7 +175,7 @@ function buildCalendarEvents({
                 canDelete: true,
                 date: getDateOnly(session.session_date),
                 icon: member?.avatar_emoji || "📅",
-                title: activity?.name || "Activity session",
+                title: activity?.event_name || activity?.name || "Activity session",
                 subtitle: [
                     timeRange,
                     member?.name,
