@@ -1229,3 +1229,13 @@ drop policy if exists "Users can view their meal ingredients" on meal_ingredient
 drop policy if exists "Users can insert their meal ingredients" on meal_ingredients;
 drop policy if exists "Users can update their meal ingredients" on meal_ingredients;
 drop policy if exists "Users can delete their meal ingredients" on meal_ingredients;
+
+-- ADD RECIPIE URLS
+
+alter table meals
+add column if not exists recipe_url text,
+add column if not exists is_favorite boolean not null default false;
+
+alter table meal_plans
+add column if not exists meal_category text,
+add column if not exists is_leftovers boolean not null default false;

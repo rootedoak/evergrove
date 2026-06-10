@@ -90,11 +90,24 @@ export default function Meals() {
     const [quickAddMealId, setQuickAddMealId] = useState(null)
     const [quickAddDate, setQuickAddDate] = useState(getTodayDate())
     const [quickAddNotes, setQuickAddNotes] = useState("")
+    const [showMealForm, setShowMealForm] = useState(false)
+    const [groceryExpanded, setGroceryExpanded] = useState(false)
+    const [mealSearch, setMealSearch] = useState("")
+
+    const [dayQuickAdd, setDayQuickAdd] = useState({
+        dateValue: "",
+        mealId: "",
+        notes: "",
+        planType: "home",
+        restaurantName: ""
+    })
 
     const [mealForm, setMealForm] = useState({
         name: "",
         description: "",
         category: "Dinner",
+        recipe_url: "",
+        is_favorite: false,
         ingredients: [{ name: "", quantity: "", category: "" }]
     })
 
@@ -259,6 +272,18 @@ export default function Meals() {
         })
     }, [consolidatedGroceryItems, shoppingCategoryOrder])
 
+    const filteredMeals = useMemo(() => {
+        const search = mealSearch.trim().toLowerCase()
+
+        if (!search) return meals
+
+        return meals.filter(meal =>
+            meal.name?.toLowerCase().includes(search) ||
+            meal.category?.toLowerCase().includes(search) ||
+            meal.description?.toLowerCase().includes(search)
+        )
+    }, [meals, mealSearch])
+
     function updateIngredient(index, field, value) {
         const nextIngredients = [...mealForm.ingredients]
 
@@ -303,6 +328,8 @@ export default function Meals() {
             name: meal.name || "",
             description: meal.description || "",
             category: meal.category || "Dinner",
+            recipe_url: meal.recipe_url || "",
+            is_favorite: meal.is_favorite || false,
             ingredients: meal.meal_ingredients?.length
                 ? meal.meal_ingredients.map(ingredient => ({
                     name: ingredient.name || "",
@@ -311,6 +338,8 @@ export default function Meals() {
                 }))
                 : [{ name: "", quantity: "", category: "" }]
         })
+
+        setShowMealForm(true)
     }
 
     function cancelEditMeal() {
@@ -320,6 +349,8 @@ export default function Meals() {
             name: "",
             description: "",
             category: "Dinner",
+            recipe_url: "",
+            is_favorite: false,
             ingredients: [{ name: "", quantity: "", category: "" }]
         })
     }
@@ -334,6 +365,50 @@ export default function Meals() {
         setQuickAddMealId(null)
         setQuickAddDate(getTodayDate())
         setQuickAddNotes("")
+    }
+
+    function startDayQuickAdd(dateValue) {
+        setDayQuickAdd({
+            dateValue,
+            mealId: "",
+            notes: "",
+            planType: "home",
+            restaurantName: ""
+        })
+    }
+
+    function cancelDayQuickAdd() {
+        setDayQuickAdd({
+            dateValue: "",
+            mealId: "",
+            notes: "",
+            planType: "home",
+            restaurantName: ""
+        })
+    }
+
+    async function handleDayQuickAdd() {
+        const isRestaurant = dayQuickAdd.planType === "restaurant"
+        const isLeftovers = dayQuickAdd.planType === "leftovers"
+
+        const selectedMeal = meals.find(
+            meal => meal.id === dayQuickAdd.mealId
+        )
+
+        if (!dayQuickAdd.dateValue) return
+        if (!isRestaurant && !isLeftovers && !selectedMeal) return
+        if (isRestaurant && !dayQuickAdd.restaurantName.trim()) return
+
+        await createMealPlan({
+            meal: selectedMeal,
+            plannedDate: dayQuickAdd.dateValue,
+            notes: dayQuickAdd.notes,
+            planType: dayQuickAdd.planType,
+            restaurantName: dayQuickAdd.restaurantName
+        })
+
+        cancelDayQuickAdd()
+        await loadData()
     }
 
     async function handleQuickAdd(meal) {
@@ -450,8 +525,12 @@ export default function Meals() {
             name: "",
             description: "",
             category: "Dinner",
+            recipe_url: "",
+            is_favorite: false,
             ingredients: [{ name: "", quantity: "", category: "" }]
         })
+
+        setShowMealForm(false)
 
         await loadData()
     }
@@ -460,13 +539,14 @@ export default function Meals() {
         event.preventDefault()
 
         const isRestaurant = planForm.planType === "restaurant"
+        const isLeftovers = planForm.planType === "leftovers"
 
         const selectedMeal = meals.find(
             meal => meal.id === planForm.mealId
         )
 
         if (!planForm.plannedDate) return
-        if (!isRestaurant && !selectedMeal) return
+        if (!isRestaurant && !isLeftovers && !selectedMeal) return
         if (isRestaurant && !planForm.restaurantName.trim()) return
 
         await createMealPlan({
@@ -554,7 +634,7 @@ export default function Meals() {
                 <div className="section-heading">
                     <div>
                         <h3>Weekly Meal Planner</h3>
-                        <p>Plan home meals and restaurant nights across the week.</p>
+                        <p>Plan home meals, leftovers, and restaurant nights across the week.</p>
                     </div>
 
                     <div className="button-row">
@@ -610,6 +690,7 @@ export default function Meals() {
                         >
                             <option value="home">Home Meal</option>
                             <option value="restaurant">Restaurant Night</option>
+                            <option value="leftovers">Leftovers</option>
                         </select>
 
                         {planForm.planType === "restaurant" ? (
@@ -623,6 +704,12 @@ export default function Meals() {
                                     })
                                 }
                                 placeholder="Restaurant name"
+                            />
+                        ) : planForm.planType === "leftovers" ? (
+                            <input
+                                className="form-input"
+                                value="Leftovers"
+                                disabled
                             />
                         ) : (
                             <select
@@ -639,6 +726,7 @@ export default function Meals() {
 
                                 {meals.map(meal => (
                                     <option key={meal.id} value={meal.id}>
+                                        {meal.is_favorite ? "⭐ " : ""}
                                         {meal.name}
                                     </option>
                                 ))}
@@ -680,8 +768,19 @@ export default function Meals() {
                     {weekDays.map(day => (
                         <div key={day.dateValue} className="weekly-meal-day">
                             <div className="weekly-meal-day-header">
-                                <p>{day.dayLabel}</p>
-                                <span>{day.dateLabel}</span>
+                                <div>
+                                    <p>{day.dayLabel}</p>
+                                    <span>{day.dateLabel}</span>
+                                </div>
+
+                                <button
+                                    className="secondary-button"
+                                    type="button"
+                                    onClick={() => startDayQuickAdd(day.dateValue)}
+                                >
+                                    <Plus size={14} />
+                                    Add
+                                </button>
                             </div>
 
                             <div className="weekly-meal-day-body">
@@ -694,8 +793,15 @@ export default function Meals() {
                                         <div>
                                             <p className="row-title">
                                                 {plan.plan_type === "restaurant" ? "🍽️ " : ""}
+                                                {plan.plan_type === "leftovers" ? "🥡 " : ""}
                                                 {plan.meal_name}
                                             </p>
+
+                                            {plan.meal_category && (
+                                                <p className="row-subtitle">
+                                                    {plan.meal_category}
+                                                </p>
+                                            )}
 
                                             {plan.notes && (
                                                 <p className="row-subtitle">{plan.notes}</p>
@@ -715,9 +821,402 @@ export default function Meals() {
                                         </button>
                                     </div>
                                 ))}
+
+                                {dayQuickAdd.dateValue === day.dateValue && (
+                                    <div className="quick-add-form">
+                                        <select
+                                            className="form-input"
+                                            value={dayQuickAdd.planType}
+                                            onChange={event =>
+                                                setDayQuickAdd({
+                                                    ...dayQuickAdd,
+                                                    planType: event.target.value,
+                                                    mealId: "",
+                                                    restaurantName: ""
+                                                })
+                                            }
+                                        >
+                                            <option value="home">Home Meal</option>
+                                            <option value="restaurant">Restaurant Night</option>
+                                            <option value="leftovers">Leftovers</option>
+                                        </select>
+
+                                        {dayQuickAdd.planType === "restaurant" ? (
+                                            <input
+                                                className="form-input"
+                                                value={dayQuickAdd.restaurantName}
+                                                onChange={event =>
+                                                    setDayQuickAdd({
+                                                        ...dayQuickAdd,
+                                                        restaurantName: event.target.value
+                                                    })
+                                                }
+                                                placeholder="Restaurant name"
+                                            />
+                                        ) : dayQuickAdd.planType === "leftovers" ? (
+                                            <input
+                                                className="form-input"
+                                                value="Leftovers"
+                                                disabled
+                                            />
+                                        ) : (
+                                            <select
+                                                className="form-input"
+                                                value={dayQuickAdd.mealId}
+                                                onChange={event =>
+                                                    setDayQuickAdd({
+                                                        ...dayQuickAdd,
+                                                        mealId: event.target.value
+                                                    })
+                                                }
+                                            >
+                                                <option value="">Choose a meal</option>
+
+                                                {meals.map(meal => (
+                                                    <option key={meal.id} value={meal.id}>
+                                                        {meal.is_favorite ? "⭐ " : ""}
+                                                        {meal.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
+
+                                        <input
+                                            className="form-input"
+                                            value={dayQuickAdd.notes}
+                                            onChange={event =>
+                                                setDayQuickAdd({
+                                                    ...dayQuickAdd,
+                                                    notes: event.target.value
+                                                })
+                                            }
+                                            placeholder="Notes"
+                                        />
+
+                                        <div className="button-row">
+                                            <button
+                                                className="primary-button"
+                                                type="button"
+                                                onClick={handleDayQuickAdd}
+                                            >
+                                                Add
+                                            </button>
+
+                                            <button
+                                                className="secondary-button"
+                                                type="button"
+                                                onClick={cancelDayQuickAdd}
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}
+                </div>
+            </section>
+
+            <section className="panel saved-meals-panel">
+                <div className="section-heading">
+                    <div>
+                        <h3>Saved Meals</h3>
+                        <p>Create meals once, then reuse them in your weekly plan.</p>
+                    </div>
+
+                    <div className="button-row">
+                        <button
+                            className="primary-button"
+                            type="button"
+                            onClick={() => {
+                                cancelEditMeal()
+                                setShowMealForm(current => !current)
+                            }}
+                        >
+                            <Plus size={16} />
+                            {showMealForm ? "Hide Form" : "Add Saved Meal"}
+                        </button>
+
+                        <UtensilsCrossed size={20} />
+                    </div>
+                </div>
+
+                {showMealForm && (
+                    <form onSubmit={handleCreateMeal} className="form-stack">
+                        <div className="three-column-form saved-meal-main-fields">
+                            <input
+                                className="form-input"
+                                value={mealForm.name}
+                                onChange={event =>
+                                    setMealForm({ ...mealForm, name: event.target.value })
+                                }
+                                placeholder="Meal name"
+                            />
+
+                            <select
+                                className="form-input"
+                                value={mealForm.category}
+                                onChange={event =>
+                                    setMealForm({
+                                        ...mealForm,
+                                        category: event.target.value
+                                    })
+                                }
+                            >
+                                <option value="Breakfast">Breakfast</option>
+                                <option value="Lunch">Lunch</option>
+                                <option value="Dinner">Dinner</option>
+                                <option value="Dessert">Dessert</option>
+                                <option value="Snack">Snack</option>
+                            </select>
+
+                            <input
+                                className="form-input"
+                                value={mealForm.description}
+                                onChange={event =>
+                                    setMealForm({ ...mealForm, description: event.target.value })
+                                }
+                                placeholder="Description"
+                            />
+                        </div>
+
+                        <input
+                            className="form-input"
+                            value={mealForm.recipe_url}
+                            onChange={event =>
+                                setMealForm({
+                                    ...mealForm,
+                                    recipe_url: event.target.value
+                                })
+                            }
+                            placeholder="Recipe URL"
+                        />
+
+                        <label className="checkbox-row">
+                            <input
+                                type="checkbox"
+                                checked={mealForm.is_favorite}
+                                onChange={event =>
+                                    setMealForm({
+                                        ...mealForm,
+                                        is_favorite: event.target.checked
+                                    })
+                                }
+                            />
+                            Favorite Meal
+                        </label>
+
+                        <div className="ingredient-table">
+                            <div className="ingredient-table-header">
+                                <span>Ingredient</span>
+                                <span>Quantity</span>
+                                <span>Category</span>
+                                <span></span>
+                            </div>
+
+                            <div className="ingredient-stack">
+                                {mealForm.ingredients.map((ingredient, index) => (
+                                    <div key={index} className="ingredient-row">
+                                        <input
+                                            className="form-input"
+                                            value={ingredient.name}
+                                            onChange={event =>
+                                                updateIngredient(index, "name", event.target.value)
+                                            }
+                                            placeholder="Ingredient"
+                                        />
+
+                                        <input
+                                            className="form-input"
+                                            value={ingredient.quantity}
+                                            onChange={event =>
+                                                updateIngredient(index, "quantity", event.target.value)
+                                            }
+                                            placeholder="Quantity"
+                                        />
+
+                                        <select
+                                            className="form-input"
+                                            value={ingredient.category}
+                                            onChange={event =>
+                                                updateIngredient(index, "category", event.target.value)
+                                            }
+                                        >
+                                            <option value="">Category</option>
+                                            {shoppingCategoryOrder.map(category => (
+                                                <option key={category} value={category}>
+                                                    {category}
+                                                </option>
+                                            ))}
+                                        </select>
+
+                                        <button
+                                            className="secondary-button"
+                                            type="button"
+                                            onClick={() => removeIngredientRow(index)}
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="button-row">
+                            <button className="secondary-button" type="button" onClick={addIngredientRow}>
+                                <Plus size={16} />
+                                Add Ingredient
+                            </button>
+
+                            <button className="primary-button" type="submit">
+                                {editingMealId ? "Update Meal" : "Save Meal"}
+                            </button>
+
+                            {editingMealId && (
+                                <button
+                                    className="secondary-button"
+                                    type="button"
+                                    onClick={cancelEditMeal}
+                                >
+                                    Cancel Edit
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                )}
+
+                <input
+                    className="form-input"
+                    value={mealSearch}
+                    onChange={event => setMealSearch(event.target.value)}
+                    placeholder="Search saved meals..."
+                />
+
+                <div className="meal-card-grid">
+                    {filteredMeals.map(meal => {
+                        const timesMade = meal.meal_plans?.length || 0
+
+                        const lastMade =
+                            meal.meal_plans?.length
+                                ? [...meal.meal_plans]
+                                    .sort((a, b) =>
+                                        b.planned_date.localeCompare(a.planned_date)
+                                    )[0]?.planned_date
+                                : null
+
+                        return (
+                            <div key={meal.id} className="meal-card">
+                                <div className="meal-card-header">
+                                    <div>
+                                        <h4>
+                                            {meal.is_favorite && "⭐ "}
+                                            {meal.name}
+                                        </h4>
+                                        <p>
+                                            {meal.category || "Dinner"} • Made {timesMade} time{timesMade === 1 ? "" : "s"}
+                                        </p>
+
+                                        {lastMade && (
+                                            <p className="row-subtitle">Last made: {lastMade}</p>
+                                        )}
+                                    </div>
+
+                                    <div className="button-row">
+                                        <button
+                                            className="secondary-button"
+                                            type="button"
+                                            onClick={() => startEditMeal(meal)}
+                                        >
+                                            Edit
+                                        </button>
+
+                                        <button
+                                            className="icon-danger-button"
+                                            type="button"
+                                            onClick={async () => {
+                                                await deleteMeal(meal.id)
+                                                await loadData()
+                                            }}
+                                            aria-label="Delete meal"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {meal.description && (
+                                    <p className="meal-description">{meal.description}</p>
+                                )}
+
+                                {meal.recipe_url && (
+                                    <a
+                                        href={
+                                            meal.recipe_url.startsWith("http")
+                                                ? meal.recipe_url
+                                                : `https://${meal.recipe_url}`
+                                        }
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="muted-link"
+                                    >
+                                        View Recipe
+                                    </a>
+                                )}
+
+                                <div className="quick-add-area">
+                                    {quickAddMealId === meal.id ? (
+                                        <div className="quick-add-form">
+                                            <input
+                                                className="form-input"
+                                                type="date"
+                                                value={quickAddDate}
+                                                onChange={event => setQuickAddDate(event.target.value)}
+                                            />
+
+                                            <input
+                                                className="form-input"
+                                                value={quickAddNotes}
+                                                onChange={event => setQuickAddNotes(event.target.value)}
+                                                placeholder="Notes"
+                                            />
+
+                                            <div className="button-row">
+                                                <button
+                                                    className="primary-button"
+                                                    type="button"
+                                                    onClick={() => handleQuickAdd(meal)}
+                                                >
+                                                    Add
+                                                </button>
+
+                                                <button
+                                                    className="secondary-button"
+                                                    type="button"
+                                                    onClick={cancelQuickAdd}
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            className="secondary-button"
+                                            type="button"
+                                            onClick={() => startQuickAdd(meal)}
+                                        >
+                                            <Plus size={16} />
+                                            Add To Week
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    })}
+
+                    {filteredMeals.length === 0 && (
+                        <p className="muted-text">No saved meals match your search.</p>
+                    )}
                 </div>
             </section>
 
@@ -732,6 +1231,14 @@ export default function Meals() {
                         <button
                             className="secondary-button"
                             type="button"
+                            onClick={() => setGroceryExpanded(current => !current)}
+                        >
+                            {groceryExpanded ? "Hide List" : `Show List (${openGroceryItems.length})`}
+                        </button>
+
+                        <button
+                            className="secondary-button"
+                            type="button"
                             onClick={handleGenerateShoppingList}
                         >
                             <ShoppingCart size={16} />
@@ -740,338 +1247,119 @@ export default function Meals() {
                     </div>
                 </div>
 
-                <div className="grocery-layout">
-                    <form onSubmit={handleCreateGroceryItem} className="form-stack grocery-form">
-                        <input
-                            className="form-input"
-                            value={groceryForm.name}
-                            onChange={event =>
-                                setGroceryForm({ ...groceryForm, name: event.target.value })
-                            }
-                            placeholder="Item"
-                        />
-
-                        <div className="two-column-form">
+                {groceryExpanded && (
+                    <div className="grocery-layout">
+                        <form onSubmit={handleCreateGroceryItem} className="form-stack grocery-form">
                             <input
                                 className="form-input"
-                                value={groceryForm.quantity}
+                                value={groceryForm.name}
                                 onChange={event =>
-                                    setGroceryForm({ ...groceryForm, quantity: event.target.value })
+                                    setGroceryForm({ ...groceryForm, name: event.target.value })
                                 }
-                                placeholder="Quantity"
+                                placeholder="Item"
                             />
 
-                            <select
-                                className="form-input"
-                                value={groceryForm.category}
-                                onChange={event =>
-                                    setGroceryForm({
-                                        ...groceryForm,
-                                        category: event.target.value
-                                    })
-                                }
-                            >
-                                <option value="">Category</option>
-                                {shoppingCategoryOrder.map(category => (
-                                    <option key={category} value={category}>
-                                        {category}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                            <div className="two-column-form">
+                                <input
+                                    className="form-input"
+                                    value={groceryForm.quantity}
+                                    onChange={event =>
+                                        setGroceryForm({ ...groceryForm, quantity: event.target.value })
+                                    }
+                                    placeholder="Quantity"
+                                />
 
-                        <button className="secondary-button" type="submit">
-                            <Plus size={16} />
-                            Add Grocery Item
-                        </button>
-                    </form>
-
-                    <div className="list-stack grocery-list-stack">
-                        {groceryItemsByCategory.map(([category, items]) => (
-                            <div key={category} className="grocery-category-group">
-                                <div className="grocery-category-header">
-                                    <h4>{category}</h4>
-                                    <span>
-                                        {items.length} item{items.length === 1 ? "" : "s"}
-                                    </span>
-                                </div>
-
-                                {items.map(group => (
-                                    <div key={group.name} className="list-row consolidated-grocery-row">
-                                        <button
-                                            className={group.checked ? "check-button checked" : "check-button"}
-                                            type="button"
-                                            onClick={async () => {
-                                                await Promise.all(
-                                                    group.items.map(item =>
-                                                        toggleGroceryItem(item.id, !group.checked)
-                                                    )
-                                                )
-                                                await loadData()
-                                            }}
-                                        >
-                                            {group.checked && <Check size={14} />}
-                                        </button>
-
-                                        <div className="row-grow">
-                                            <p className={group.checked ? "row-title completed" : "row-title"}>
-                                                {group.quantity ? `${group.quantity} ` : ""}
-                                                {group.name}
-                                                {group.items.length > 1 ? ` (${group.items.length})` : ""}
-                                            </p>
-
-                                            {group.usedIn.length > 0 && (
-                                                <div className="used-in-list">
-                                                    <p>Used In:</p>
-                                                    <ul>
-                                                        {group.usedIn.map(mealName => (
-                                                            <li key={mealName}>{mealName}</li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <button
-                                            className="icon-danger-button"
-                                            type="button"
-                                            onClick={async () => {
-                                                await Promise.all(
-                                                    group.items.map(item => deleteGroceryItem(item.id))
-                                                )
-                                                await loadData()
-                                            }}
-                                            aria-label="Delete grocery item"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                ))}
+                                <select
+                                    className="form-input"
+                                    value={groceryForm.category}
+                                    onChange={event =>
+                                        setGroceryForm({
+                                            ...groceryForm,
+                                            category: event.target.value
+                                        })
+                                    }
+                                >
+                                    <option value="">Category</option>
+                                    {shoppingCategoryOrder.map(category => (
+                                        <option key={category} value={category}>
+                                            {category}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
 
-            <section className="panel saved-meals-panel">
-                <div className="section-heading">
-                    <div>
-                        <h3>Saved Meals</h3>
-                        <p>Create meals once, then reuse them in your weekly plan.</p>
-                    </div>
-                    <UtensilsCrossed size={20} />
-                </div>
+                            <button className="secondary-button" type="submit">
+                                <Plus size={16} />
+                                Add Grocery Item
+                            </button>
+                        </form>
 
-                <form onSubmit={handleCreateMeal} className="form-stack">
-                    <div className="three-column-form saved-meal-main-fields">
-                        <input
-                            className="form-input"
-                            value={mealForm.name}
-                            onChange={event =>
-                                setMealForm({ ...mealForm, name: event.target.value })
-                            }
-                            placeholder="Meal name"
-                        />
+                        <div className="list-stack grocery-list-stack">
+                            {groceryItemsByCategory.map(([category, items]) => (
+                                <div key={category} className="grocery-category-group">
+                                    <div className="grocery-category-header">
+                                        <h4>{category}</h4>
+                                        <span>
+                                            {items.length} item{items.length === 1 ? "" : "s"}
+                                        </span>
+                                    </div>
 
-                        <select
-                            className="form-input"
-                            value={mealForm.category}
-                            onChange={event =>
-                                setMealForm({
-                                    ...mealForm,
-                                    category: event.target.value
-                                })
-                            }
-                        >
-                            <option value="Breakfast">Breakfast</option>
-                            <option value="Lunch">Lunch</option>
-                            <option value="Dinner">Dinner</option>
-                            <option value="Dessert">Dessert</option>
-                            <option value="Snack">Snack</option>
-                        </select>
+                                    {items.map(group => (
+                                        <div key={group.name} className="list-row consolidated-grocery-row">
+                                            <button
+                                                className={group.checked ? "check-button checked" : "check-button"}
+                                                type="button"
+                                                onClick={async () => {
+                                                    await Promise.all(
+                                                        group.items.map(item =>
+                                                            toggleGroceryItem(item.id, !group.checked)
+                                                        )
+                                                    )
+                                                    await loadData()
+                                                }}
+                                            >
+                                                {group.checked && <Check size={14} />}
+                                            </button>
 
-                        <input
-                            className="form-input"
-                            value={mealForm.description}
-                            onChange={event =>
-                                setMealForm({ ...mealForm, description: event.target.value })
-                            }
-                            placeholder="Description"
-                        />
-                    </div>
+                                            <div className="row-grow">
+                                                <p className={group.checked ? "row-title completed" : "row-title"}>
+                                                    {group.quantity ? `${group.quantity} ` : ""}
+                                                    {group.name}
+                                                    {group.items.length > 1 ? ` (${group.items.length})` : ""}
+                                                </p>
 
-                    <div className="ingredient-table">
-                        <div className="ingredient-table-header">
-                            <span>Ingredient</span>
-                            <span>Quantity</span>
-                            <span>Category</span>
-                            <span></span>
-                        </div>
+                                                {group.usedIn.length > 0 && (
+                                                    <div className="used-in-list">
+                                                        <p>Used In:</p>
+                                                        <ul>
+                                                            {group.usedIn.map(mealName => (
+                                                                <li key={mealName}>{mealName}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
 
-                        <div className="ingredient-stack">
-                            {mealForm.ingredients.map((ingredient, index) => (
-                                <div key={index} className="ingredient-row">
-                                    <input
-                                        className="form-input"
-                                        value={ingredient.name}
-                                        onChange={event =>
-                                            updateIngredient(index, "name", event.target.value)
-                                        }
-                                        placeholder="Ingredient"
-                                    />
-
-                                    <input
-                                        className="form-input"
-                                        value={ingredient.quantity}
-                                        onChange={event =>
-                                            updateIngredient(index, "quantity", event.target.value)
-                                        }
-                                        placeholder="Quantity"
-                                    />
-
-                                    <select
-                                        className="form-input"
-                                        value={ingredient.category}
-                                        onChange={event =>
-                                            updateIngredient(index, "category", event.target.value)
-                                        }
-                                    >
-                                        <option value="">Category</option>
-                                        {shoppingCategoryOrder.map(category => (
-                                            <option key={category} value={category}>
-                                                {category}
-                                            </option>
-                                        ))}
-                                    </select>
-
-                                    <button
-                                        className="secondary-button"
-                                        type="button"
-                                        onClick={() => removeIngredientRow(index)}
-                                    >
-                                        Remove
-                                    </button>
+                                            <button
+                                                className="icon-danger-button"
+                                                type="button"
+                                                onClick={async () => {
+                                                    await Promise.all(
+                                                        group.items.map(item => deleteGroceryItem(item.id))
+                                                    )
+                                                    await loadData()
+                                                }}
+                                                aria-label="Delete grocery item"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
                             ))}
                         </div>
                     </div>
-
-                    <div className="button-row">
-                        <button className="secondary-button" type="button" onClick={addIngredientRow}>
-                            <Plus size={16} />
-                            Add Ingredient
-                        </button>
-
-                        <button className="primary-button" type="submit">
-                            {editingMealId ? "Update Meal" : "Save Meal"}
-                        </button>
-
-                        {editingMealId && (
-                            <button
-                                className="secondary-button"
-                                type="button"
-                                onClick={cancelEditMeal}
-                            >
-                                Cancel Edit
-                            </button>
-                        )}
-                    </div>
-                </form>
-
-                <div className="meal-card-grid">
-                    {meals.map(meal => (
-                        <div key={meal.id} className="meal-card">
-                            <div className="meal-card-header">
-                                <div>
-                                    <h4>{meal.name}</h4>
-                                    <p>{meal.category || "Dinner"}</p>
-                                </div>
-
-                                <div className="button-row">
-                                    <button
-                                        className="secondary-button"
-                                        type="button"
-                                        onClick={() => startEditMeal(meal)}
-                                    >
-                                        Edit
-                                    </button>
-
-                                    <button
-                                        className="icon-danger-button"
-                                        type="button"
-                                        onClick={async () => {
-                                            await deleteMeal(meal.id)
-                                            await loadData()
-                                        }}
-                                        aria-label="Delete meal"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {meal.description && (
-                                <p className="meal-description">{meal.description}</p>
-                            )}
-
-                            <ul className="ingredient-list">
-                                {(meal.meal_ingredients || []).map(ingredient => (
-                                    <li key={ingredient.id}>
-                                        {ingredient.quantity ? `${ingredient.quantity} ` : ""}
-                                        {ingredient.name}
-                                    </li>
-                                ))}
-                            </ul>
-
-                            <div className="quick-add-area">
-                                {quickAddMealId === meal.id ? (
-                                    <div className="quick-add-form">
-                                        <input
-                                            className="form-input"
-                                            type="date"
-                                            value={quickAddDate}
-                                            onChange={event => setQuickAddDate(event.target.value)}
-                                        />
-
-                                        <input
-                                            className="form-input"
-                                            value={quickAddNotes}
-                                            onChange={event => setQuickAddNotes(event.target.value)}
-                                            placeholder="Notes"
-                                        />
-
-                                        <div className="button-row">
-                                            <button
-                                                className="primary-button"
-                                                type="button"
-                                                onClick={() => handleQuickAdd(meal)}
-                                            >
-                                                Add
-                                            </button>
-
-                                            <button
-                                                className="secondary-button"
-                                                type="button"
-                                                onClick={cancelQuickAdd}
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <button
-                                        className="secondary-button"
-                                        type="button"
-                                        onClick={() => startQuickAdd(meal)}
-                                    >
-                                        <Plus size={16} />
-                                        Add To Week
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                )}
             </section>
         </div>
     )

@@ -27,7 +27,13 @@ export async function getMeals() {
         .from("meals")
         .select(`
             *,
-            meal_ingredients (*)
+            meal_ingredients (*),
+            meal_plans (
+                id,
+                planned_date,
+                plan_type,
+                is_leftovers
+            )
         `)
         .eq("household_id", household.id)
         .order("name", { ascending: true })
@@ -36,7 +42,14 @@ export async function getMeals() {
     return data || []
 }
 
-export async function createMeal({ name, description, category, ingredients = [] }) {
+export async function createMeal({
+    name,
+    description,
+    category,
+    recipe_url = "",
+    is_favorite = false,
+    ingredients = []
+}) {
     const { user, household } = await getUserAndHousehold()
 
     const { data: meal, error: mealError } = await supabase
@@ -46,7 +59,9 @@ export async function createMeal({ name, description, category, ingredients = []
             household_id: household.id,
             name,
             description,
-            category: category || "Dinner"
+            category: category || "Dinner",
+            recipe_url: recipe_url || "",
+            is_favorite: Boolean(is_favorite)
         })
         .select()
         .single()
@@ -75,7 +90,17 @@ export async function createMeal({ name, description, category, ingredients = []
     return meal
 }
 
-export async function updateMeal(id, { name, description, category, ingredients = [] }) {
+export async function updateMeal(
+    id,
+    {
+        name,
+        description,
+        category,
+        recipe_url = "",
+        is_favorite = false,
+        ingredients = []
+    }
+) {
     const { user, household } = await getUserAndHousehold()
 
     const { data: meal, error: mealError } = await supabase
@@ -83,7 +108,9 @@ export async function updateMeal(id, { name, description, category, ingredients 
         .update({
             name,
             description,
-            category: category || "Dinner"
+            category: category || "Dinner",
+            recipe_url: recipe_url || "",
+            is_favorite: Boolean(is_favorite)
         })
         .eq("id", id)
         .eq("household_id", household.id)
@@ -149,31 +176,49 @@ export async function getMealPlans() {
     return data || []
 }
 
-export async function createMealPlan({ meal, plannedDate, notes, planType = "home", restaurantName = "" }) {
+export async function createMealPlan({
+    meal,
+    plannedDate,
+    notes,
+    planType = "home",
+    restaurantName = "",
+    isLeftovers = false
+}) {
     const { user, household } = await getUserAndHousehold()
 
     const isRestaurantNight = planType === "restaurant"
+    const isLeftoversNight = planType === "leftovers" || isLeftovers
+
+    const mealName = isLeftoversNight
+        ? "Leftovers"
+        : isRestaurantNight
+            ? restaurantName || "Eat Out"
+            : meal?.name || "Dinner"
 
     const { data: plan, error } = await supabase
         .from("meal_plans")
         .insert({
             user_id: user.id,
             household_id: household.id,
-            meal_id: isRestaurantNight ? null : meal?.id || null,
-            meal_name: isRestaurantNight
-                ? restaurantName || "Eat Out"
-                : meal?.name || "Dinner",
+            meal_id: isRestaurantNight || isLeftoversNight ? null : meal?.id || null,
+            meal_name: mealName,
             planned_date: plannedDate,
             notes: notes || "",
-            plan_type: planType,
-            restaurant_name: isRestaurantNight ? restaurantName : null
+            plan_type: isLeftoversNight ? "leftovers" : planType,
+            restaurant_name: isRestaurantNight ? restaurantName : null,
+            meal_category: isLeftoversNight
+                ? "Leftovers"
+                : isRestaurantNight
+                    ? "Restaurant"
+                    : meal?.category || "Dinner",
+            is_leftovers: Boolean(isLeftoversNight)
         })
         .select()
         .single()
 
     if (error) throw error
 
-    if (!isRestaurantNight) {
+    if (!isRestaurantNight && !isLeftoversNight) {
         const groceryRows = (meal?.meal_ingredients || [])
             .filter(item => item.name?.trim())
             .map(item => ({
