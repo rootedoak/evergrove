@@ -482,12 +482,11 @@ export default function Calendar() {
         refreshCalendarEvents
     } = useCalendarEvents()
 
-    const weekStartsOn = preferences?.week_starts_on || "Sunday"
     const showActivitySessions = preferences?.show_activity_sessions !== false
 
     const calendarDays = useMemo(
-        () => getCalendarDays(visibleDate, weekStartsOn),
-        [visibleDate, weekStartsOn]
+        () => getCalendarDays(visibleDate, "Sunday"),
+        [visibleDate]
     )
 
     const events = useMemo(
@@ -832,10 +831,15 @@ export default function Calendar() {
 
     const todayString = getTodayString()
 
-    const weekdayLabels =
-        weekStartsOn === "Monday"
-            ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-            : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    const weekdayLabels = [
+        "Sun",
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat"
+    ]
 
     return (
         <div className="calendar-page">
