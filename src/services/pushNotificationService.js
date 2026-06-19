@@ -158,7 +158,17 @@ export async function sendTestPushNotification() {
         }),
     })
 
-    const result = await response.json()
+    const responseText = await response.text()
+
+    let result = {}
+
+    try {
+        result = responseText ? JSON.parse(responseText) : {}
+    } catch {
+        result = {
+            error: responseText,
+        }
+    }
 
     if (!response.ok) {
         throw new Error(result.error || "Unable to send test push.")
