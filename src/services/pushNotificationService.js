@@ -176,3 +176,43 @@ export async function sendTestPushNotification() {
 
     return result
 }
+
+export async function sendPushNotificationToUser({
+    userId,
+    title,
+    body,
+    url = "/inbox",
+}) {
+    if (!userId || !title || !body) return null
+
+    const response = await fetch("/api/send-push", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            userId,
+            title,
+            body,
+            url,
+        }),
+    })
+
+    const responseText = await response.text()
+
+    let result = {}
+
+    try {
+        result = responseText ? JSON.parse(responseText) : {}
+    } catch {
+        result = {
+            error: responseText,
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error(result.error || "Unable to send push notification.")
+    }
+
+    return result
+}

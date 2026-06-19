@@ -1,6 +1,8 @@
 import { supabase } from "../lib/supabase"
 import { ensureMyHousehold } from "./householdService"
 
+import { sendPushNotificationToUser } from "./pushNotificationService"
+
 async function getCurrentUser() {
     const {
         data: { user },
@@ -91,6 +93,17 @@ export async function createPersonalInboxItem(payload) {
         })
 
     if (error) throw error
+
+    try {
+        await sendPushNotificationToUser({
+            userId: recipientUserId,
+            title: payload.title || "Evergrove",
+            body: payload.message || "You have a new Evergrove update.",
+            url: "/inbox"
+        })
+    } catch (pushError) {
+        console.error("Push notification failed:", pushError)
+    }
 
     return null
 }
