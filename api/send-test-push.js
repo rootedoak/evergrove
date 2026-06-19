@@ -1,30 +1,15 @@
 import webpush from "web-push"
 import { createClient } from "@supabase/supabase-js"
 
-const requiredEnvVars = [
-    "SUPABASE_URL",
-    "SUPABASE_SERVICE_ROLE_KEY",
-    "VITE_VAPID_PUBLIC_KEY",
-    "VAPID_PRIVATE_KEY",
-    "VAPID_SUBJECT",
-]
-
-for (const envVar of requiredEnvVars) {
-    if (!process.env[envVar]) {
-        throw new Error(`Missing required environment variable: ${envVar}`)
-    }
+function getMissingEnvVars() {
+    return [
+        "SUPABASE_URL",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "VITE_VAPID_PUBLIC_KEY",
+        "VAPID_PRIVATE_KEY",
+        "VAPID_SUBJECT",
+    ].filter(envVar => !process.env[envVar])
 }
-
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-)
-
-webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT,
-    process.env.VITE_VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-)
 
 export default async function handler(req, res) {
     if (req.method !== "POST") {
@@ -32,6 +17,25 @@ export default async function handler(req, res) {
     }
 
     try {
+        const missingEnvVars = getMissingEnvVars()
+
+        if (missingEnvVars.length > 0) {
+            return res.status(500).json({
+                error: `Missing environment variables: ${missingEnvVars.join(", ")}`,
+            })
+        }
+
+        const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_ROLE_KEY
+        )
+
+        webpush.setVapidDetails(
+            process.env.VAPID_SUBJECT,
+            process.env.VITE_VAPID_PUBLIC_KEY,
+            process.env.VAPID_PRIVATE_KEY
+        )
+
         const { userId } = req.body
 
         if (!userId) {
@@ -96,9 +100,15 @@ export default async function handler(req, res) {
             sent: results.filter(result => result.status === "fulfilled").length,
             failed: results.filter(result => result.status === "rejected").length,
             expiredRemoved: expiredSubscriptionIds.length,
+            failures: results
+                .filter(result => result.status === "rejected")
+                .map(result => ({
+                    statusCode: result.reason?.statusCode,
+                    message: result.reason?.message,
+                })),
         })
     } catch (error) {
-        console.error(error)
+        console.error("send-test-push error:", error)
 
         return res.status(500).json({
             error: error.message || "Unable to send test push.",
