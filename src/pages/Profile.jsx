@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../lib/supabase"
+
+import PushNotificationSettings from "../components/PushNotificationSettings"
+
 import {
     getPreferences,
     updatePreferences
@@ -519,6 +522,14 @@ export default function Profile() {
                                 onChange={value => updatePreference("inbox_reminders", value)}
                             />
                         </div>
+                    </SettingsSection>
+
+                    <SettingsSection
+                        title="Push Notifications"
+                        scope="Personal user setting"
+                        subtitle="Receive device alerts for important Evergrove updates."
+                    >
+                        <PushNotificationSettings />
                     </SettingsSection>
 
                     <div className="settings-save-row">
