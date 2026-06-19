@@ -26,7 +26,8 @@ const userPreferenceFields = [
     "show_trips",
     "show_school_items",
     "show_activity_sessions",
-    "show_suggested_tasks"
+    "show_suggested_tasks",
+    "task_default_view"
 ]
 
 async function getCurrentUserId() {

@@ -4,6 +4,11 @@ import useSchoolItems from "../hooks/useSchoolItems"
 import useFamilyMembers from "../hooks/useFamilyMembers"
 import useTrips from "../hooks/useTrips"
 import usePreferences from "../hooks/usePreferences"
+
+import { useEffect, useMemo, useState } from "react"
+import { supabase } from "../lib/supabase"
+import { filterTasksByScope } from "../utils/taskFilters"
+
 import useActivitySessions from "../hooks/useActivitySessions"
 import useMeals from "../hooks/useMeals"
 
@@ -20,6 +25,11 @@ import { getTaskSuggestions } from "../utils/taskSuggestions"
 function getDateOnly(value) {
     if (!value) return ""
     return String(value).slice(0, 10)
+}
+
+function isChildMember(member) {
+    const role = String(member.role || "").toLowerCase()
+    return role === "child"
 }
 
 function parseDateParts(dateString) {
@@ -48,6 +58,37 @@ function getTodayString() {
         today.getMonth() + 1,
         today.getDate()
     )
+}
+
+function getWeekRange(weekStartsOn = "sunday") {
+    const today = createLocalDate(getTodayString())
+    const start = new Date(today)
+    const day = start.getDay()
+
+    const offset =
+        weekStartsOn === "monday"
+            ? day === 0
+                ? -6
+                : 1 - day
+            : -day
+
+    start.setDate(start.getDate() + offset)
+
+    const end = new Date(start)
+    end.setDate(start.getDate() + 6)
+
+    return {
+        start: formatDateParts(
+            start.getFullYear(),
+            start.getMonth() + 1,
+            start.getDate()
+        ),
+        end: formatDateParts(
+            end.getFullYear(),
+            end.getMonth() + 1,
+            end.getDate()
+        )
+    }
 }
 
 function getDaysUntil(dateString) {
@@ -115,6 +156,27 @@ function isHappeningNow(event) {
         currentMinutes >= getMinutesFromTime(event.start_time) &&
         currentMinutes <= getMinutesFromTime(event.end_time)
     )
+}
+
+function getOwnershipBadge(task) {
+    if (task.visibility === "private") {
+        return {
+            label: "Private",
+            icon: "🔒"
+        }
+    }
+
+    if (task.family_members?.name) {
+        return {
+            label: task.family_members.name,
+            icon: task.family_members.avatar_emoji || "👤"
+        }
+    }
+
+    return {
+        label: "Family",
+        icon: "🏠"
+    }
 }
 
 function getUpcomingBirthdayDate(birthdate) {
@@ -378,8 +440,9 @@ function TodayEventRow({ item }) {
 }
 
 function TaskRow({ task, onComplete }) {
-    const memberName = task.family_members?.name || "To-Do"
-    const initials = getInitials(memberName)
+    const memberName = task.family_members?.name || "Family"
+
+    const ownership = getOwnershipBadge(task)
 
     return (
         <div className="home-task-row">
@@ -390,11 +453,10 @@ function TaskRow({ task, onComplete }) {
                 onClick={() => onComplete(task)}
             />
 
-            <span className="member-avatar">
-                {initials || "TD"}
-            </span>
-
             <div>
+                <span className="task-owner-badge">
+                    {ownership.icon} {ownership.label}
+                </span>
                 <strong>{task.title}</strong>
 
                 <p>
@@ -449,6 +511,7 @@ function VisibilityBadge({ visibility }) {
 }
 
 export default function Dashboard() {
+    const [currentUserId, setCurrentUserId] = useState(null)
     const { activities, loading, refreshActivities } = useActivities()
     const { tasks, loading: tasksLoading, refreshTasks } = useTasks()
     const { schoolItems } = useSchoolItems()
@@ -463,7 +526,8 @@ export default function Dashboard() {
     const { dinnerTonight, loading: mealsLoading } = useMeals()
 
     const todayString = getTodayString()
-    const dashboardWindowDays = Number(preferences?.dashboard_window_days || 7)
+    const weekStartsOn = preferences?.week_starts_on || "sunday"
+    const currentWeek = getWeekRange(weekStartsOn)
     const timelineDays = Number(preferences?.timeline_window_days || 90)
 
     const {
@@ -507,8 +571,11 @@ export default function Dashboard() {
 
     const upcomingEvents = allEvents
         .filter(item => {
-            const days = getDaysUntil(item.date)
-            return days !== null && days > 0 && days <= dashboardWindowDays
+            return (
+                item.date > todayString &&
+                item.date >= currentWeek.start &&
+                item.date <= currentWeek.end
+            )
         })
         .sort((a, b) => {
             const dateDiff = createLocalDate(a.date) - createLocalDate(b.date)
@@ -523,8 +590,32 @@ export default function Dashboard() {
 
     const upcomingEventsByDate = groupEventsByDate(upcomingEvents)
 
-    const openTasks = tasks
-        .filter(task => task.status !== "complete")
+    const currentMember = familyMembers.find(
+        member => member.user_id === currentUserId
+    )
+
+    const childMemberIds = familyMembers
+        .filter(isChildMember)
+        .map(member => member.id)
+
+    const dashboardTaskScope = preferences?.task_default_view || "mine_family"
+
+    const scopedTasks = useMemo(() => {
+        return filterTasksByScope(
+            tasks,
+            dashboardTaskScope,
+            currentMember?.id,
+            childMemberIds
+        )
+    }, [tasks, dashboardTaskScope, currentMember?.id, childMemberIds])
+
+    const openTasks = scopedTasks
+        .filter(task => {
+            if (task.status === "complete") return false
+            if (!task.due_date) return false
+
+            return task.due_date <= currentWeek.end
+        })
         .sort((a, b) => {
             if (!a.due_date && !b.due_date) return 0
             if (!a.due_date) return 1
@@ -569,6 +660,24 @@ export default function Dashboard() {
             alert(error.message || "Could not complete to-do.")
         }
     }
+
+    useEffect(() => {
+        async function loadCurrentUser() {
+            const {
+                data: { user },
+                error
+            } = await supabase.auth.getUser()
+
+            if (error) {
+                console.error(error)
+                return
+            }
+
+            setCurrentUserId(user?.id || null)
+        }
+
+        loadCurrentUser()
+    }, [])
 
     return (
         <div className="home-command-page">
@@ -713,13 +822,13 @@ export default function Dashboard() {
 
             <HomeSection
                 eyebrow="To-Do"
-                title="Open To-Do's"
+                title="This Week's To-Do's"
                 count={openTasks.length}
             >
                 {tasksLoading ? (
                     <EmptyState>Loading to-do's...</EmptyState>
                 ) : openTasks.length === 0 ? (
-                    <EmptyState>No open to-do's.</EmptyState>
+                    <EmptyState>No to-do's due this week.</EmptyState>
                 ) : (
                     <div className="home-check-list">
                         {openTasks.map(task => (
@@ -734,16 +843,14 @@ export default function Dashboard() {
             </HomeSection>
 
             <HomeSection
-                eyebrow={`Next ${dashboardWindowDays} Days`}
-                title="This Week"
+                eyebrow="This Week"
+                title="Coming Up"
                 count={upcomingEvents.length}
             >
                 {dashboardLoading ? (
                     <EmptyState>Loading the week ahead...</EmptyState>
                 ) : upcomingEvents.length === 0 ? (
-                    <EmptyState>
-                        Nothing coming up in the next {dashboardWindowDays} days.
-                    </EmptyState>
+                    <EmptyState>Nothing else coming up this week.</EmptyState>
                 ) : (
                     <div className="home-week-list">
                         {Object.keys(upcomingEventsByDate).map(date => (

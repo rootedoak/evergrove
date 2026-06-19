@@ -558,9 +558,9 @@ Status: Backlog
 
 ## FAM-015
 Notifications & Reminders  
-Status: Planned
+Status: Complete
 
-### Goals
+### Completed
 - Upcoming deadline alerts
 - Registration reminders
 - School reminders
@@ -1117,6 +1117,40 @@ Status: Backlog
 - Mobile calendar improvements
 - Release notes system
 - Dynamic version/build tracking
+
+## UI-002
+Dashboard Modernization
+Status: Backlog
+
+### Goals
+- Reduce dashboard clutter
+- Improve mobile usability
+- Modular dashboard cards
+- Customizable dashboard layout
+
+---
+
+## UI-003
+Mobile Calendar Experience
+Status: Backlog
+
+### Goals
+- Calendar event popovers
+- Faster event editing
+- Improved month navigation
+- Mobile-first interactions
+
+---
+
+## FAM-025
+Recurring Important Dates
+Status: Planned
+
+### Goals
+- Annual birthdays
+- Annual anniversaries
+- Annual holidays
+- Recurring family events
 
 ## Platform & Infrastructure
 

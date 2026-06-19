@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
+
+import { supabase } from "../lib/supabase"
 
 import {
     completeTask,
@@ -12,6 +14,16 @@ import {
 import { getActivities } from "../services/activityService"
 import { getFamilyMembers } from "../services/familyService"
 
+import usePreferences from "../hooks/usePreferences"
+import { updatePreferences } from "../services/preferenceService"
+
+import { filterTasksByScope } from "../utils/taskFilters"
+
+import {
+    getLocalDateString,
+    isDateInCurrentWeek
+} from "../utils/dateUtils"
+
 const initialForm = {
     title: "",
     description: "",
@@ -22,6 +34,14 @@ const initialForm = {
     trip_id: "",
     visibility: "household"
 }
+
+const taskScopes = [
+    { key: "mine_family", label: "Mine + Family" },
+    { key: "mine", label: "Mine" },
+    { key: "family", label: "Family" },
+    { key: "kids", label: "Kids" },
+    { key: "all", label: "All" }
+]
 
 function normalizeTask(task) {
     return {
@@ -36,15 +56,6 @@ function normalizeTask(task) {
     }
 }
 
-function getTodayString() {
-    const today = new Date()
-    return [
-        today.getFullYear(),
-        String(today.getMonth() + 1).padStart(2, "0"),
-        String(today.getDate()).padStart(2, "0")
-    ].join("-")
-}
-
 function createLocalDate(dateString) {
     const [year, month, day] = String(dateString).slice(0, 10).split("-").map(Number)
     return new Date(year, month - 1, day)
@@ -53,7 +64,7 @@ function createLocalDate(dateString) {
 function getDaysUntil(dateString) {
     if (!dateString) return null
 
-    const today = createLocalDate(getTodayString())
+    const today = createLocalDate(getLocalDateString())
     const target = createLocalDate(dateString)
 
     return Math.round((target - today) / (1000 * 60 * 60 * 24))
@@ -89,6 +100,11 @@ function getTaskMeta(task, familyMembers) {
     return pieces.join(" • ")
 }
 
+function isChildMember(member) {
+    const role = String(member.role || "").toLowerCase()
+    return role === "child"
+}
+
 function groupTasks(tasks) {
     const groups = {
         overdue: [],
@@ -116,7 +132,7 @@ function groupTasks(tasks) {
             return
         }
 
-        if (daysUntil !== null && daysUntil > 0 && daysUntil <= 7) {
+        if (task.due_date && isDateInCurrentWeek(task.due_date)) {
             groups.thisWeek.push(task)
             return
         }
@@ -153,9 +169,32 @@ function TaskDestinationCard({ to, icon, title, description }) {
     )
 }
 
+function getOwnershipBadge(task) {
+    if (task.visibility === "private") {
+        return {
+            label: "Private",
+            icon: "🔒"
+        }
+    }
+
+    if (task.family_members?.name) {
+        return {
+            label: task.family_members.name,
+            icon: task.family_members.avatar_emoji || "👤"
+        }
+    }
+
+    return {
+        label: "Family",
+        icon: "🏠"
+    }
+}
+
 function TaskRow({ task, familyMembers, onComplete, onEdit, onDelete }) {
     const isComplete = task.status === "complete"
     const meta = getTaskMeta(task, familyMembers)
+
+    const ownership = getOwnershipBadge(task)
 
     return (
         <div className={`task-command-row ${isComplete ? "task-command-row-complete" : ""}`}>
@@ -170,7 +209,13 @@ function TaskRow({ task, familyMembers, onComplete, onEdit, onDelete }) {
             </button>
 
             <div className="task-command-main">
-                <strong>{task.title}</strong>
+                <div className="task-title-line">
+                    <span className="task-owner-badge">
+                        {ownership.icon} {ownership.label}
+                    </span>
+
+                    <strong>{task.title}</strong>
+                </div>
                 {meta && <p>{meta}</p>}
                 {task.description && <small>{task.description}</small>}
             </div>
@@ -231,6 +276,7 @@ function TaskSection({
 }
 
 export default function Tasks() {
+    const { preferences, refreshPreferences } = usePreferences()
     const [searchParams] = useSearchParams()
     const tripId = searchParams.get("tripId")
     const dueDateParam = searchParams.get("dueDate")
@@ -238,16 +284,32 @@ export default function Tasks() {
     const [tasks, setTasks] = useState([])
     const [familyMembers, setFamilyMembers] = useState([])
     const [activities, setActivities] = useState([])
+    const [currentUserId, setCurrentUserId] = useState(null)
     const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
     const [form, setForm] = useState(initialForm)
     const [saving, setSaving] = useState(false)
     const [editingId, setEditingId] = useState(null)
     const [showCompleted, setShowCompleted] = useState(false)
+    const [taskScope, setTaskScope] = useState("mine_family")
 
-    const visibleTasks = tripId
-        ? tasks.filter(task => task.trip_id === tripId)
-        : tasks
+    const currentMember = familyMembers.find(member => member.user_id === currentUserId)
+    const childMemberIds = familyMembers.filter(isChildMember).map(member => member.id)
+
+    const visibleTasks = useMemo(() => {
+        const tripTasks = tripId
+            ? tasks.filter(task => task.trip_id === tripId)
+            : tasks
+
+        if (tripId) return tripTasks
+
+        return filterTasksByScope(
+            tripTasks,
+            taskScope,
+            currentMember?.id,
+            childMemberIds
+        )
+    }, [tasks, tripId, taskScope, currentMember?.id, childMemberIds])
 
     const selectedTrip = visibleTasks.find(task => task.trips)?.trips
     const groupedTasks = groupTasks(sortTasks(visibleTasks))
@@ -260,12 +322,20 @@ export default function Tasks() {
 
     async function loadData() {
         try {
+            const {
+                data: { user },
+                error
+            } = await supabase.auth.getUser()
+
+            if (error) throw error
+
             const [taskData, memberData, activityData] = await Promise.all([
                 getTasks(),
                 getFamilyMembers(),
                 getActivities()
             ])
 
+            setCurrentUserId(user?.id || null)
             setTasks(taskData)
             setFamilyMembers(memberData)
             setActivities(activityData)
@@ -290,6 +360,12 @@ export default function Tasks() {
         }
     }, [dueDateParam, tripId])
 
+    useEffect(() => {
+        if (preferences?.task_default_view && !tripId) {
+            setTaskScope(preferences.task_default_view)
+        }
+    }, [preferences?.task_default_view, tripId])
+
     function updateForm(field, value) {
         setForm(current => ({
             ...current,
@@ -311,6 +387,20 @@ export default function Tasks() {
         setForm(normalizeTask(task))
         setShowForm(true)
         window.scrollTo({ top: 0, behavior: "smooth" })
+    }
+
+    async function handleTaskScopeChange(scope) {
+        setTaskScope(scope)
+
+        try {
+            await updatePreferences({
+                task_default_view: scope
+            })
+
+            await refreshPreferences?.()
+        } catch (error) {
+            console.error(error)
+        }
     }
 
     async function handleSubmit(event) {
@@ -410,6 +500,28 @@ export default function Tasks() {
                     {showForm ? "Cancel" : "+ Add To-Do"}
                 </button>
             </header>
+
+            {!tripId && (
+                <section className="task-scope-filter card">
+                    <div>
+                        <strong>Showing</strong>
+                        <p>Choose which To-Do's you want to focus on.</p>
+                    </div>
+
+                    <div className="task-scope-buttons">
+                        {taskScopes.map(scope => (
+                            <button
+                                key={scope.key}
+                                type="button"
+                                className={taskScope === scope.key ? "active" : ""}
+                                onClick={() => handleTaskScopeChange(scope.key)}
+                            >
+                                {scope.label}
+                            </button>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {!tripId && (
                 <section className="task-destinations">
@@ -539,7 +651,7 @@ export default function Tasks() {
                     <p className="dashboard-empty">
                         {tripId
                             ? "No checklist tasks for this trip yet."
-                            : "No tasks added yet."}
+                            : "No tasks match this view."}
                     </p>
                 ) : (
                     <>
@@ -568,10 +680,10 @@ export default function Tasks() {
 
                         <TaskSection
                             title="This Week"
-                            subtitle="Due in the next 7 days."
+                            subtitle="Due before the end of this calendar week."
                             tasks={groupedTasks.thisWeek}
                             familyMembers={familyMembers}
-                            emptyText="Nothing due this week."
+                            emptyText="Nothing else due this week."
                             onComplete={handleComplete}
                             onEdit={startEdit}
                             onDelete={handleDelete}

@@ -1297,3 +1297,29 @@ on personal_reminders
 for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
+
+-- ADD DISPLAY FIELDS TO USER PREFERENCES
+
+alter table user_display_preferences
+add column if not exists todo_default_scope text default 'mine_family',
+add column if not exists dashboard_task_window text default 'this_week';
+
+alter table user_display_preferences
+add constraint todo_default_scope_check
+check (todo_default_scope in ('mine', 'mine_family', 'family', 'kids', 'all'));
+
+alter table user_display_preferences
+add constraint dashboard_task_window_check
+check (dashboard_task_window in ('today', 'this_week', 'next_7_days'));
+
+-- ADD TASK FILTER TO USER PREFERENCES
+
+alter table user_display_preferences
+add column if not exists task_default_view text default 'mine_family';
+
+alter table user_display_preferences
+drop constraint if exists task_default_view_check;
+
+alter table user_display_preferences
+add constraint task_default_view_check
+check (task_default_view in ('mine', 'mine_family', 'family', 'kids', 'all'));
