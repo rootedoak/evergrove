@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 import logo from "./assets/evergrove-logo.svg"
 
+import PWAInstallBanner from "./components/PWAInstallBanner"
+
 import {
   APP_NAME,
   APP_VERSION,
@@ -168,6 +170,8 @@ function AppLayout() {
           </p>
         </div>
       </aside>
+
+      <PWAInstallBanner />
 
       <main className="main-content">
         <Routes>
