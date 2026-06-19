@@ -36,9 +36,23 @@ self.addEventListener("fetch", event => {
     if (event.request.method !== "GET") return
 
     event.respondWith(
-        fetch(event.request).catch(() => {
-            return caches.match(event.request)
-        })
+        fetch(event.request)
+            .then(response => response)
+            .catch(async () => {
+                const cachedResponse = await caches.match(event.request)
+
+                if (cachedResponse) {
+                    return cachedResponse
+                }
+
+                return new Response("Offline", {
+                    status: 503,
+                    statusText: "Offline",
+                    headers: {
+                        "Content-Type": "text/plain",
+                    },
+                })
+            })
     )
 })
 

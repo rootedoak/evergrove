@@ -7,24 +7,6 @@ import {
     unsubscribeFromPushNotifications,
 } from "../services/pushNotificationService"
 
-async function handleSendTest() {
-    setSaving(true)
-    setMessage("")
-
-    try {
-        const result = await sendTestPushNotification()
-
-        setMessage(
-            `Test notification sent. Sent: ${result.sent}, Failed: ${result.failed}`
-        )
-    } catch (error) {
-        console.error(error)
-        setMessage(error.message || "Unable to send test notification.")
-    } finally {
-        setSaving(false)
-    }
-}
-
 export default function PushNotificationSettings() {
     const [supported, setSupported] = useState(false)
     const [permission, setPermission] = useState("default")
@@ -73,6 +55,24 @@ export default function PushNotificationSettings() {
         }
     }
 
+    async function handleSendTest() {
+        setSaving(true)
+        setMessage("")
+
+        try {
+            const result = await sendTestPushNotification()
+
+            setMessage(
+                `Test notification sent. Sent: ${result.sent}, Failed: ${result.failed}`
+            )
+        } catch (error) {
+            console.error(error)
+            setMessage(error.message || "Unable to send test notification.")
+        } finally {
+            setSaving(false)
+        }
+    }
+
     if (!supported) {
         return (
             <div className="settings-empty-state">
@@ -80,7 +80,6 @@ export default function PushNotificationSettings() {
             </div>
         )
     }
-
 
     return (
         <div className="settings-toggle-grid">
@@ -108,20 +107,20 @@ export default function PushNotificationSettings() {
 
                     <button
                         type="button"
-                        className="danger-button"
-                        onClick={handleDisable}
-                        disabled={saving}
-                    >
-                        Disable
-                    </button>
-
-                    <button
-                        type="button"
                         className="secondary-button"
                         onClick={handleSendTest}
                         disabled={saving || permission !== "granted"}
                     >
                         Send Test
+                    </button>
+
+                    <button
+                        type="button"
+                        className="danger-button"
+                        onClick={handleDisable}
+                        disabled={saving}
+                    >
+                        Disable
                     </button>
                 </div>
             </div>
