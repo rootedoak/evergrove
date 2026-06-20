@@ -1,6 +1,7 @@
 import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
 import { createTripInboxNotification } from "./tripInboxNotificationService"
+import { createFeedEvent } from "./feedService"
 
 async function getCurrentUserId() {
     const {
@@ -71,6 +72,22 @@ export async function createTrip(trip, familyMemberIds = []) {
     }
 
     await createTripInboxNotification(data)
+
+    await createFeedEvent({
+        event_type: "trip_created",
+        title: data.name || data.title || "Trip added",
+        description: data.destination
+            ? `Family trip added to ${data.destination}`
+            : "Family trip added",
+        reference_type: "trip",
+        reference_id: data.id,
+        metadata: {
+            trip_name: data.name || data.title || null,
+            destination: data.destination || null,
+            start_date: data.start_date || null,
+            end_date: data.end_date || null,
+        },
+    })
 
     return data
 }

@@ -1,6 +1,7 @@
 import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
 import { createActivityInboxNotification } from "./activityInboxNotificationService"
+import { createFeedEvent } from "./feedService"
 
 async function getCurrentUserId() {
     const {
@@ -57,6 +58,20 @@ export async function createActivity(activity) {
     if (error) throw error
 
     await createActivityInboxNotification(data)
+
+    await createFeedEvent({
+        event_type: "activity_created",
+        title: data.name || "Activity added",
+        description: "Family activity added",
+        reference_type: "activity",
+        reference_id: data.id,
+        metadata: {
+            activity_name: data.name || null,
+            family_member_id: data.family_member_id || null,
+            organization: data.organization || null,
+            season: data.season || null,
+        },
+    })
 
     return data
 }

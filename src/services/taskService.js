@@ -2,6 +2,8 @@ import { supabase } from "../lib/supabase"
 import { completeRoutine } from "./routineService"
 import { createTaskInboxNotification } from "./taskInboxNotificationService"
 
+import { createFeedEvent } from "./feedService"
+
 async function getCurrentUser() {
     const {
         data: { user },
@@ -114,6 +116,25 @@ export async function updateTask(id, updates) {
         .maybeSingle()
 
     if (error) throw error
+
+    const isCompleted =
+        updates.status === "complete" ||
+        updates.status === "completed" ||
+        updates.completed === true
+
+    if (isCompleted) {
+        await createFeedEvent({
+            event_type: "task_completed",
+            title: data.title,
+            description: "Task completed",
+            reference_type: "task",
+            reference_id: data.id,
+            metadata: {
+                task_title: data.title,
+                family_member_id: data.family_member_id || null,
+            },
+        })
+    }
 
     return data
 }

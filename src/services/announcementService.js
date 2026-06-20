@@ -1,6 +1,8 @@
 import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
 
+import { createFeedEvent } from "./feedService"
+
 async function getCurrentUser() {
     const {
         data: { user },
@@ -72,6 +74,17 @@ export async function createAnnouncement(announcement) {
         .single()
 
     if (error) throw error
+
+    await createFeedEvent({
+        event_type: "announcement_posted",
+        title: data.title,
+        description: "New family announcement",
+        reference_type: "announcement",
+        reference_id: data.id,
+        metadata: {
+            announcement_title: data.title,
+        },
+    })
 
     return data
 }

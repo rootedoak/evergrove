@@ -72,6 +72,15 @@ Goals:
 - School updates
 - Announcement activity
 
+#### FAM-032.1 — Feed Actor Names
+Status: Backlog
+
+Goals:
+- Show who created each feed event
+- Display names like "Posted by Matt" or "Completed by Laura"
+- Use household member data from created_by
+- Later support avatar emoji/profile images
+
 #### FAM-033
 Family Reactions
 Status: Planned

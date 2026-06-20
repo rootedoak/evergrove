@@ -23,6 +23,9 @@ import FamilyTimelineCard from "../components/FamilyTimelineCard"
 import useAnnouncements from "../hooks/useAnnouncements"
 import FamilyAnnouncementsCard from "../components/FamilyAnnouncementsCard"
 
+import useHouseholdFeed from "../hooks/useHouseholdFeed"
+import HouseholdFeedCard from "../components/HouseholdFeedCard"
+
 import { getTaskSuggestions } from "../utils/taskSuggestions"
 
 function getDateOnly(value) {
@@ -534,6 +537,11 @@ export default function Dashboard() {
     const timelineDays = Number(preferences?.timeline_window_days || 90)
 
     const {
+        feedEvents,
+        loading: feedLoading,
+    } = useHouseholdFeed(10)
+
+    const {
         calendarEvents,
         loading: calendarEventsLoading
     } = useCalendarEvents()
@@ -733,6 +741,11 @@ export default function Dashboard() {
                 onAdd={addAnnouncement}
                 onEdit={editAnnouncement}
                 onDelete={removeAnnouncement}
+            />
+
+            <HouseholdFeedCard
+                feedEvents={feedEvents}
+                loading={feedLoading}
             />
 
             <div className="home-quick-actions">

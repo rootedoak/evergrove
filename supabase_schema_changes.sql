@@ -1418,4 +1418,21 @@ on family_announcements
 for delete
 using (created_by = auth.uid());
 
--- 
+-- ADD HOUSEHOLD FEED TABLE
+
+create table household_feed (
+    id uuid primary key default gen_random_uuid(),
+    household_id uuid not null,
+    created_by uuid,
+    event_type text not null,
+
+    title text not null,
+    description text,
+
+    reference_type text,
+    reference_id uuid,
+
+    metadata jsonb,
+
+    created_at timestamptz default now()
+);

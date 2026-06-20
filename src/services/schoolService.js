@@ -1,6 +1,7 @@
 import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
 import { createSchoolInboxNotification } from "./schoolInboxNotificationService"
+import { createFeedEvent } from "./feedService"
 
 async function getCurrentUserId() {
     const {
@@ -55,6 +56,23 @@ export async function createSchoolItem(item) {
     if (error) throw error
 
     await createSchoolInboxNotification(data)
+
+    await createFeedEvent({
+        event_type: "school_item_created",
+        title: data.title || "School item added",
+        description: data.due_date
+            ? `School item due ${data.due_date}`
+            : "School item added",
+        reference_type: "school_item",
+        reference_id: data.id,
+        metadata: {
+            school_item_id: data.id,
+            title: data.title || null,
+            family_member_id: data.family_member_id || null,
+            due_date: data.due_date || null,
+            type: data.type || null,
+        },
+    })
 
     return data
 }

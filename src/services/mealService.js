@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase"
 import { ensureMyHousehold } from "./householdService"
+import { createFeedEvent } from "./feedService"
 
 async function getCurrentUser() {
     const {
@@ -239,6 +240,23 @@ export async function createMealPlan({
             if (groceryError) throw groceryError
         }
     }
+
+    await createFeedEvent({
+        event_type: "meal_planned",
+        title: plan.meal_name || "Meal planned",
+        description: plan.planned_date
+            ? `Planned for ${plan.planned_date}`
+            : "Meal added to the weekly plan",
+        reference_type: "meal_plan",
+        reference_id: plan.id,
+        metadata: {
+            meal_plan_id: plan.id,
+            meal_id: plan.meal_id || null,
+            meal_name: plan.meal_name || null,
+            planned_date: plan.planned_date || null,
+            plan_type: plan.plan_type || null,
+        },
+    })
 
     return plan
 }
