@@ -20,6 +20,9 @@ import useCalendarEvents from "../hooks/useCalendarEvents"
 
 import FamilyTimelineCard from "../components/FamilyTimelineCard"
 
+import useAnnouncements from "../hooks/useAnnouncements"
+import FamilyAnnouncementsCard from "../components/FamilyAnnouncementsCard"
+
 import { getTaskSuggestions } from "../utils/taskSuggestions"
 
 function getDateOnly(value) {
@@ -624,6 +627,14 @@ export default function Dashboard() {
         })
         .slice(0, 6)
 
+    const {
+        announcements,
+        loading: announcementsLoading,
+        addAnnouncement,
+        editAnnouncement,
+        removeAnnouncement,
+    } = useAnnouncements()
+
     const dashboardLoading =
         loading ||
         tasksLoading ||
@@ -715,6 +726,14 @@ export default function Dashboard() {
                     ))}
                 </div>
             )}
+
+            <FamilyAnnouncementsCard
+                announcements={announcements}
+                loading={announcementsLoading}
+                onAdd={addAnnouncement}
+                onEdit={editAnnouncement}
+                onDelete={removeAnnouncement}
+            />
 
             <div className="home-quick-actions">
                 <button

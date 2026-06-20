@@ -1363,3 +1363,59 @@ on push_subscriptions
 for delete
 to authenticated
 using (auth.uid() = user_id);
+
+-- CREATE ANNOUNCEMENT TABLE
+
+create table if not exists family_announcements (
+    id uuid primary key default gen_random_uuid(),
+    household_id uuid not null references households(id) on delete cascade,
+    created_by uuid not null references auth.users(id) on delete cascade,
+    title text not null,
+    message text,
+    is_pinned boolean not null default false,
+    expires_at date,
+    created_at timestamp with time zone not null default now(),
+    updated_at timestamp with time zone not null default now()
+);
+
+-- ENABLE RLS ON ANNOUNCEMENT TABLE
+
+alter table family_announcements enable row level security;
+
+-- CREATE RLS POLICIES ON ANNOUNCEMENT TABLE
+
+create policy "Household members can view announcements"
+on family_announcements
+for select
+using (
+    household_id in (
+        select household_id
+        from family_members
+        where user_id = auth.uid()
+    )
+);
+
+create policy "Household members can create announcements"
+on family_announcements
+for insert
+with check (
+    created_by = auth.uid()
+    and household_id in (
+        select household_id
+        from family_members
+        where user_id = auth.uid()
+    )
+);
+
+create policy "Creators can update announcements"
+on family_announcements
+for update
+using (created_by = auth.uid())
+with check (created_by = auth.uid());
+
+create policy "Creators can delete announcements"
+on family_announcements
+for delete
+using (created_by = auth.uid());
+
+-- 

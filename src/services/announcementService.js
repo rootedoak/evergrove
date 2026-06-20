@@ -1,0 +1,104 @@
+import { supabase } from "../lib/supabase"
+import { getCurrentHousehold } from "./householdService"
+
+async function getCurrentUser() {
+    const {
+        data: { user },
+        error,
+    } = await supabase.auth.getUser()
+
+    if (error) throw error
+    if (!user) throw new Error("No authenticated user found.")
+
+    return user
+}
+
+export async function getAnnouncements() {
+    const household = await getCurrentHousehold()
+
+    const today = new Date().toISOString().slice(0, 10)
+
+    const { data: announcements, error } = await supabase
+        .from("family_announcements")
+        .select("*")
+        .eq("household_id", household.id)
+        .or(`expires_at.is.null,expires_at.gte.${today}`)
+        .order("is_pinned", { ascending: false })
+        .order("created_at", { ascending: false })
+
+    if (error) throw error
+
+    const createdByIds = [
+        ...new Set((announcements || []).map((item) => item.created_by)),
+    ]
+
+    if (createdByIds.length === 0) {
+        return []
+    }
+
+    const { data: members, error: membersError } = await supabase
+        .from("family_members")
+        .select("id, user_id, name, avatar_emoji")
+        .eq("household_id", household.id)
+        .in("user_id", createdByIds)
+
+    if (membersError) throw membersError
+
+    const memberByUserId = new Map(
+        (members || []).map((member) => [member.user_id, member])
+    )
+
+    return (announcements || []).map((announcement) => ({
+        ...announcement,
+        posted_by: memberByUserId.get(announcement.created_by) || null,
+    }))
+}
+
+export async function createAnnouncement(announcement) {
+    const user = await getCurrentUser()
+    const household = await getCurrentHousehold()
+
+    const { data, error } = await supabase
+        .from("family_announcements")
+        .insert({
+            household_id: household.id,
+            created_by: user.id,
+            title: announcement.title,
+            message: announcement.message || null,
+            is_pinned: Boolean(announcement.is_pinned),
+            expires_at: announcement.expires_at || null,
+        })
+        .select()
+        .single()
+
+    if (error) throw error
+
+    return data
+}
+
+export async function updateAnnouncement(id, updates) {
+    const { data, error } = await supabase
+        .from("family_announcements")
+        .update({
+            title: updates.title,
+            message: updates.message || null,
+            is_pinned: Boolean(updates.is_pinned),
+            expires_at: updates.expires_at || null,
+        })
+        .eq("id", id)
+        .select()
+        .single()
+
+    if (error) throw error
+
+    return data
+}
+
+export async function deleteAnnouncement(id) {
+    const { error } = await supabase
+        .from("family_announcements")
+        .delete()
+        .eq("id", id)
+
+    if (error) throw error
+}
