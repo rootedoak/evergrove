@@ -108,8 +108,8 @@ export default function HouseholdFeedCard({
         <section className="dashboard-card household-feed-card">
             <div className="card-header">
                 <div>
-                    <h2>Household Feed</h2>
-                    <p>Recent family activity.</p>
+                    <h2>Household Activity</h2>
+                    <p>What your family has been up to lately.</p>
                 </div>
             </div>
 

@@ -412,10 +412,12 @@ function TodayEventRow({ item }) {
 
 function UpcomingEventRow({ item }) {
     return (
-        <div className="home-upcoming-row">
-            <span className="home-upcoming-icon">{item.icon}</span>
+        <div className="upcoming-event-card">
+            <div className="upcoming-event-icon">
+                {item.icon}
+            </div>
 
-            <div>
+            <div className="upcoming-event-content">
                 {item.time_label && (
                     <p className="card-kicker">{item.time_label}</p>
                 )}
@@ -726,18 +728,25 @@ export default function Dashboard() {
                 )}
             </HomeSection>
 
-            <div className="home-timeline-section">
-                <FamilyTimelineCard
-                    activities={activities}
-                    tasks={tasks}
-                    schoolItems={showSchoolItems ? schoolItems : []}
-                    familyMembers={showBirthdays ? familyMembers : []}
-                    trips={showTrips ? trips : []}
-                    activitySessions={showActivitySessions ? activitySessions : []}
-                    calendarEvents={calendarEvents}
-                    timelineDays={timelineDays}
-                />
-            </div>
+            <details className="timeline-expandable">
+                <summary>
+                    <span>Family Timeline</span>
+                    <small>View recent and upcoming family history</small>
+                </summary>
+
+                <div className="home-timeline-section">
+                    <FamilyTimelineCard
+                        activities={activities}
+                        tasks={tasks}
+                        schoolItems={showSchoolItems ? schoolItems : []}
+                        familyMembers={showBirthdays ? familyMembers : []}
+                        trips={showTrips ? trips : []}
+                        activitySessions={showActivitySessions ? activitySessions : []}
+                        calendarEvents={calendarEvents}
+                        timelineDays={timelineDays}
+                    />
+                </div>
+            </details>
 
             <FloatingQuickActions
                 onAddTask={() =>

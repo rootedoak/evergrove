@@ -4569,13 +4569,13 @@ a {
   right: 1.15rem;
   bottom: 1.15rem;
   z-index: 100;
-  width: 58px;
-  height: 58px;
+  width: 64px;
+  height: 64px;
   border: none;
   border-radius: 999px;
-  background: var(--accent);
+  background: #172033;
   color: #ffffff;
-  font-size: 2rem;
+  font-size: 2.2rem;
   line-height: 1;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
   cursor: pointer;
@@ -4598,4 +4598,74 @@ a {
   .fab-backdrop {
     background: transparent;
   }
+}
+
+.upcoming-event-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: #ffffff;
+}
+
+.upcoming-event-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.upcoming-event-content {
+  min-width: 0;
+}
+
+.upcoming-event-content strong {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.upcoming-event-content p {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.timeline-expandable {
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.timeline-expandable summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.timeline-expandable summary::-webkit-details-marker {
+  display: none;
+}
+
+.timeline-expandable summary span {
+  font-weight: 800;
+  color: var(--text);
+}
+
+.timeline-expandable summary small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.timeline-expandable[open] summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.timeline-expandable .home-timeline-section {
+  padding: 1rem;
 }

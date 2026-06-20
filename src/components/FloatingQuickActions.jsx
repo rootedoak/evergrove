@@ -71,7 +71,7 @@ export default function FloatingQuickActions({
                 aria-label="Open quick actions"
                 onClick={() => setOpen(current => !current)}
             >
-                +
+                ✚
             </button>
         </>
     )
