@@ -4284,3 +4284,39 @@ a {
     gap: 0.25rem;
   }
 }
+
+.reaction-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.reaction-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.reaction-button:hover {
+  background: var(--surface-soft);
+}
+
+.reaction-button.has-reactions {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.reaction-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+}

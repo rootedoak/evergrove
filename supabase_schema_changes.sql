@@ -1436,3 +1436,65 @@ create table household_feed (
 
     created_at timestamptz default now()
 );
+
+-- CREATE REACTIONS TABLE
+
+create table if not exists household_reactions (
+    id uuid primary key default gen_random_uuid(),
+
+    household_id uuid not null references households(id) on delete cascade,
+    user_id uuid not null references auth.users(id) on delete cascade,
+
+    target_type text not null,
+    target_id uuid not null,
+
+    reaction text not null,
+
+    created_at timestamp with time zone not null default now(),
+
+    unique (user_id, target_type, target_id, reaction)
+);
+
+-- ENABLE RLS ON REACTIONS TABLE
+
+alter table household_reactions enable row level security;
+
+-- CREATE POLICIES ON REACTIONS TABLE
+
+create policy "Household members can view reactions"
+on household_reactions
+for select
+using (
+    household_id in (
+        select household_id
+        from family_members
+        where user_id = auth.uid()
+    )
+);
+
+create policy "Household members can add reactions"
+on household_reactions
+for insert
+with check (
+    user_id = auth.uid()
+    and household_id in (
+        select household_id
+        from family_members
+        where user_id = auth.uid()
+    )
+);
+
+create policy "Users can delete their own reactions"
+on household_reactions
+for delete
+using (
+    user_id = auth.uid()
+);
+
+-- ADD INDEXES TO REACTIONS TABLE
+
+create index if not exists household_reactions_target_idx
+on household_reactions (target_type, target_id);
+
+create index if not exists household_reactions_household_idx
+on household_reactions (household_id);

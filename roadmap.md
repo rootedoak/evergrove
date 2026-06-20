@@ -83,13 +83,8 @@ Goals:
 
 #### FAM-033
 Family Reactions
-Status: Planned
+Status: Complete
 
-Goals:
-- 👍 Reactions
-- ❤️ Reactions
-- 🎉 Reactions
-- Lightweight engagement
 
 #### FAM-034
 Household Notifications

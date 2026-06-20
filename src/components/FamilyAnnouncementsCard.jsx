@@ -1,5 +1,8 @@
 import { useState } from "react"
 
+import useReactions from "../hooks/useReactions"
+import ReactionBar from "./ReactionBar"
+
 export default function FamilyAnnouncementsCard({
     announcements = [],
     loading = false,
@@ -7,6 +10,17 @@ export default function FamilyAnnouncementsCard({
     onEdit,
     onDelete,
 }) {
+
+    const announcementIds = announcements.map(a => a.id)
+
+    const {
+        toggleReaction,
+        getReactionSummary,
+    } = useReactions(
+        "announcement",
+        announcementIds
+    )
+
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState(null)
 
@@ -172,6 +186,12 @@ export default function FamilyAnnouncementsCard({
                                         Expires {announcement.expires_at}
                                     </small>
                                 )}
+
+                                <ReactionBar
+                                    targetId={announcement.id}
+                                    summary={getReactionSummary(announcement.id)}
+                                    onToggle={toggleReaction}
+                                />
                             </div>
 
                             <div className="announcement-actions">
