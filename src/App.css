@@ -2607,7 +2607,7 @@ a {
 
 .home-section-header h3 {
   margin: 0;
-  color: var(--primary);
+  color: #111827;
   font-size: 1.05rem;
   font-weight: 850;
 }
@@ -4356,6 +4356,9 @@ a {
   margin: 0;
   font-size: clamp(1.35rem, 5vw, 2rem);
   line-height: 1.05;
+  color: var(--text);
+  opacity: 1;
+  font-weight: 800;
 }
 
 .brief-subtitle {
@@ -4446,7 +4449,8 @@ a {
 .attention-header h2 {
   margin: 0.1rem 0 0;
   font-size: 1.1rem;
-  color: var(--text);
+  color: #111827;
+  ;
   opacity: 1;
 }
 
@@ -4672,4 +4676,69 @@ a {
 
 .timeline-expandable .home-timeline-section {
   padding: 1rem;
+}
+
+.family-announcements-card .card-header h2 {
+  color: var(--text) !important;
+  opacity: 1 !important;
+  font-weight: 800;
+}
+
+.household-feed-card .card-header h2 {
+  color: #111827 !important;
+  opacity: 1 !important;
+  font-weight: 800;
+}
+
+.brief-digest {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.brief-digest-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.brief-digest-label {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.brief-digest-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.brief-digest-row span {
+  flex-shrink: 0;
+}
+
+.brief-digest-row p {
+  margin: 0;
+  line-height: 1.25;
+}
+
+.brief-digest-row strong {
+  color: var(--text);
+}
+
+.brief-digest-row.attention {
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.75rem;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.brief-digest-row.attention strong {
+  color: #9a3412;
 }

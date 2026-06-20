@@ -658,6 +658,12 @@ export default function Dashboard() {
                 todayTasks={openTasks.filter(task => task.due_date === todayString)}
                 tonightDinner={dinnerTonight}
                 upcomingItems={upcomingEvents || []}
+                attentionCount={
+                    scopedTasks.filter(task => {
+                        if (task.status === "complete") return false
+                        return task.due_date && task.due_date <= todayString
+                    }).length
+                }
             />
 
             <CommandCenterNeedsAttention

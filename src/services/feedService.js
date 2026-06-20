@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
+import { createPersonalInboxItem } from "./personalInboxService"
 
 async function getCurrentUser() {
     const {
@@ -11,6 +12,100 @@ async function getCurrentUser() {
     if (!user) throw new Error("No authenticated user found.")
 
     return user
+}
+
+function getInboxMessage(event, actorName = "Someone") {
+    switch (event.event_type) {
+        case "announcement_posted":
+            return {
+                title: `${actorName} posted an announcement`,
+                message: event.title,
+            }
+
+        case "task_completed":
+            return {
+                title: `${actorName} completed a to-do`,
+                message: event.title,
+            }
+
+        case "trip_created":
+            return {
+                title: `${actorName} added a trip`,
+                message: event.title,
+            }
+
+        case "activity_created":
+            return {
+                title: `${actorName} added an activity`,
+                message: event.title,
+            }
+
+        case "meal_planned":
+            return {
+                title: `${actorName} planned a meal`,
+                message: event.title,
+            }
+
+        case "school_item_created":
+            return {
+                title: `${actorName} added a school item`,
+                message: event.title,
+            }
+
+        default:
+            return {
+                title: "New household activity",
+                message: event.title,
+            }
+    }
+}
+
+async function getActorName(householdId, userId) {
+    if (!userId) return "Someone"
+
+    const { data, error } = await supabase
+        .from("family_members")
+        .select("name")
+        .eq("household_id", householdId)
+        .eq("user_id", userId)
+        .maybeSingle()
+
+    if (error) throw error
+
+    return data?.name || "Someone"
+}
+
+async function notifyHouseholdMembers(feedEvent, household, actorUser) {
+    const { data: householdMembers, error } = await supabase
+        .from("family_members")
+        .select("id, user_id, name, role")
+        .eq("household_id", household.id)
+        .not("user_id", "is", null)
+
+    if (error) throw error
+
+    const actorName = await getActorName(household.id, actorUser.id)
+    const inboxMessage = getInboxMessage(feedEvent, actorName)
+
+    const recipientUserIds = [
+        ...new Set(
+            (householdMembers || [])
+                .map(member => member.user_id)
+                .filter(Boolean)
+                .filter(userId => userId !== actorUser.id)
+        ),
+    ]
+
+    for (const recipientUserId of recipientUserIds) {
+        await createPersonalInboxItem({
+            user_id: recipientUserId,
+            title: inboxMessage.title,
+            message: inboxMessage.message,
+            item_type: "feed",
+            related_type: feedEvent.reference_type || "household_feed",
+            related_id: feedEvent.reference_id || feedEvent.id,
+        })
+    }
 }
 
 export async function getFeedEvents(limit = 25) {
@@ -75,6 +170,14 @@ export async function createFeedEvent(event) {
         .single()
 
     if (error) throw error
+
+    try {
+        if (event.notify !== false) {
+            await notifyHouseholdMembers(data, household, user)
+        }
+    } catch (notificationError) {
+        console.error("Feed inbox notification failed:", notificationError)
+    }
 
     return data
 }

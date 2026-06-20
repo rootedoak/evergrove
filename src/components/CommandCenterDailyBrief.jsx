@@ -14,17 +14,32 @@ function getGreeting() {
     return "Good evening"
 }
 
+function getItemTitle(item) {
+    return item?.title || item?.name || item?.meal_name || "Untitled"
+}
+
+function getItemTime(item) {
+    return item?.time_label || item?.time || ""
+}
+
 export default function CommandCenterDailyBrief({
     householdName = "Family",
     todayEvents = [],
     todayTasks = [],
     tonightDinner = null,
     upcomingItems = [],
+    attentionCount = 0,
 }) {
     const taskCount = todayTasks.length
     const eventCount = todayEvents.length
-    const topEvent = todayEvents[0]
-    const topUpcoming = upcomingItems[0]
+
+    const topEvents = todayEvents.slice(0, 2)
+    const topUpcoming = upcomingItems.slice(0, 2)
+
+    const dinnerName =
+        tonightDinner?.meal_name ||
+        tonightDinner?.name ||
+        "Not set"
 
     return (
         <section className="command-center-brief">
@@ -47,7 +62,7 @@ export default function CommandCenterDailyBrief({
                     <span className="brief-icon">📅</span>
                     <div>
                         <strong>{eventCount}</strong>
-                        <span>Today</span>
+                        <span>{eventCount === 1 ? "event today" : "events today"}</span>
                     </div>
                 </div>
 
@@ -55,48 +70,82 @@ export default function CommandCenterDailyBrief({
                     <span className="brief-icon">✅</span>
                     <div>
                         <strong>{taskCount}</strong>
-                        <span>Tasks</span>
+                        <span>{taskCount === 1 ? "task due" : "tasks due"}</span>
                     </div>
                 </div>
 
                 <div className="brief-summary-item">
                     <span className="brief-icon">🍽️</span>
                     <div>
-                        <strong>
-                            {tonightDinner?.meal_name || tonightDinner?.name || "Not set"}
-                        </strong>
+                        <strong>{dinnerName}</strong>
                         <span>Dinner</span>
                     </div>
                 </div>
             </div>
 
-            <div className="brief-today-list">
-                {topEvent && (
-                    <div className="brief-today-item">
-                        <span>📌</span>
+            <div className="brief-digest">
+                {attentionCount > 0 && (
+                    <div className="brief-digest-row attention">
+                        <span>⚠️</span>
                         <p>
-                            <strong>{topEvent.title || topEvent.name}</strong>
-                            {topEvent.time && <> • {topEvent.time}</>}
+                            <strong>{attentionCount}</strong>{" "}
+                            {attentionCount === 1
+                                ? "item needs attention"
+                                : "items need attention"}
                         </p>
                     </div>
                 )}
 
-                {topUpcoming && (
-                    <div className="brief-today-item">
-                        <span>⏭️</span>
-                        <p>
-                            <strong>Coming up:</strong>{" "}
-                            {topUpcoming.title || topUpcoming.name}
-                        </p>
+                {topEvents.length > 0 && (
+                    <div className="brief-digest-group">
+                        <p className="brief-digest-label">Today</p>
+
+                        {topEvents.map((event) => (
+                            <div
+                                className="brief-digest-row"
+                                key={event.id}
+                            >
+                                <span>{event.icon || "📌"}</span>
+                                <p>
+                                    <strong>{getItemTitle(event)}</strong>
+                                    {getItemTime(event) && (
+                                        <> • {getItemTime(event)}</>
+                                    )}
+                                </p>
+                            </div>
+                        ))}
                     </div>
                 )}
 
-                {!topEvent && !topUpcoming && taskCount === 0 && !tonightDinner && (
-                    <div className="brief-today-item">
-                        <span>🌿</span>
-                        <p>Your family has a lighter day today.</p>
+                {topUpcoming.length > 0 && (
+                    <div className="brief-digest-group">
+                        <p className="brief-digest-label">Coming soon</p>
+
+                        {topUpcoming.map((item) => (
+                            <div
+                                className="brief-digest-row"
+                                key={item.id}
+                            >
+                                <span>{item.icon || "⏭️"}</span>
+                                <p>
+                                    <strong>{getItemTitle(item)}</strong>
+                                    {item.subtitle && <> • {item.subtitle}</>}
+                                </p>
+                            </div>
+                        ))}
                     </div>
                 )}
+
+                {topEvents.length === 0 &&
+                    topUpcoming.length === 0 &&
+                    taskCount === 0 &&
+                    attentionCount === 0 &&
+                    !tonightDinner && (
+                        <div className="brief-digest-row">
+                            <span>🌿</span>
+                            <p>Your family has a lighter day today.</p>
+                        </div>
+                    )}
             </div>
         </section>
     )
