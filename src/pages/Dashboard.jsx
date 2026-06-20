@@ -8,6 +8,8 @@ import usePreferences from "../hooks/usePreferences"
 import CommandCenterDailyBrief from "../components/CommandCenterDailyBrief"
 import CommandCenterNeedsAttention from "../components/CommandCenterNeedsAttention"
 
+import FloatingQuickActions from "../components/FloatingQuickActions"
+
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../lib/supabase"
 import { filterTasksByScope } from "../utils/taskFilters"
@@ -665,67 +667,6 @@ export default function Dashboard() {
                 onCompleteTask={handleCompleteTask}
             />
 
-            <div className="home-quick-actions">
-                <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() =>
-                        navigate("/calendar", {
-                            state: {
-                                openTaskForm: true,
-                                selectedDate: todayString
-                            }
-                        })
-                    }
-                >
-                    + To-Do
-                </button>
-
-                <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() =>
-                        navigate("/calendar", {
-                            state: {
-                                openCalendarEventForm: true,
-                                selectedDate: todayString
-                            }
-                        })
-                    }
-                >
-                    + Event
-                </button>
-
-                <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() =>
-                        navigate("/meals", {
-                            state: {
-                                openMealPlanForm: true,
-                                selectedDate: todayString
-                            }
-                        })
-                    }
-                >
-                    + Meal
-                </button>
-
-                <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() =>
-                        navigate("/shopping", {
-                            state: {
-                                openShoppingForm: true
-                            }
-                        })
-                    }
-                >
-                    + Shopping
-                </button>
-            </div>
-
             <HouseholdFeedCard
                 feedEvents={feedEvents}
                 loading={feedLoading}
@@ -797,6 +738,44 @@ export default function Dashboard() {
                     timelineDays={timelineDays}
                 />
             </div>
+
+            <FloatingQuickActions
+                onAddTask={() =>
+                    navigate("/calendar", {
+                        state: {
+                            openTaskForm: true,
+                            selectedDate: todayString
+                        }
+                    })
+                }
+                onAddEvent={() =>
+                    navigate("/calendar", {
+                        state: {
+                            openCalendarEventForm: true,
+                            selectedDate: todayString
+                        }
+                    })
+                }
+                onAddMeal={() =>
+                    navigate("/meals", {
+                        state: {
+                            openMealPlanForm: true,
+                            selectedDate: todayString
+                        }
+                    })
+                }
+                onAddShopping={() =>
+                    navigate("/shopping", {
+                        state: {
+                            openShoppingForm: true
+                        }
+                    })
+                }
+                onAddAnnouncement={() => {
+                    const button = document.querySelector(".family-announcements-card .secondary-button")
+                    button?.click()
+                }}
+            />
         </div>
     )
 }
