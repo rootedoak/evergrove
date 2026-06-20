@@ -5,6 +5,9 @@ import useFamilyMembers from "../hooks/useFamilyMembers"
 import useTrips from "../hooks/useTrips"
 import usePreferences from "../hooks/usePreferences"
 
+import CommandCenterDailyBrief from "../components/CommandCenterDailyBrief"
+import CommandCenterNeedsAttention from "../components/CommandCenterNeedsAttention"
+
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../lib/supabase"
 import { filterTasksByScope } from "../utils/taskFilters"
@@ -97,25 +100,6 @@ function getWeekRange(weekStartsOn = "sunday") {
     }
 }
 
-function getDaysUntil(dateString) {
-    if (!dateString) return null
-
-    const today = createLocalDate(getTodayString())
-    const target = createLocalDate(dateString)
-
-    return Math.round((target - today) / (1000 * 60 * 60 * 24))
-}
-
-function formatDisplayDate(dateString) {
-    if (!dateString) return ""
-
-    return createLocalDate(dateString).toLocaleDateString(undefined, {
-        weekday: "short",
-        month: "short",
-        day: "numeric"
-    })
-}
-
 function formatShortDate(dateString) {
     if (!dateString) return ""
 
@@ -162,27 +146,6 @@ function isHappeningNow(event) {
         currentMinutes >= getMinutesFromTime(event.start_time) &&
         currentMinutes <= getMinutesFromTime(event.end_time)
     )
-}
-
-function getOwnershipBadge(task) {
-    if (task.visibility === "private") {
-        return {
-            label: "Private",
-            icon: "🔒"
-        }
-    }
-
-    if (task.family_members?.name) {
-        return {
-            label: task.family_members.name,
-            icon: task.family_members.avatar_emoji || "👤"
-        }
-    }
-
-    return {
-        label: "Family",
-        icon: "🏠"
-    }
 }
 
 function getUpcomingBirthdayDate(birthdate) {
@@ -445,37 +408,6 @@ function TodayEventRow({ item }) {
     )
 }
 
-function TaskRow({ task, onComplete }) {
-    const memberName = task.family_members?.name || "Family"
-
-    const ownership = getOwnershipBadge(task)
-
-    return (
-        <div className="home-task-row">
-            <button
-                className="home-check-circle home-task-check"
-                type="button"
-                aria-label="Complete To-Do"
-                onClick={() => onComplete(task)}
-            />
-
-            <div>
-                <span className="task-owner-badge">
-                    {ownership.icon} {ownership.label}
-                </span>
-                <strong>{task.title}</strong>
-
-                <p>
-                    {memberName}
-                    {task.due_date ? ` • ${formatDisplayDate(task.due_date)}` : ""}
-                </p>
-
-                <VisibilityBadge visibility={task.visibility} />
-            </div>
-        </div>
-    )
-}
-
 function UpcomingEventRow({ item }) {
     return (
         <div className="home-upcoming-row">
@@ -496,45 +428,22 @@ function UpcomingEventRow({ item }) {
     )
 }
 
-function getInitials(name = "") {
-    return name
-        .split(" ")
-        .filter(Boolean)
-        .map(part => part[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-}
-
-function VisibilityBadge({ visibility }) {
-    const isPrivate = visibility === "private"
-
-    return (
-        <span className="visibility-badge">
-            {isPrivate ? "🔒 Private" : "🏠 Household"}
-        </span>
-    )
-}
-
 export default function Dashboard() {
     const [currentUserId, setCurrentUserId] = useState(null)
+
     const { activities, loading, refreshActivities } = useActivities()
     const { tasks, loading: tasksLoading, refreshTasks } = useTasks()
     const { schoolItems } = useSchoolItems()
     const { familyMembers } = useFamilyMembers()
     const { trips } = useTrips()
     const { preferences, loading: preferencesLoading } = usePreferences()
+
     const {
         activitySessions,
         loading: activitySessionsLoading
     } = useActivitySessions()
 
-    const { dinnerTonight, loading: mealsLoading } = useMeals()
-
-    const todayString = getTodayString()
-    const weekStartsOn = preferences?.week_starts_on || "sunday"
-    const currentWeek = getWeekRange(weekStartsOn)
-    const timelineDays = Number(preferences?.timeline_window_days || 90)
+    const { dinnerTonight } = useMeals()
 
     const {
         feedEvents,
@@ -546,7 +455,20 @@ export default function Dashboard() {
         loading: calendarEventsLoading
     } = useCalendarEvents()
 
+    const {
+        announcements,
+        loading: announcementsLoading,
+        addAnnouncement,
+        editAnnouncement,
+        removeAnnouncement,
+    } = useAnnouncements()
+
     const navigate = useNavigate()
+
+    const todayString = getTodayString()
+    const weekStartsOn = preferences?.week_starts_on || "sunday"
+    const currentWeek = getWeekRange(weekStartsOn)
+    const timelineDays = Number(preferences?.timeline_window_days || 90)
 
     const showBirthdays = preferences?.show_birthdays !== false
     const showTrips = preferences?.show_trips !== false
@@ -633,15 +555,6 @@ export default function Dashboard() {
             if (!b.due_date) return -1
             return createLocalDate(a.due_date) - createLocalDate(b.due_date)
         })
-        .slice(0, 6)
-
-    const {
-        announcements,
-        loading: announcementsLoading,
-        addAnnouncement,
-        editAnnouncement,
-        removeAnnouncement,
-    } = useAnnouncements()
 
     const dashboardLoading =
         loading ||
@@ -735,17 +648,21 @@ export default function Dashboard() {
                 </div>
             )}
 
-            <FamilyAnnouncementsCard
-                announcements={announcements}
-                loading={announcementsLoading}
-                onAdd={addAnnouncement}
-                onEdit={editAnnouncement}
-                onDelete={removeAnnouncement}
+            <CommandCenterDailyBrief
+                householdName={preferences?.household_name || "Family"}
+                todayEvents={todayEvents || []}
+                todayTasks={openTasks.filter(task => task.due_date === todayString)}
+                tonightDinner={dinnerTonight}
+                upcomingItems={upcomingEvents || []}
             />
 
-            <HouseholdFeedCard
-                feedEvents={feedEvents}
-                loading={feedLoading}
+            <CommandCenterNeedsAttention
+                tasks={scopedTasks}
+                schoolItems={schoolItems}
+                taskSuggestions={showSuggestedTasks ? taskSuggestions : []}
+                todayString={todayString}
+                onCreateSuggestedTask={handleCreateSuggestedTask}
+                onCompleteTask={handleCompleteTask}
             />
 
             <div className="home-quick-actions">
@@ -756,7 +673,7 @@ export default function Dashboard() {
                         navigate("/calendar", {
                             state: {
                                 openTaskForm: true,
-                                selectedDate: getTodayString()
+                                selectedDate: todayString
                             }
                         })
                     }
@@ -771,7 +688,7 @@ export default function Dashboard() {
                         navigate("/calendar", {
                             state: {
                                 openCalendarEventForm: true,
-                                selectedDate: getTodayString()
+                                selectedDate: todayString
                             }
                         })
                     }
@@ -786,7 +703,7 @@ export default function Dashboard() {
                         navigate("/meals", {
                             state: {
                                 openMealPlanForm: true,
-                                selectedDate: getTodayString()
+                                selectedDate: todayString
                             }
                         })
                     }
@@ -809,70 +726,10 @@ export default function Dashboard() {
                 </button>
             </div>
 
-            <HomeSection
-                eyebrow="Today"
-                title="Today's Agenda"
-                count={todayEvents.length}
-            >
-                {dashboardLoading ? (
-                    <EmptyState>Loading today...</EmptyState>
-                ) : todayEvents.length === 0 ? (
-                    <EmptyState>Enjoy your day. Nothing scheduled for today.</EmptyState>
-                ) : (
-                    <div className="home-check-list">
-                        {todayEvents.map(item => (
-                            <TodayEventRow key={item.id} item={item} />
-                        ))}
-                    </div>
-                )}
-            </HomeSection>
-
-            <HomeSection
-                eyebrow="Dinner"
-                title="Tonight's Dinner"
-            >
-                {mealsLoading ? (
-                    <EmptyState>Loading dinner...</EmptyState>
-                ) : dinnerTonight ? (
-                    <div className="home-check-list">
-                        <div className="home-check-row">
-                            <span className="home-check-circle" />
-
-                            <div>
-                                <strong>{dinnerTonight.meal_name}</strong>
-
-                                {dinnerTonight.notes && (
-                                    <p>{dinnerTonight.notes}</p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <EmptyState>No dinner planned tonight.</EmptyState>
-                )}
-            </HomeSection>
-
-            <HomeSection
-                eyebrow="To-Do"
-                title="This Week's To-Do's"
-                count={openTasks.length}
-            >
-                {tasksLoading ? (
-                    <EmptyState>Loading to-do's...</EmptyState>
-                ) : openTasks.length === 0 ? (
-                    <EmptyState>No to-do's due this week.</EmptyState>
-                ) : (
-                    <div className="home-check-list">
-                        {openTasks.map(task => (
-                            <TaskRow
-                                key={task.id}
-                                task={task}
-                                onComplete={handleCompleteTask}
-                            />
-                        ))}
-                    </div>
-                )}
-            </HomeSection>
+            <HouseholdFeedCard
+                feedEvents={feedEvents}
+                loading={feedLoading}
+            />
 
             <HomeSection
                 eyebrow="This Week"
@@ -902,43 +759,31 @@ export default function Dashboard() {
                 )}
             </HomeSection>
 
-            {showSuggestedTasks && taskSuggestions.length > 0 && (
-                <HomeSection
-                    eyebrow="Suggested"
-                    title="Helpful Next Steps"
-                    count={taskSuggestions.length}
-                >
-                    <div className="home-suggestion-list">
-                        {taskSuggestions.map(suggestion => (
-                            <div className="home-suggestion-row" key={suggestion.activityId}>
-                                <span className="home-upcoming-icon">
-                                    {suggestion.avatar}
-                                </span>
+            <FamilyAnnouncementsCard
+                announcements={announcements}
+                loading={announcementsLoading}
+                onAdd={addAnnouncement}
+                onEdit={editAnnouncement}
+                onDelete={removeAnnouncement}
+            />
 
-                                <div>
-                                    <strong>{suggestion.title}</strong>
-
-                                    {suggestion.daysRemaining !== null && (
-                                        <p>
-                                            Registration closes in{" "}
-                                            {suggestion.daysRemaining}{" "}
-                                            {suggestion.daysRemaining === 1 ? "day" : "days"}.
-                                        </p>
-                                    )}
-                                </div>
-
-                                <button
-                                    className="secondary-button"
-                                    type="button"
-                                    onClick={() => handleCreateSuggestedTask(suggestion)}
-                                >
-                                    Create To-Do
-                                </button>
-                            </div>
+            <HomeSection
+                eyebrow="Today"
+                title="Today's Agenda"
+                count={todayEvents.length}
+            >
+                {dashboardLoading ? (
+                    <EmptyState>Loading today...</EmptyState>
+                ) : todayEvents.length === 0 ? (
+                    <EmptyState>Enjoy your day. Nothing scheduled for today.</EmptyState>
+                ) : (
+                    <div className="home-check-list">
+                        {todayEvents.map(item => (
+                            <TodayEventRow key={item.id} item={item} />
                         ))}
                     </div>
-                </HomeSection>
-            )}
+                )}
+            </HomeSection>
 
             <div className="home-timeline-section">
                 <FamilyTimelineCard

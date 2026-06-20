@@ -25,7 +25,34 @@ export async function getFeedEvents(limit = 25) {
 
     if (error) throw error
 
-    return feedEvents || []
+    const createdByIds = [
+        ...new Set(
+            (feedEvents || [])
+                .map((event) => event.created_by)
+                .filter(Boolean)
+        ),
+    ]
+
+    if (createdByIds.length === 0) {
+        return feedEvents || []
+    }
+
+    const { data: members, error: membersError } = await supabase
+        .from("family_members")
+        .select("id, user_id, name, avatar_emoji")
+        .eq("household_id", household.id)
+        .in("user_id", createdByIds)
+
+    if (membersError) throw membersError
+
+    const memberByUserId = new Map(
+        (members || []).map((member) => [member.user_id, member])
+    )
+
+    return (feedEvents || []).map((event) => ({
+        ...event,
+        actor: memberByUserId.get(event.created_by) || null,
+    }))
 }
 
 export async function createFeedEvent(event) {

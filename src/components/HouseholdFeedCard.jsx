@@ -12,6 +12,35 @@ export default function HouseholdFeedCard({
         getReactionSummary,
     } = useReactions("feed_event", feedEventIds)
 
+    function getActorText(event) {
+        const name = event.actor?.name
+
+        if (!name) return ""
+
+        switch (event.event_type) {
+            case "announcement_posted":
+                return `${name} posted`
+
+            case "task_completed":
+                return `${name} completed`
+
+            case "activity_created":
+                return `${name} added an activity`
+
+            case "trip_created":
+                return `${name} added a trip`
+
+            case "meal_planned":
+                return `${name} planned a meal`
+
+            case "school_item_created":
+                return `${name} added a school item`
+
+            default:
+                return name
+        }
+    }
+
     function getIcon(eventType) {
         switch (eventType) {
             case "announcement_posted":
@@ -104,6 +133,12 @@ export default function HouseholdFeedCard({
                                         {formatDate(event.created_at)}
                                     </span>
                                 </div>
+
+                                {getActorText(event) && (
+                                    <div className="feed-actor">
+                                        {getActorText(event)}
+                                    </div>
+                                )}
 
                                 {event.description && (
                                     <p>{event.description}</p>

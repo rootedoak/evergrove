@@ -52,12 +52,6 @@ Transform Evergrove from a planner into a communication hub for families.
 Family Announcements
 Status: Complete
 
-Completed:
-- Family announcements
-- Pinned announcements
-- Expiration support
-- Dashboard integration
-- Posted-by attribution
 
 #### FAM-032
 Household Feed
@@ -72,14 +66,10 @@ Goals:
 - School updates
 - Announcement activity
 
-#### FAM-032.1 — Feed Actor Names
-Status: Backlog
+#### FAM-032.1
+Feed Actor Names
+Status: Complete
 
-Goals:
-- Show who created each feed event
-- Display names like "Posted by Matt" or "Completed by Laura"
-- Use household member data from created_by
-- Later support avatar emoji/profile images
 
 #### FAM-033
 Family Reactions
