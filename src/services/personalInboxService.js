@@ -95,12 +95,20 @@ export async function createPersonalInboxItem(payload) {
     if (error) throw error
 
     try {
-        await sendPushNotificationToUser({
+        console.log("Sending push notification", {
+            userId: recipientUserId,
+            title: payload.title,
+            body: payload.message,
+        })
+
+        const pushResult = await sendPushNotificationToUser({
             userId: recipientUserId,
             title: payload.title || "Evergrove",
             body: payload.message || "You have a new Evergrove update.",
             url: "/inbox"
         })
+
+        console.log("Push notification sent", pushResult)
     } catch (pushError) {
         console.error("Push notification failed:", pushError)
     }
