@@ -3,6 +3,7 @@ import { completeRoutine } from "./routineService"
 import { createTaskInboxNotification } from "./taskInboxNotificationService"
 
 import { createFeedEvent } from "./feedService"
+import { trackEvent } from "./analyticsService"
 
 async function getCurrentUser() {
     const {
@@ -104,6 +105,21 @@ export async function createTask(task) {
 
     await createTaskInboxNotification(data)
 
+    await trackEvent({
+        eventName: "task_created",
+        eventType: "productivity",
+        source: "tasks",
+        metadata: {
+            task_id: data.id,
+            visibility: data.visibility || "household",
+            has_due_date: Boolean(data.due_date),
+            family_member_id: data.family_member_id || null,
+            activity_id: data.activity_id || null,
+            routine_id: data.routine_id || null,
+            trip_id: data.trip_id || null,
+        },
+    })
+
     return data
 }
 
@@ -132,6 +148,20 @@ export async function updateTask(id, updates) {
             metadata: {
                 task_title: data.title,
                 family_member_id: data.family_member_id || null,
+            },
+        })
+
+        await trackEvent({
+            eventName: "task_completed",
+            eventType: "productivity",
+            source: "tasks",
+            metadata: {
+                task_id: data.id,
+                visibility: data.visibility || null,
+                family_member_id: data.family_member_id || null,
+                activity_id: data.activity_id || null,
+                routine_id: data.routine_id || null,
+                trip_id: data.trip_id || null,
             },
         })
     }

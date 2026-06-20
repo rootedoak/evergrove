@@ -1498,3 +1498,20 @@ on household_reactions (target_type, target_id);
 
 create index if not exists household_reactions_household_idx
 on household_reactions (household_id);
+
+-- CREATE ANALYTICS TABLE
+
+create table if not exists analytics_events (
+    id uuid primary key default gen_random_uuid(),
+
+    household_id uuid references households(id) on delete cascade,
+    user_id uuid references auth.users(id) on delete set null,
+
+    event_name text not null,
+    event_type text,
+
+    source text,
+    metadata jsonb not null default '{}'::jsonb,
+
+    created_at timestamp with time zone not null default now()
+);

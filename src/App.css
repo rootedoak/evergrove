@@ -4742,3 +4742,44 @@ a {
 .brief-digest-row.attention strong {
   color: #9a3412;
 }
+
+.analytics-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.analytics-metric-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.analytics-metric-card span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.analytics-metric-card strong {
+  color: var(--text);
+  font-size: 1.35rem;
+  font-weight: 850;
+}
+
+@media (min-width: 720px) {
+  .analytics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

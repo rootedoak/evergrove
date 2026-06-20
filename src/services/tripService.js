@@ -2,6 +2,7 @@ import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
 import { createTripInboxNotification } from "./tripInboxNotificationService"
 import { createFeedEvent } from "./feedService"
+import { trackEvent } from "./analyticsService"
 
 async function getCurrentUserId() {
     const {
@@ -86,6 +87,19 @@ export async function createTrip(trip, familyMemberIds = []) {
             destination: data.destination || null,
             start_date: data.start_date || null,
             end_date: data.end_date || null,
+        },
+    })
+
+    await trackEvent({
+        eventName: "trip_created",
+        eventType: "planning",
+        source: "trips",
+        metadata: {
+            trip_id: data.id,
+            destination: data.destination || null,
+            start_date: data.start_date || null,
+            end_date: data.end_date || null,
+            attendee_count: familyMemberIds.length,
         },
     })
 

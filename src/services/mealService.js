@@ -1,6 +1,7 @@
 import { supabase } from "../lib/supabase"
 import { ensureMyHousehold } from "./householdService"
 import { createFeedEvent } from "./feedService"
+import { trackEvent } from "./analyticsService"
 
 async function getCurrentUser() {
     const {
@@ -87,6 +88,19 @@ export async function createMeal({
 
         if (ingredientError) throw ingredientError
     }
+
+    await trackEvent({
+        eventName: "meal_created",
+        eventType: "planning",
+        source: "meals",
+        metadata: {
+            meal_id: meal.id,
+            category: meal.category || null,
+            is_favorite: Boolean(meal.is_favorite),
+            ingredient_count: ingredientRows.length,
+            has_recipe_url: Boolean(meal.recipe_url),
+        },
+    })
 
     return meal
 }
@@ -255,6 +269,21 @@ export async function createMealPlan({
             meal_name: plan.meal_name || null,
             planned_date: plan.planned_date || null,
             plan_type: plan.plan_type || null,
+        },
+    })
+
+    await trackEvent({
+        eventName: "meal_planned",
+        eventType: "planning",
+        source: "meals",
+        metadata: {
+            meal_plan_id: plan.id,
+            meal_id: plan.meal_id || null,
+            meal_name: plan.meal_name || null,
+            planned_date: plan.planned_date || null,
+            plan_type: plan.plan_type || null,
+            is_leftovers: Boolean(plan.is_leftovers),
+            is_restaurant: plan.plan_type === "restaurant",
         },
     })
 

@@ -29,6 +29,8 @@ import {
   X
 } from "lucide-react"
 
+import Analytics from "./pages/Analytics"
+
 import { supabase } from "./lib/supabase"
 import { runFamilyAutomation } from "./utils/runFamilyAutomation"
 import usePreferences from "./hooks/usePreferences"
@@ -190,6 +192,7 @@ function AppLayout() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/about" element={<About />} />
           <Route path="/personal-inbox" element={<PersonalInbox />} />
+          <Route path="/analytics" element={<Analytics />} />
         </Routes>
       </main>
     </div>
