@@ -675,9 +675,35 @@ export default function Dashboard() {
                 onCompleteTask={handleCompleteTask}
             />
 
+            <HomeSection
+                eyebrow="Today"
+                title="Today's Agenda"
+                count={todayEvents.length}
+            >
+                {dashboardLoading ? (
+                    <EmptyState>Loading today...</EmptyState>
+                ) : todayEvents.length === 0 ? (
+                    <EmptyState>Enjoy your day. Nothing scheduled for today.</EmptyState>
+                ) : (
+                    <div className="home-check-list">
+                        {todayEvents.map(item => (
+                            <TodayEventRow key={item.id} item={item} />
+                        ))}
+                    </div>
+                )}
+            </HomeSection>
+
             <HouseholdFeedCard
                 feedEvents={feedEvents}
                 loading={feedLoading}
+            />
+
+            <FamilyAnnouncementsCard
+                announcements={announcements}
+                loading={announcementsLoading}
+                onAdd={addAnnouncement}
+                onEdit={editAnnouncement}
+                onDelete={removeAnnouncement}
             />
 
             <HomeSection
@@ -703,32 +729,6 @@ export default function Dashboard() {
                                     ))}
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                )}
-            </HomeSection>
-
-            <FamilyAnnouncementsCard
-                announcements={announcements}
-                loading={announcementsLoading}
-                onAdd={addAnnouncement}
-                onEdit={editAnnouncement}
-                onDelete={removeAnnouncement}
-            />
-
-            <HomeSection
-                eyebrow="Today"
-                title="Today's Agenda"
-                count={todayEvents.length}
-            >
-                {dashboardLoading ? (
-                    <EmptyState>Loading today...</EmptyState>
-                ) : todayEvents.length === 0 ? (
-                    <EmptyState>Enjoy your day. Nothing scheduled for today.</EmptyState>
-                ) : (
-                    <div className="home-check-list">
-                        {todayEvents.map(item => (
-                            <TodayEventRow key={item.id} item={item} />
                         ))}
                     </div>
                 )}
