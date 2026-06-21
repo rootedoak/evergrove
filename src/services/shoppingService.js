@@ -34,7 +34,55 @@ export async function getShoppingLists() {
 
     if (error) throw error
 
-    return data || []
+    const lists = data || []
+
+    const sourceGroceryItemIds = [
+        ...new Set(
+            lists
+                .flatMap(list => list.shopping_list_items || [])
+                .flatMap(item => item.source_grocery_item_ids || [])
+                .filter(Boolean)
+        )
+    ]
+
+    if (sourceGroceryItemIds.length === 0) {
+        return lists
+    }
+
+    const { data: groceryItems, error: groceryError } = await supabase
+        .from("grocery_items")
+        .select(`
+            id,
+            name,
+            meal_plans (
+                id,
+                meal_name
+            )
+        `)
+        .eq("household_id", household.id)
+        .in("id", sourceGroceryItemIds)
+
+    if (groceryError) throw groceryError
+
+    const groceryItemById = new Map(
+        (groceryItems || []).map(item => [item.id, item])
+    )
+
+    return lists.map(list => ({
+        ...list,
+        shopping_list_items: (list.shopping_list_items || []).map(item => {
+            const usedIn = (item.source_grocery_item_ids || [])
+                .map(sourceId => groceryItemById.get(sourceId))
+                .filter(Boolean)
+                .map(sourceItem => sourceItem.meal_plans?.meal_name)
+                .filter(Boolean)
+
+            return {
+                ...item,
+                used_in: [...new Set(usedIn)].join(", ")
+            }
+        })
+    }))
 }
 
 export async function createShoppingList({

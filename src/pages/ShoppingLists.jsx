@@ -28,6 +28,19 @@ const defaultShoppingCategoryOrder = [
     "Uncategorized"
 ]
 
+function getItemMealSource(item) {
+    return (
+        item.meal_name ||
+        item.source_meal_name ||
+        item.used_in ||
+        item.meal_plan_name ||
+        item.metadata?.meal_name ||
+        item.metadata?.source_meal_name ||
+        item.metadata?.used_in ||
+        ""
+    )
+}
+
 export default function ShoppingLists() {
     const location = useLocation()
     const navigate = useNavigate()
@@ -47,6 +60,12 @@ export default function ShoppingLists() {
     const [selectedListId, setSelectedListId] = useState("")
     const [newListTitle, setNewListTitle] = useState("")
     const [shoppingMode, setShoppingMode] = useState(false)
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+    const [selectedItemInfo, setSelectedItemInfo] = useState(null)
+
+    const [showListForm, setShowListForm] = useState(false)
+    const [showShoppingFabMenu, setShowShoppingFabMenu] = useState(false)
+
     const [itemForm, setItemForm] = useState({
         name: "",
         quantity: "",
@@ -78,6 +97,18 @@ export default function ShoppingLists() {
     }, [])
 
     useEffect(() => {
+        function handleResize() {
+            setIsMobile(window.innerWidth <= 768)
+        }
+
+        window.addEventListener("resize", handleResize)
+
+        return () => {
+            window.removeEventListener("resize", handleResize)
+        }
+    }, [])
+
+    useEffect(() => {
         if (!location.state?.openShoppingForm) return
 
         setShoppingMode(false)
@@ -100,13 +131,15 @@ export default function ShoppingLists() {
     }, [location, navigate, selectedListId])
 
     const sortedShoppingLists = useMemo(() => {
-        return [...shoppingLists].sort((a, b) => {
-            if (a.status !== b.status) {
-                return a.status === "active" ? -1 : 1
-            }
+        return shoppingLists
+            .filter(list => list.status !== "archived")
+            .sort((a, b) => {
+                if (a.status !== b.status) {
+                    return a.status === "active" ? -1 : 1
+                }
 
-            return new Date(b.created_at || 0) - new Date(a.created_at || 0)
-        })
+                return new Date(b.created_at || 0) - new Date(a.created_at || 0)
+            })
     }, [shoppingLists])
 
     const selectedList = useMemo(() => {
@@ -157,17 +190,11 @@ export default function ShoppingLists() {
         const percent =
             total === 0 ? 0 : Math.round((completed / total) * 100)
 
-        return {
-            remaining,
-            completed,
-            total,
-            percent
-        }
+        return { remaining, completed, total, percent }
     }
 
     async function handleCreateList(event) {
         event.preventDefault()
-
         if (!newListTitle.trim()) return
 
         const list = await createShoppingList({
@@ -182,7 +209,6 @@ export default function ShoppingLists() {
 
     async function handleCreateItem(event) {
         event.preventDefault()
-
         if (!selectedList?.id || !itemForm.name.trim()) return
 
         await createShoppingListItem({
@@ -227,9 +253,7 @@ export default function ShoppingLists() {
         <div className="tasks-command-page">
             <header className="calendar-header">
                 <div>
-                    <p className="dashboard-household-name">
-                        Shopping
-                    </p>
+                    <p className="dashboard-household-name">Shopping</p>
                     <h2>Shopping Lists</h2>
                     <p>
                         Build shared household shopping lists for groceries, errands, and weekly needs.
@@ -239,59 +263,62 @@ export default function ShoppingLists() {
 
             {error && <div className="error-banner">{error}</div>}
 
-            <div className="dashboard-grid">
-                <section className="panel hero-panel">
-                    <div className="panel-icon">
-                        <ShoppingCart size={22} />
-                    </div>
+            {!isMobile && (
+                <div className="dashboard-grid">
+                    <section className="panel hero-panel">
+                        <div className="panel-icon">
+                            <ShoppingCart size={22} />
+                        </div>
 
-                    <div>
-                        <p className="eyebrow">Selected List</p>
-                        <h3>{selectedList?.title || "No shopping list yet"}</h3>
+                        <div>
+                            <p className="eyebrow">Selected List</p>
+                            <h3>{selectedList?.title || "No shopping list yet"}</h3>
 
-                        {selectedList ? (
-                            <div>
-                                <p className="muted-text">
-                                    {openItemCount} remaining • {completedItemCount} completed
-                                </p>
+                            {selectedList ? (
+                                <div>
+                                    <p className="muted-text">
+                                        {openItemCount} remaining • {completedItemCount} completed
+                                    </p>
 
-                                <div className="shopping-progress-bar">
-                                    <div
-                                        className="shopping-progress-fill"
-                                        style={{ width: `${completionPercentage}%` }}
-                                    />
+                                    <div className="shopping-progress-bar">
+                                        <div
+                                            className="shopping-progress-fill"
+                                            style={{ width: `${completionPercentage}%` }}
+                                        />
+                                    </div>
+
+                                    <p className="muted-text">
+                                        {completionPercentage}% complete
+                                    </p>
                                 </div>
-
+                            ) : (
                                 <p className="muted-text">
-                                    {completionPercentage}% complete
+                                    Create or select a shopping list.
                                 </p>
-                            </div>
-                        ) : (
-                            <p className="muted-text">
-                                Create or select a shopping list.
-                            </p>
-                        )}
-                    </div>
-                </section>
+                            )}
+                        </div>
+                    </section>
 
-                <section className="panel stat-panel">
-                    <ShoppingCart size={22} />
+                    <section className="panel stat-panel">
+                        <ShoppingCart size={22} />
 
-                    <div>
-                        <p className="eyebrow">Lists</p>
-                        <h3>{shoppingLists.length}</h3>
-                        <p className="muted-text">total lists</p>
-                    </div>
-                </section>
-            </div>
+                        <div>
+                            <p className="eyebrow">Lists</p>
+                            <h3>{shoppingLists.length}</h3>
+                            <p className="muted-text">total lists</p>
+                        </div>
+                    </section>
+                </div>
+            )}
 
-            {!shoppingMode && (
+            {showListForm && !shoppingMode && (
                 <section className="panel" ref={createListRef}>
                     <div className="section-heading">
                         <div>
                             <h3>Create Shopping List</h3>
                             <p>Start a new household shopping list.</p>
                         </div>
+
                         <ShoppingCart size={20} />
                     </div>
 
@@ -321,7 +348,7 @@ export default function ShoppingLists() {
                             <p>
                                 {shoppingMode
                                     ? "Tap items as you shop."
-                                    : "Select a list on the left, then manage its items on the right."}
+                                    : "Select a list, then manage its items."}
                             </p>
                         </div>
 
@@ -399,12 +426,6 @@ export default function ShoppingLists() {
                                                 <p className="muted-text">
                                                     {stats.percent}% complete
                                                 </p>
-
-                                                {list.status === "archived" && (
-                                                    <span className="shopping-list-status">
-                                                        Archived
-                                                    </span>
-                                                )}
                                             </div>
                                         </button>
                                     )
@@ -501,15 +522,11 @@ export default function ShoppingLists() {
                                             </p>
                                         ) : (
                                             itemsByCategory.map(([category, items]) => (
-                                                <div
-                                                    key={category}
-                                                    className="grocery-category-group"
-                                                >
+                                                <div key={category} className="grocery-category-group">
                                                     <div className="grocery-category-header">
                                                         <h4>{category}</h4>
                                                         <span>
-                                                            {items.length} item
-                                                            {items.length === 1 ? "" : "s"}
+                                                            {items.length} item{items.length === 1 ? "" : "s"}
                                                         </span>
                                                     </div>
 
@@ -540,7 +557,11 @@ export default function ShoppingLists() {
                                                                 {item.checked && <Check size={14} />}
                                                             </button>
 
-                                                            <div className="row-grow">
+                                                            <button
+                                                                type="button"
+                                                                className="row-grow shopping-item-info-trigger"
+                                                                onClick={() => setSelectedItemInfo(item)}
+                                                            >
                                                                 <p
                                                                     className={
                                                                         item.checked
@@ -548,12 +569,10 @@ export default function ShoppingLists() {
                                                                             : "row-title"
                                                                     }
                                                                 >
-                                                                    {item.quantity
-                                                                        ? `${item.quantity} `
-                                                                        : ""}
+                                                                    {item.quantity ? `${item.quantity} ` : ""}
                                                                     {item.name}
                                                                 </p>
-                                                            </div>
+                                                            </button>
 
                                                             {!shoppingMode && (
                                                                 <button
@@ -588,6 +607,84 @@ export default function ShoppingLists() {
                         No shopping lists yet. Create one above or generate one from the Meals page.
                     </p>
                 </section>
+            )}
+
+            {!shoppingMode && (
+                <div className="shopping-fab-wrapper">
+                    {showShoppingFabMenu && (
+                        <div
+                            className="shopping-fab-menu-backdrop"
+                            onClick={() => setShowShoppingFabMenu(false)}
+                        >
+                            <div
+                                className="shopping-fab-menu"
+                                onClick={event => event.stopPropagation()}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowShoppingFabMenu(false)
+                                        setShowListForm(true)
+
+                                        setTimeout(() => {
+                                            createListRef.current?.scrollIntoView({
+                                                behavior: "smooth",
+                                                block: "center"
+                                            })
+                                        }, 100)
+                                    }}
+                                >
+                                    <span>🛒</span>
+                                    Create List
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <button
+                        type="button"
+                        className="shopping-mobile-fab"
+                        onClick={() => setShowShoppingFabMenu(current => !current)}
+                        aria-label="Shopping actions"
+                    >
+                        {showShoppingFabMenu ? "×" : "+"}
+                    </button>
+                </div>
+            )}
+
+            {selectedItemInfo && (
+                <div
+                    className="task-action-backdrop"
+                    onClick={() => setSelectedItemInfo(null)}
+                >
+                    <div
+                        className="task-action-sheet"
+                        onClick={event => event.stopPropagation()}
+                    >
+                        <h3>{selectedItemInfo.name}</h3>
+
+                        <p className="muted-text">
+                            {selectedItemInfo.quantity
+                                ? `Quantity: ${selectedItemInfo.quantity}`
+                                : "No quantity listed"}
+                        </p>
+
+                        <p className="muted-text">
+                            Category: {selectedItemInfo.category || "Uncategorized"}
+                        </p>
+
+                        <p className="muted-text">
+                            Used in: {getItemMealSource(selectedItemInfo) || "No linked meal found"}
+                        </p>
+
+                        <button
+                            type="button"
+                            onClick={() => setSelectedItemInfo(null)}
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
             )}
         </div>
     )

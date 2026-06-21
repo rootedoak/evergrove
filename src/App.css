@@ -5238,3 +5238,320 @@ a {
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
   z-index: 220;
 }
+
+.meals-mobile-tabs {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .meals-mobile-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    padding: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+  }
+
+  .meals-mobile-tabs button {
+    border: none;
+    border-radius: 999px;
+    padding: 0.65rem 0.5rem;
+    background: transparent;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .meals-mobile-tabs button.active {
+    background: var(--primary);
+    color: white;
+  }
+}
+
+.compact-meal-heading {
+  align-items: center;
+}
+
+.compact-meal-heading p {
+  margin-top: 0.15rem;
+  font-size: 0.85rem;
+}
+
+.compact-week-controls {
+  gap: 0.35rem;
+}
+
+@media (max-width: 768px) {
+  .compact-week-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .compact-week-controls .secondary-button {
+    padding: 0.55rem 0.75rem;
+    min-height: auto;
+  }
+}
+
+.compact-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.compact-day-label {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.compact-add-button {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.compact-expand-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.25rem;
+}
+
+.meal-card-compact .meal-card-header {
+  align-items: flex-start;
+}
+
+.meal-card-compact h4 {
+  margin-bottom: 0.15rem;
+}
+
+.meal-card-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.meals-fab-wrapper {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .meals-fab-wrapper {
+    display: block;
+  }
+
+  .meals-mobile-fab {
+    position: fixed;
+    right: 1rem;
+    bottom: 6.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 999px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: white;
+    font-size: 2rem;
+    font-weight: 700;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
+    z-index: 220;
+  }
+
+  .meals-fab-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.2);
+    z-index: 210;
+  }
+
+  .meals-fab-menu {
+    position: fixed;
+    right: 1rem;
+    bottom: 10.75rem;
+    display: grid;
+    gap: 0.5rem;
+    min-width: 220px;
+  }
+
+  .meals-fab-menu button {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 700;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+  }
+}
+
+.shopping-mobile-tabs {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .shopping-mobile-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    padding: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+  }
+
+  .shopping-mobile-tabs button {
+    border: none;
+    border-radius: 999px;
+    padding: 0.65rem 0.5rem;
+    background: transparent;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .shopping-mobile-tabs button.active {
+    background: var(--primary);
+    color: white;
+  }
+}
+
+.shopping-mobile-fab {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .shopping-mobile-fab {
+    display: flex;
+    position: fixed;
+    right: 1rem;
+    bottom: 6.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 999px;
+    border: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    line-height: 1;
+    font-weight: 700;
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
+    z-index: 220;
+  }
+}
+
+.shopping-fab-wrapper {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .shopping-fab-wrapper {
+    display: block;
+  }
+
+  .shopping-mobile-fab {
+    display: flex;
+    position: fixed;
+    right: 1rem;
+    bottom: 6.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 999px;
+    border: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
+    z-index: 220;
+  }
+
+  .shopping-fab-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.2);
+    z-index: 210;
+  }
+
+  .shopping-fab-menu {
+    position: fixed;
+    right: 1rem;
+    bottom: 10.75rem;
+    display: grid;
+    gap: 0.5rem;
+    min-width: 220px;
+  }
+
+  .shopping-fab-menu button {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 700;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+  }
+}
+
+.consolidated-grocery-row {
+  padding: 0.55rem 0;
+  gap: 0.6rem;
+  min-height: auto;
+}
+
+.consolidated-grocery-row .row-title {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.check-button {
+  width: 1.65rem;
+  height: 1.65rem;
+  flex: 0 0 1.65rem;
+}
+
+.icon-danger-button {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+}
+
+.grocery-category-header {
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.25rem;
+}
+
+.grocery-category-group {
+  gap: 0.35rem;
+}
+
+.shopping-item-info-trigger {
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
