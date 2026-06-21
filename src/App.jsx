@@ -19,6 +19,7 @@ import {
   Info,
   Mail,
   Menu,
+  MoreHorizontal,
   Plane,
   Repeat,
   School,
@@ -68,6 +69,13 @@ const navItems = [
   { to: "/about", icon: Info, label: "About" }
 ]
 
+const mobileNavItems = [
+  { to: "/", icon: Home, label: "Home", end: true },
+  { to: "/tasks", icon: ClipboardList, label: "To-Do" },
+  { to: "/calendar", icon: CalendarDays, label: "Calendar" },
+  { to: "/meals", icon: UtensilsCrossed, label: "Meals" },
+]
+
 function NavItem({ to, icon: Icon, label, end, onClick, badge }) {
   return (
     <NavLink
@@ -87,6 +95,40 @@ function NavItem({ to, icon: Icon, label, end, onClick, badge }) {
         </span>
       )}
     </NavLink>
+  )
+}
+
+function MobileBottomNav({
+  unreadInboxCount,
+  onMoreClick,
+}) {
+  return (
+    <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
+      {mobileNavItems.map(item => (
+        <NavItem
+          key={item.to}
+          to={item.to}
+          icon={item.icon}
+          label={item.label}
+          end={item.end}
+        />
+      ))}
+
+      <button
+        type="button"
+        className="nav-item mobile-more-button"
+        onClick={onMoreClick}
+      >
+        <MoreHorizontal size={18} />
+        <span>More</span>
+
+        {unreadInboxCount > 0 && (
+          <span className="nav-inbox-badge">
+            {unreadInboxCount}
+          </span>
+        )}
+      </button>
+    </nav>
   )
 }
 
@@ -195,6 +237,12 @@ function AppLayout() {
           <Route path="/analytics" element={<Analytics />} />
         </Routes>
       </main>
+
+      <MobileBottomNav
+        unreadInboxCount={unreadInboxCount}
+        onMoreClick={() => setMobileNavOpen(true)}
+      />
+
     </div>
   )
 }

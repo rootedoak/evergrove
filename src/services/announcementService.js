@@ -120,10 +120,17 @@ export async function updateAnnouncement(id, updates) {
 }
 
 export async function deleteAnnouncement(id) {
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from("family_announcements")
         .delete()
         .eq("id", id)
+        .select("id")
 
     if (error) throw error
+
+    if (!data || data.length === 0) {
+        throw new Error("Announcement was not deleted. Check RLS delete policy or announcement id.")
+    }
+
+    return data[0]
 }

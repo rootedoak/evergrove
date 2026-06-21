@@ -412,11 +412,55 @@ function buildCalendarEvents({
     })
 }
 
+function formatAgendaDateLabel(dateString) {
+    const today = getTodayString()
+
+    const tomorrowDate = createLocalDate(today)
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1)
+
+    const tomorrow = formatDateParts(
+        tomorrowDate.getFullYear(),
+        tomorrowDate.getMonth() + 1,
+        tomorrowDate.getDate()
+    )
+
+    if (dateString === today) return "Today"
+    if (dateString === tomorrow) return "Tomorrow"
+
+    return createLocalDate(dateString).toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric"
+    })
+}
+
+function openAddMenuForm(type) {
+    const today = getTodayString()
+
+    setSelectedDate(today)
+    resetCalendarEventForm(today)
+    resetTaskForm(today)
+    resetActivityForm()
+    resetSchoolItemForm()
+
+    setShowCalendarEventForm(type === "event")
+    setShowTaskForm(type === "task")
+    setShowActivityForm(type === "activity")
+    setShowSchoolItemForm(type === "school")
+
+    setShowAddMenu(false)
+}
+
 export default function Calendar() {
     const navigate = useNavigate()
     const location = useLocation()
+
+    const [showAddMenu, setShowAddMenu] = useState(false)
+
     const [visibleDate, setVisibleDate] = useState(() => new Date())
     const [selectedDate, setSelectedDate] = useState(null)
+
+    const [calendarView, setCalendarView] = useState("agenda")
 
     const [showCalendarEventForm, setShowCalendarEventForm] = useState(false)
     const [savingCalendarEvent, setSavingCalendarEvent] = useState(false)
@@ -522,6 +566,22 @@ export default function Calendar() {
     }, [events])
 
     const selectedEvents = selectedDate ? eventsByDate[selectedDate] || [] : []
+
+    const agendaEvents = useMemo(() => {
+        const today = getTodayString()
+
+        return events
+            .filter(event => event.date >= today)
+            .slice(0, 30)
+    }, [events])
+
+    const agendaEventsByDate = useMemo(() => {
+        return agendaEvents.reduce((grouped, event) => {
+            if (!grouped[event.date]) grouped[event.date] = []
+            grouped[event.date].push(event)
+            return grouped
+        }, {})
+    }, [agendaEvents])
 
     useEffect(() => {
         const date = location.state?.selectedDate || getTodayString()
@@ -851,6 +911,24 @@ export default function Calendar() {
 
                     <h2>Family Calendar</h2>
 
+                    <div className="calendar-view-toggle">
+                        <button
+                            type="button"
+                            className={calendarView === "agenda" ? "active" : ""}
+                            onClick={() => setCalendarView("agenda")}
+                        >
+                            Agenda
+                        </button>
+
+                        <button
+                            type="button"
+                            className={calendarView === "month" ? "active" : ""}
+                            onClick={() => setCalendarView("month")}
+                        >
+                            Month
+                        </button>
+                    </div>
+
                     <div className="calendar-destinations">
                         <Link className="calendar-destination-card" to="/activities">
                             <span>🏀</span>
@@ -879,103 +957,221 @@ export default function Calendar() {
                             </div>
                         </Link>
                     </div>
+
+                    <div className="calendar-fab-wrapper">
+                        {showAddMenu && (
+                            <div
+                                className="calendar-fab-menu-backdrop"
+                                onClick={() => setShowAddMenu(false)}
+                            >
+                                <div
+                                    className="calendar-fab-menu"
+                                    onClick={event => event.stopPropagation()}
+                                >
+                                    <button type="button" onClick={() => openAddMenuForm("event")}>
+                                        <span>📌</span>
+                                        Calendar Event
+                                    </button>
+
+                                    <button type="button" onClick={() => openAddMenuForm("task")}>
+                                        <span>✅</span>
+                                        To-Do
+                                    </button>
+
+                                    <button type="button" onClick={() => openAddMenuForm("activity")}>
+                                        <span>🏃</span>
+                                        Activity
+                                    </button>
+
+                                    <button type="button" onClick={() => openAddMenuForm("school")}>
+                                        <span>🎒</span>
+                                        School Item
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <button
+                            type="button"
+                            className="mobile-fab calendar-mobile-fab"
+                            onClick={() => setShowAddMenu(current => !current)}
+                            aria-label="Add calendar item"
+                        >
+                            {showAddMenu ? "×" : "+"}
+                        </button>
+                    </div>
+
                 </div>
             </header>
 
-            <section className="card calendar-card">
-                <div className="calendar-toolbar">
-                    <div>
-                        <p className="card-kicker">Month View</p>
-                        <h3>{formatMonthTitle(visibleDate)}</h3>
-                    </div>
-
-                    <div className="calendar-controls">
-                        <button
-                            type="button"
-                            className="calendar-nav-button"
-                            onClick={goToPreviousMonth}
-                            aria-label="Previous month"
-                        >
-                            ‹
-                        </button>
+            {calendarView === "agenda" && (
+                <section className="card calendar-agenda-card">
+                    <div className="calendar-toolbar">
+                        <div>
+                            <p className="card-kicker">Agenda</p>
+                            <h3>Upcoming</h3>
+                        </div>
 
                         <button
                             type="button"
                             className="calendar-today-button"
-                            onClick={goToCurrentMonth}
+                            onClick={() => {
+                                setVisibleDate(new Date())
+                                setCalendarView("month")
+                            }}
                         >
-                            Today
-                        </button>
-
-                        <button
-                            type="button"
-                            className="calendar-nav-button"
-                            onClick={goToNextMonth}
-                            aria-label="Next month"
-                        >
-                            ›
+                            View Month
                         </button>
                     </div>
-                </div>
 
-                {loading ? (
-                    <p>Loading calendar...</p>
-                ) : (
-                    <div className="calendar-grid">
-                        {weekdayLabels.map(day => (
-                            <div className="calendar-weekday" key={day}>
-                                {day}
-                            </div>
-                        ))}
+                    {loading ? (
+                        <p>Loading calendar...</p>
+                    ) : agendaEvents.length === 0 ? (
+                        <p className="dashboard-empty">
+                            Nothing coming up.
+                        </p>
+                    ) : (
+                        <div className="calendar-agenda-list">
+                            {Object.entries(agendaEventsByDate).map(([date, dateEvents]) => (
+                                <section className="calendar-agenda-day" key={date}>
+                                    <h4>{formatAgendaDateLabel(date)}</h4>
 
-                        {calendarDays.map(day => {
-                            const dayEvents = eventsByDate[day.dateString] || []
-                            const isToday = day.dateString === todayString
-
-                            return (
-                                <button
-                                    className={`calendar-day calendar-day-button ${day.isCurrentMonth ? "" : "calendar-day-muted"
-                                        } ${isToday ? "calendar-day-today" : ""}`}
-                                    key={day.dateString}
-                                    type="button"
-                                    onClick={() => {
-                                        setSelectedDate(day.dateString)
-                                        setShowCalendarEventForm(false)
-                                        setShowTaskForm(false)
-                                        resetCalendarEventForm(day.dateString)
-                                        resetTaskForm()
-                                    }}
-                                >
-                                    <div className="calendar-day-number">
-                                        {day.date.getDate()}
-                                    </div>
-
-                                    <div className="calendar-events">
-                                        {dayEvents.slice(0, 4).map(event => (
-                                            <div
-                                                className="calendar-event"
+                                    <div className="calendar-agenda-events">
+                                        {dateEvents.map(event => (
+                                            <button
                                                 key={event.id}
-                                                title={[event.title, event.subtitle]
-                                                    .filter(Boolean)
-                                                    .join(" • ")}
+                                                type="button"
+                                                className="calendar-agenda-row"
+                                                onClick={() => {
+                                                    setSelectedDate(event.date)
+                                                    setShowCalendarEventForm(false)
+                                                    setShowTaskForm(false)
+                                                    resetCalendarEventForm(event.date)
+                                                    resetTaskForm(event.date)
+                                                }}
                                             >
-                                                <span>{event.icon}</span>
-                                                <strong>{event.title}</strong>
-                                            </div>
-                                        ))}
+                                                <span className="calendar-agenda-icon">
+                                                    {event.icon}
+                                                </span>
 
-                                        {dayEvents.length > 4 && (
-                                            <small>
-                                                +{dayEvents.length - 4} more
-                                            </small>
-                                        )}
+                                                <div>
+                                                    <strong>{event.title}</strong>
+
+                                                    {event.subtitle && (
+                                                        <p>{event.subtitle}</p>
+                                                    )}
+
+                                                    {event.location && (
+                                                        <small>{event.location}</small>
+                                                    )}
+                                                </div>
+                                            </button>
+                                        ))}
                                     </div>
-                                </button>
-                            )
-                        })}
+                                </section>
+                            ))}
+                        </div>
+                    )}
+                </section>
+            )}
+
+            {calendarView === "month" && (
+                <section className="card calendar-card">
+                    <div className="calendar-toolbar">
+                        <div>
+                            <p className="card-kicker">Month View</p>
+                            <h3>{formatMonthTitle(visibleDate)}</h3>
+                        </div>
+
+                        <div className="calendar-controls">
+                            <button
+                                type="button"
+                                className="calendar-nav-button"
+                                onClick={goToPreviousMonth}
+                                aria-label="Previous month"
+                            >
+                                ‹
+                            </button>
+
+                            <button
+                                type="button"
+                                className="calendar-today-button"
+                                onClick={goToCurrentMonth}
+                            >
+                                Today
+                            </button>
+
+                            <button
+                                type="button"
+                                className="calendar-nav-button"
+                                onClick={goToNextMonth}
+                                aria-label="Next month"
+                            >
+                                ›
+                            </button>
+                        </div>
                     </div>
-                )}
-            </section>
+
+                    {loading ? (
+                        <p>Loading calendar...</p>
+                    ) : (
+                        <div className="calendar-grid">
+                            {weekdayLabels.map(day => (
+                                <div className="calendar-weekday" key={day}>
+                                    {day}
+                                </div>
+                            ))}
+
+                            {calendarDays.map(day => {
+                                const dayEvents = eventsByDate[day.dateString] || []
+                                const isToday = day.dateString === todayString
+
+                                return (
+                                    <button
+                                        className={`calendar-day calendar-day-button ${day.isCurrentMonth ? "" : "calendar-day-muted"
+                                            } ${isToday ? "calendar-day-today" : ""}`}
+                                        key={day.dateString}
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedDate(day.dateString)
+                                            setShowCalendarEventForm(false)
+                                            setShowTaskForm(false)
+                                            resetCalendarEventForm(day.dateString)
+                                            resetTaskForm(day.dateString)
+                                        }}
+                                    >
+                                        <div className="calendar-day-number">
+                                            {day.date.getDate()}
+                                        </div>
+
+                                        <div className="calendar-events">
+                                            {dayEvents.slice(0, 4).map(event => (
+                                                <div
+                                                    className="calendar-event"
+                                                    key={event.id}
+                                                    title={[event.title, event.subtitle]
+                                                        .filter(Boolean)
+                                                        .join(" • ")}
+                                                >
+                                                    <span>{event.icon}</span>
+                                                    <strong>{event.title}</strong>
+                                                </div>
+                                            ))}
+
+                                            {dayEvents.length > 4 && (
+                                                <small>
+                                                    +{dayEvents.length - 4} more
+                                                </small>
+                                            )}
+                                        </div>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    )}
+                </section>
+
+            )}
 
             {selectedDate && (
                 <div

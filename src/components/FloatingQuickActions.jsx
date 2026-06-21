@@ -19,47 +19,54 @@ export default function FloatingQuickActions({
     }
 
     return (
-        <>
+        <div className="dashboard-fab-wrapper">
             {open && (
                 <div
-                    className="fab-backdrop"
+                    className="dashboard-fab-menu-backdrop"
                     onClick={close}
-                />
-            )}
-
-            {open && (
-                <div className="fab-sheet">
-                    <div className="fab-sheet-handle" />
-
-                    <div className="fab-sheet-header">
-                        <h3>Quick Add</h3>
-                        <p>What would you like to add?</p>
-                    </div>
-
-                    <div className="fab-action-list">
-                        <button type="button" onClick={() => handleAction(onAddTask)}>
+                >
+                    <div
+                        className="dashboard-fab-menu"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => handleAction(onAddTask)}
+                        >
                             <span>✅</span>
-                            <strong>To-Do</strong>
+                            To-Do
                         </button>
 
-                        <button type="button" onClick={() => handleAction(onAddEvent)}>
+                        <button
+                            type="button"
+                            onClick={() => handleAction(onAddEvent)}
+                        >
                             <span>📅</span>
-                            <strong>Event</strong>
+                            Calendar Event
                         </button>
 
-                        <button type="button" onClick={() => handleAction(onAddMeal)}>
+                        <button
+                            type="button"
+                            onClick={() => handleAction(onAddMeal)}
+                        >
                             <span>🍽️</span>
-                            <strong>Meal</strong>
+                            Meal
                         </button>
 
-                        <button type="button" onClick={() => handleAction(onAddShopping)}>
+                        <button
+                            type="button"
+                            onClick={() => handleAction(onAddShopping)}
+                        >
                             <span>🛒</span>
-                            <strong>Shopping</strong>
+                            Shopping Item
                         </button>
 
-                        <button type="button" onClick={() => handleAction(onAddAnnouncement)}>
+                        <button
+                            type="button"
+                            onClick={() => handleAction(onAddAnnouncement)}
+                        >
                             <span>📢</span>
-                            <strong>Announcement</strong>
+                            Announcement
                         </button>
                     </div>
                 </div>
@@ -67,12 +74,12 @@ export default function FloatingQuickActions({
 
             <button
                 type="button"
-                className={open ? "floating-action-button open" : "floating-action-button"}
+                className="floating-action-button"
                 aria-label="Open quick actions"
                 onClick={() => setOpen(current => !current)}
             >
-                ✚
+                {open ? "×" : "+"}
             </button>
-        </>
+        </div>
     )
 }

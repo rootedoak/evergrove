@@ -191,13 +191,14 @@ function getOwnershipBadge(task) {
 }
 
 function TaskRow({ task, familyMembers, onComplete, onEdit, onDelete }) {
+    const [menuOpen, setMenuOpen] = useState(false)
+
     const isComplete = task.status === "complete"
     const meta = getTaskMeta(task, familyMembers)
-
     const ownership = getOwnershipBadge(task)
 
     return (
-        <div className={`task-command-row ${isComplete ? "task-command-row-complete" : ""}`}>
+        <div className={`task-command-row task-command-row-compact ${isComplete ? "task-command-row-complete" : ""}`}>
             <button
                 className="task-check-button"
                 type="button"
@@ -209,25 +210,71 @@ function TaskRow({ task, familyMembers, onComplete, onEdit, onDelete }) {
             </button>
 
             <div className="task-command-main">
-                <div className="task-title-line">
-                    <span className="task-owner-badge">
+                <div className="task-title-line task-title-line-compact">
+                    <strong>{task.title}</strong>
+                </div>
+
+                <div className="task-compact-meta">
+                    <span className="task-owner-badge task-owner-badge-compact">
                         {ownership.icon} {ownership.label}
                     </span>
 
-                    <strong>{task.title}</strong>
+                    {meta && <span>{meta}</span>}
                 </div>
-                {meta && <p>{meta}</p>}
-                {task.description && <small>{task.description}</small>}
+
+                {task.description && (
+                    <small className="task-description-compact">
+                        {task.description}
+                    </small>
+                )}
             </div>
 
-            <div className="task-command-actions">
-                <button className="secondary-button" type="button" onClick={() => onEdit(task)}>
-                    Edit
+            <div className="task-row-menu">
+                <button
+                    type="button"
+                    className="task-menu-button"
+                    onClick={() => setMenuOpen(true)}
+                    aria-label="Open task actions"
+                >
+                    ⋮
                 </button>
 
-                <button className="danger-button" type="button" onClick={() => onDelete(task)}>
-                    Delete
-                </button>
+                {menuOpen && (
+                    <div className="task-action-backdrop" onClick={() => setMenuOpen(false)}>
+                        <div
+                            className="task-action-sheet"
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMenuOpen(false)
+                                    onEdit(task)
+                                }}
+                            >
+                                Edit
+                            </button>
+
+                            <button
+                                type="button"
+                                className="danger"
+                                onClick={() => {
+                                    setMenuOpen(false)
+                                    onDelete(task)
+                                }}
+                            >
+                                Delete
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setMenuOpen(false)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )
@@ -242,8 +289,13 @@ function TaskSection({
     onComplete,
     onEdit,
     onDelete,
-    className = ""
+    className = "",
+    hideWhenEmpty = false
 }) {
+    if (hideWhenEmpty && tasks.length === 0) {
+        return null
+    }
+
     return (
         <section className={`task-command-section ${className}`}>
             <div className="task-section-header">
@@ -373,6 +425,16 @@ export default function Tasks() {
         }))
     }
 
+    function openNewTaskForm() {
+        setForm({
+            ...initialForm,
+            trip_id: tripId || ""
+        })
+        setEditingId(null)
+        setShowForm(true)
+        window.scrollTo({ top: 0, behavior: "smooth" })
+    }
+
     function resetForm() {
         setForm({
             ...initialForm,
@@ -482,19 +544,14 @@ export default function Tasks() {
 
                 <button
                     type="button"
-                    className="primary-button"
+                    className="primary-button tasks-header-add-button"
                     onClick={() => {
                         if (showForm) {
                             resetForm()
                             return
                         }
 
-                        setForm({
-                            ...initialForm,
-                            trip_id: tripId || ""
-                        })
-                        setEditingId(null)
-                        setShowForm(true)
+                        openNewTaskForm()
                     }}
                 >
                     {showForm ? "Cancel" : "+ Add To-Do"}
@@ -502,48 +559,43 @@ export default function Tasks() {
             </header>
 
             {!tripId && (
-                <section className="task-scope-filter card">
-                    <div>
-                        <strong>Showing</strong>
-                        <p>Choose which To-Do's you want to focus on.</p>
-                    </div>
+                <section className="task-scope-filter task-scope-filter-compact">
+                    <label>
+                        <span>View</span>
 
-                    <div className="task-scope-buttons">
-                        {taskScopes.map(scope => (
-                            <button
-                                key={scope.key}
-                                type="button"
-                                className={taskScope === scope.key ? "active" : ""}
-                                onClick={() => handleTaskScopeChange(scope.key)}
-                            >
-                                {scope.label}
-                            </button>
-                        ))}
-                    </div>
+                        <select
+                            value={taskScope}
+                            onChange={(event) =>
+                                handleTaskScopeChange(event.target.value)
+                            }
+                        >
+                            {taskScopes.map(scope => (
+                                <option
+                                    key={scope.key}
+                                    value={scope.key}
+                                >
+                                    {scope.label}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
                 </section>
             )}
 
             {!tripId && (
-                <section className="task-destinations">
+                <section className="task-destinations task-destinations-compact">
                     <TaskDestinationCard
                         to="/routines"
                         icon="🔁"
                         title="Routines"
-                        description="Recurring household responsibilities."
-                    />
-
-                    <TaskDestinationCard
-                        to="/reminders"
-                        icon="🔔"
-                        title="Reminders"
-                        description="Important one-time reminders."
+                        description="Manage recurring household tasks."
                     />
                 </section>
             )}
 
             {showForm && (
                 <section className="card form-card">
-                    <h3>{editingId ? "Edit Task" : "Add Task"}</h3>
+                    <h3>{editingId ? "Edit To-Do" : "Add To-Do"}</h3>
 
                     <form className="form-grid" onSubmit={handleSubmit}>
                         <label>
@@ -638,7 +690,7 @@ export default function Tasks() {
                                 ? "Saving..."
                                 : editingId
                                     ? "Save Changes"
-                                    : "Save Task"}
+                                    : "Save To-Do"}
                         </button>
                     </form>
                 </section>
@@ -664,6 +716,7 @@ export default function Tasks() {
                             onComplete={handleComplete}
                             onEdit={startEdit}
                             onDelete={handleDelete}
+                            hideWhenEmpty
                         />
 
                         <TaskSection
@@ -676,6 +729,7 @@ export default function Tasks() {
                             onEdit={startEdit}
                             onDelete={handleDelete}
                             className="task-section-today"
+                            hideWhenEmpty
                         />
 
                         <TaskSection
@@ -687,6 +741,7 @@ export default function Tasks() {
                             onComplete={handleComplete}
                             onEdit={startEdit}
                             onDelete={handleDelete}
+                            hideWhenEmpty
                         />
 
                         <TaskSection
@@ -698,7 +753,14 @@ export default function Tasks() {
                             onComplete={handleComplete}
                             onEdit={startEdit}
                             onDelete={handleDelete}
+                            hideWhenEmpty
                         />
+
+                        {openCount === 0 && (
+                            <p className="dashboard-empty">
+                                No open To-Do's in this view.
+                            </p>
+                        )}
 
                         {groupedTasks.completed.length > 0 && (
                             <section className="task-command-section">
@@ -731,6 +793,17 @@ export default function Tasks() {
                     </>
                 )}
             </section>
+
+            {!showForm && (
+                <button
+                    type="button"
+                    className="mobile-fab tasks-mobile-fab"
+                    onClick={openNewTaskForm}
+                    aria-label="Add To-Do"
+                >
+                    +
+                </button>
+            )}
         </div>
     )
 }

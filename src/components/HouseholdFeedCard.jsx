@@ -1,43 +1,46 @@
-import useReactions from "../hooks/useReactions"
-import ReactionBar from "./ReactionBar"
+import { useState } from "react"
 
 export default function HouseholdFeedCard({
     feedEvents = [],
     loading = false,
 }) {
-    const feedEventIds = feedEvents.map((event) => event.id)
+    const [showAll, setShowAll] = useState(false)
 
-    const {
-        toggleReaction,
-        getReactionSummary,
-    } = useReactions("feed_event", feedEventIds)
+    const visibleFeedEvents = showAll
+        ? feedEvents
+        : feedEvents.slice(0, 5)
 
-    function getActorText(event) {
-        const name = event.actor?.name
+    function getActorName(event) {
+        return event.actor?.name || "Someone"
+    }
 
-        if (!name) return ""
+    function getMetaText(event) {
+        const actorName = getActorName(event)
 
         switch (event.event_type) {
             case "announcement_posted":
-                return `${name} posted`
+                return `${actorName} posted`
 
             case "task_completed":
-                return `${name} completed`
+                return `${actorName} completed`
+
+            case "task_created":
+                return `${actorName} created a task`
 
             case "activity_created":
-                return `${name} added an activity`
+                return `${actorName} added an activity`
 
             case "trip_created":
-                return `${name} added a trip`
+                return `${actorName} added a trip`
 
             case "meal_planned":
-                return `${name} planned a meal`
+                return `${actorName} planned a meal`
 
             case "school_item_created":
-                return `${name} added a school item`
+                return `${actorName} added a school item`
 
             default:
-                return name
+                return actorName
         }
     }
 
@@ -72,31 +75,21 @@ export default function HouseholdFeedCard({
             (now.getTime() - date.getTime()) / 1000
         )
 
-        if (seconds < 60) {
-            return "Just now"
-        }
+        if (seconds < 60) return "Now"
 
         const minutes = Math.floor(seconds / 60)
 
-        if (minutes < 60) {
-            return `${minutes} min ago`
-        }
+        if (minutes < 60) return `${minutes}m`
 
         const hours = Math.floor(minutes / 60)
 
-        if (hours < 24) {
-            return `${hours} hr ago`
-        }
+        if (hours < 24) return `${hours}h`
 
         const days = Math.floor(hours / 24)
 
-        if (days === 1) {
-            return "Yesterday"
-        }
+        if (days === 1) return "1d"
 
-        if (days < 7) {
-            return `${days} days ago`
-        }
+        if (days < 7) return `${days}d`
 
         return date.toLocaleDateString(undefined, {
             month: "short",
@@ -109,7 +102,7 @@ export default function HouseholdFeedCard({
             <div className="card-header">
                 <div>
                     <h2>Household Activity</h2>
-                    <p>What your family has been up to lately.</p>
+                    <p>Recent updates from your household.</p>
                 </div>
             </div>
 
@@ -118,41 +111,44 @@ export default function HouseholdFeedCard({
             ) : feedEvents.length === 0 ? (
                 <p className="muted-text">No activity yet.</p>
             ) : (
-                <div className="feed-list">
-                    {feedEvents.map((event) => (
-                        <article key={event.id} className="feed-item">
-                            <div className="feed-icon">
-                                {getIcon(event.event_type)}
-                            </div>
-
-                            <div className="feed-content">
-                                <div className="feed-title-row">
-                                    <strong>{event.title}</strong>
-
-                                    <span className="feed-date">
-                                        {formatDate(event.created_at)}
-                                    </span>
+                <>
+                    <div className="feed-list">
+                        {visibleFeedEvents.map((event) => (
+                            <article key={event.id} className="feed-row">
+                                <div className="feed-icon">
+                                    {getIcon(event.event_type)}
                                 </div>
 
-                                {getActorText(event) && (
-                                    <div className="feed-actor">
-                                        {getActorText(event)}
+                                <div className="feed-content">
+                                    <div className="feed-title-row">
+                                        <strong>{event.title}</strong>
+
+                                        <span className="feed-date">
+                                            {formatDate(event.created_at)}
+                                        </span>
                                     </div>
-                                )}
 
-                                {event.description && (
-                                    <p>{event.description}</p>
-                                )}
+                                    <div className="feed-meta">
+                                        {getMetaText(event)}
+                                        {event.description
+                                            ? ` • ${event.description}`
+                                            : ""}
+                                    </div>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
 
-                                <ReactionBar
-                                    targetId={event.id}
-                                    summary={getReactionSummary(event.id)}
-                                    onToggle={toggleReaction}
-                                />
-                            </div>
-                        </article>
-                    ))}
-                </div>
+                    {feedEvents.length > 5 && (
+                        <button
+                            type="button"
+                            className="feed-view-all-button"
+                            onClick={() => setShowAll((current) => !current)}
+                        >
+                            {showAll ? "Show less" : "View all activity"}
+                        </button>
+                    )}
+                </>
             )}
         </section>
     )
