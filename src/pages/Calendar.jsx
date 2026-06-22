@@ -5,7 +5,6 @@ import useActivities from "../hooks/useActivities"
 import useSchoolItems from "../hooks/useSchoolItems"
 import useFamilyMembers from "../hooks/useFamilyMembers"
 import useTrips from "../hooks/useTrips"
-import useActivitySessions from "../hooks/useActivitySessions"
 import usePreferences from "../hooks/usePreferences"
 import useCalendarEvents from "../hooks/useCalendarEvents"
 
@@ -532,7 +531,6 @@ export default function Calendar() {
     })
 
     const { activities, loading: activitiesLoading } = useActivities()
-    const { activitySessions, loading: sessionsLoading } = useActivitySessions()
 
     const [showActivityForm, setShowActivityForm] = useState(false)
     const [savingActivity, setSavingActivity] = useState(false)

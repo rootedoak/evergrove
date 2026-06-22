@@ -12,7 +12,6 @@ import {
 } from "../services/activitySessionService"
 import { getFamilyMembers } from "../services/familyService"
 import { getRegistrationStatus } from "../utils/activityStatus"
-import useActivitySessions from "../hooks/useActivitySessions"
 
 const activityTypeConfig = {
     Activity: {
@@ -373,7 +372,6 @@ function ActivitySection({
 export default function Activities() {
     const [searchParams] = useSearchParams()
     const startDateParam = searchParams.get("startDate")
-    const { activitySessions, refreshActivitySessions } = useActivitySessions()
 
     const [activities, setActivities] = useState([])
     const [familyMembers, setFamilyMembers] = useState([])

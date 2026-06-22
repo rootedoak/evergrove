@@ -1,4 +1,3 @@
-import useActivities from "../hooks/useActivities"
 import useTasks from "../hooks/useTasks"
 import useSchoolItems from "../hooks/useSchoolItems"
 import useFamilyMembers from "../hooks/useFamilyMembers"
@@ -7,19 +6,15 @@ import usePreferences from "../hooks/usePreferences"
 
 import CommandCenterDailyBrief from "../components/CommandCenterDailyBrief"
 import CommandCenterNeedsAttention from "../components/CommandCenterNeedsAttention"
-
 import FloatingQuickActions from "../components/FloatingQuickActions"
 
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../lib/supabase"
 import { filterTasksByScope } from "../utils/taskFilters"
 
-import useActivitySessions from "../hooks/useActivitySessions"
 import useMeals from "../hooks/useMeals"
-
 import { useNavigate } from "react-router-dom"
-import { completeTask, createTask } from "../services/taskService"
-import { markRegistrationTaskCreated } from "../services/activityService"
+import { completeTask } from "../services/taskService"
 
 import useCalendarEvents from "../hooks/useCalendarEvents"
 
@@ -30,8 +25,6 @@ import FamilyAnnouncementsCard from "../components/FamilyAnnouncementsCard"
 
 import useHouseholdFeed from "../hooks/useHouseholdFeed"
 import HouseholdFeedCard from "../components/HouseholdFeedCard"
-
-import { getTaskSuggestions } from "../utils/taskSuggestions"
 
 function getDateOnly(value) {
     if (!value) return ""
@@ -165,7 +158,7 @@ function getUpcomingBirthdayDate(birthdate) {
 }
 
 function getBirthdayEvents(familyMembers) {
-    return familyMembers
+    return (Array.isArray(familyMembers) ? familyMembers : [])
         .filter(member => member.birthdate)
         .map(member => {
             const date = getUpcomingBirthdayDate(member.birthdate)
@@ -183,99 +176,8 @@ function getBirthdayEvents(familyMembers) {
         })
 }
 
-function getActivitySessionEvents(activitySessions) {
-    return activitySessions
-        .filter(session => session.session_date)
-        .map(session => {
-            const activity = session.activities
-            const member = activity?.family_members
-            const timeRange = formatTimeRange(session.start_time, session.end_time)
-
-            return {
-                id: `activity-session-${session.id}`,
-                date: getDateOnly(session.session_date),
-                icon: member?.avatar_emoji || "📅",
-                title: activity?.event_name || activity?.name || "Activity session",
-                subtitle: member?.name || "",
-                detail: session.location || "",
-                time_label: timeRange,
-                start_time: session.start_time,
-                end_time: session.end_time,
-                sort_time: getMinutesFromTime(session.start_time)
-            }
-        })
-}
-
-function getActivityEvents(activities, activitySessions = []) {
-    const activityIdsWithSessions = new Set(
-        activitySessions
-            .map(session => session.activity_id)
-            .filter(Boolean)
-    )
-
-    return activities.flatMap(activity => {
-        const member = activity.family_members
-        const avatar = member?.avatar_emoji || "📅"
-        const memberName = member?.name
-        const timeRange = formatTimeRange(activity.start_time, activity.end_time)
-        const hasSessions = activityIdsWithSessions.has(activity.id)
-
-        const events = []
-
-        if (activity.registration_open_date) {
-            events.push({
-                id: `${activity.id}-registration-open`,
-                date: getDateOnly(activity.registration_open_date),
-                icon: avatar,
-                title: `${activity.name} registration opens`,
-                subtitle: memberName,
-                sort_time: 99999
-            })
-        }
-
-        if (activity.registration_close_date) {
-            events.push({
-                id: `${activity.id}-registration-close`,
-                date: getDateOnly(activity.registration_close_date),
-                icon: avatar,
-                title: `${activity.name} registration closes`,
-                subtitle: memberName,
-                sort_time: 99999
-            })
-        }
-
-        if (!hasSessions && activity.start_date) {
-            events.push({
-                id: `${activity.id}-start`,
-                date: getDateOnly(activity.start_date),
-                icon: avatar,
-                title: `${activity.name}`,
-                subtitle: memberName,
-                detail: "",
-                time_label: timeRange,
-                start_time: activity.start_time,
-                end_time: activity.end_time,
-                sort_time: getMinutesFromTime(activity.start_time)
-            })
-        }
-
-        if (!hasSessions && activity.end_date) {
-            events.push({
-                id: `${activity.id}-end`,
-                date: getDateOnly(activity.end_date),
-                icon: avatar,
-                title: `${activity.name}`,
-                subtitle: memberName,
-                sort_time: 99999
-            })
-        }
-
-        return events
-    })
-}
-
 function getSchoolEvents(schoolItems) {
-    return schoolItems
+    return (Array.isArray(schoolItems) ? schoolItems : [])
         .filter(item => item.due_date)
         .map(item => ({
             id: `school-${item.id}`,
@@ -288,7 +190,7 @@ function getSchoolEvents(schoolItems) {
 }
 
 function getCalendarEventEvents(calendarEvents) {
-    return calendarEvents.flatMap(event => {
+    return (Array.isArray(calendarEvents) ? calendarEvents : []).flatMap(event => {
         if (!event.start_date) return []
 
         const events = []
@@ -306,7 +208,7 @@ function getCalendarEventEvents(calendarEvents) {
             events.push({
                 id: `calendar-event-${event.id}-${date}`,
                 date,
-                icon: "📌",
+                icon: event.event_type === "Activity" ? "🏃" : "📌",
                 title: event.title,
                 subtitle: event.event_type || "Calendar Event",
                 detail: event.location || "",
@@ -324,7 +226,7 @@ function getCalendarEventEvents(calendarEvents) {
 }
 
 function getTripEvents(trips) {
-    return trips.flatMap(trip => {
+    return (Array.isArray(trips) ? trips : []).flatMap(trip => {
         if (!trip.start_date) return []
 
         const attendees = trip.trip_family_members
@@ -424,9 +326,7 @@ function UpcomingEventRow({ item }) {
 
                 <strong>{item.title}</strong>
 
-                <p>
-                    {item.subtitle || "Family"}
-                </p>
+                <p>{item.subtitle || "Family"}</p>
             </div>
         </div>
     )
@@ -435,17 +335,11 @@ function UpcomingEventRow({ item }) {
 export default function Dashboard() {
     const [currentUserId, setCurrentUserId] = useState(null)
 
-    const { activities, loading, refreshActivities } = useActivities()
     const { tasks, loading: tasksLoading, refreshTasks } = useTasks()
     const { schoolItems } = useSchoolItems()
     const { familyMembers } = useFamilyMembers()
     const { trips } = useTrips()
     const { preferences, loading: preferencesLoading } = usePreferences()
-
-    const {
-        activitySessions,
-        loading: activitySessionsLoading
-    } = useActivitySessions()
 
     const { dinnerTonight } = useMeals()
 
@@ -477,17 +371,8 @@ export default function Dashboard() {
     const showBirthdays = preferences?.show_birthdays !== false
     const showTrips = preferences?.show_trips !== false
     const showSchoolItems = preferences?.show_school_items !== false
-    const showSuggestedTasks = preferences?.show_suggested_tasks !== false
-    const showActivitySessions = preferences?.show_activity_sessions !== false
-
-    const taskSuggestions = getTaskSuggestions(activities)
 
     const allEvents = [
-        ...getActivityEvents(
-            activities,
-            showActivitySessions ? activitySessions : []
-        ),
-        ...(showActivitySessions ? getActivitySessionEvents(activitySessions) : []),
         ...(showSchoolItems ? getSchoolEvents(schoolItems) : []),
         ...(showTrips ? getTripEvents(trips) : []),
         ...getCalendarEventEvents(calendarEvents),
@@ -527,11 +412,11 @@ export default function Dashboard() {
 
     const upcomingEventsByDate = groupEventsByDate(upcomingEvents)
 
-    const currentMember = familyMembers.find(
+    const currentMember = (Array.isArray(familyMembers) ? familyMembers : []).find(
         member => member.user_id === currentUserId
     )
 
-    const childMemberIds = familyMembers
+    const childMemberIds = (Array.isArray(familyMembers) ? familyMembers : [])
         .filter(isChildMember)
         .map(member => member.id)
 
@@ -539,7 +424,7 @@ export default function Dashboard() {
 
     const scopedTasks = useMemo(() => {
         return filterTasksByScope(
-            tasks,
+            Array.isArray(tasks) ? tasks : [],
             dashboardTaskScope,
             currentMember?.id,
             childMemberIds
@@ -561,31 +446,9 @@ export default function Dashboard() {
         })
 
     const dashboardLoading =
-        loading ||
         tasksLoading ||
         preferencesLoading ||
-        activitySessionsLoading ||
         calendarEventsLoading
-
-    async function handleCreateSuggestedTask(suggestion) {
-        try {
-            await createTask({
-                title: suggestion.title,
-                description: `Registration task created from ${suggestion.activityName}.`,
-                due_date: null,
-                status: "open",
-                family_member_id: suggestion.familyMemberId,
-                activity_id: suggestion.activityId
-            })
-
-            await markRegistrationTaskCreated(suggestion.activityId)
-            await refreshActivities()
-            await refreshTasks()
-        } catch (error) {
-            console.error(error)
-            alert(error.message || "Could not create to-do.")
-        }
-    }
 
     async function handleCompleteTask(task) {
         try {
@@ -669,9 +532,9 @@ export default function Dashboard() {
             <CommandCenterNeedsAttention
                 tasks={scopedTasks}
                 schoolItems={schoolItems}
-                taskSuggestions={showSuggestedTasks ? taskSuggestions : []}
+                taskSuggestions={[]}
                 todayString={todayString}
-                onCreateSuggestedTask={handleCreateSuggestedTask}
+                onCreateSuggestedTask={() => { }}
                 onCompleteTask={handleCompleteTask}
             />
 
@@ -742,13 +605,13 @@ export default function Dashboard() {
 
                 <div className="home-timeline-section">
                     <FamilyTimelineCard
-                        activities={activities}
-                        tasks={tasks}
+                        activities={[]}
+                        tasks={Array.isArray(tasks) ? tasks : []}
                         schoolItems={showSchoolItems ? schoolItems : []}
                         familyMembers={showBirthdays ? familyMembers : []}
-                        trips={showTrips ? trips : []}
-                        activitySessions={showActivitySessions ? activitySessions : []}
-                        calendarEvents={calendarEvents}
+                        trips={showTrips && Array.isArray(trips) ? trips : []}
+                        activitySessions={[]}
+                        calendarEvents={Array.isArray(calendarEvents) ? calendarEvents : []}
                         timelineDays={timelineDays}
                     />
                 </div>

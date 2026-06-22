@@ -27,18 +27,18 @@ export default function FamilyTimelineCard({
     schoolItems = [],
     familyMembers = [],
     trips = [],
-    activitySessions = [],
     calendarEvents = [],
     timelineDays = 90
 }) {
     const timeline = buildFamilyTimeline(
-        tasks,
-        schoolItems,
-        familyMembers,
-        trips,
+        [],
+        Array.isArray(tasks) ? tasks : [],
+        Array.isArray(schoolItems) ? schoolItems : [],
+        Array.isArray(familyMembers) ? familyMembers : [],
+        Array.isArray(trips) ? trips : [],
         timelineDays,
-        activitySessions,
-        calendarEvents
+        [],
+        Array.isArray(calendarEvents) ? calendarEvents : []
     ).slice(0, 15)
 
     return (
