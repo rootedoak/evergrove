@@ -332,6 +332,26 @@ function UpcomingEventRow({ item }) {
     )
 }
 
+function dedupeEvents(events) {
+    const seen = new Set()
+
+    return events.filter(event => {
+        const key = [
+            event.date,
+            event.title,
+            event.subtitle,
+            event.time_label || "",
+            event.start_time || "",
+            event.end_time || ""
+        ].join("|")
+
+        if (seen.has(key)) return false
+
+        seen.add(key)
+        return true
+    })
+}
+
 export default function Dashboard() {
     const [currentUserId, setCurrentUserId] = useState(null)
 
@@ -372,12 +392,12 @@ export default function Dashboard() {
     const showTrips = preferences?.show_trips !== false
     const showSchoolItems = preferences?.show_school_items !== false
 
-    const allEvents = [
+    const allEvents = dedupeEvents([
         ...(showSchoolItems ? getSchoolEvents(schoolItems) : []),
         ...(showTrips ? getTripEvents(trips) : []),
         ...getCalendarEventEvents(calendarEvents),
         ...(showBirthdays ? getBirthdayEvents(familyMembers) : [])
-    ]
+    ])
 
     const todayEvents = allEvents
         .filter(item => item.date === todayString)

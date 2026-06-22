@@ -890,14 +890,6 @@ export default function Calendar() {
                     </div>
 
                     <div className="calendar-destinations">
-                        <Link className="calendar-destination-card" to="/activities">
-                            <span>🏀</span>
-
-                            <div>
-                                <strong>Activities</strong>
-                                <p>Sports, lessons, clubs, and sessions.</p>
-                            </div>
-                        </Link>
 
                         <Link className="calendar-destination-card" to="/trips">
                             <span>🚗</span>
