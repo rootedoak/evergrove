@@ -17,7 +17,6 @@ import {
 import { createTask } from "../services/taskService"
 import { createActivity } from "../services/activityService"
 import { deleteActivity } from "../services/activityService"
-import { deleteActivitySession } from "../services/activitySessionService"
 import { createSchoolItem } from "../services/schoolService"
 import { deleteSchoolItem } from "../services/schoolService"
 import { deleteTrip } from "../services/tripService"
@@ -148,134 +147,13 @@ function getCalendarDays(visibleDate, weekStartsOn = "Sunday") {
 }
 
 function buildCalendarEvents({
-    activities,
-    activitySessions,
     schoolItems,
     familyMembers,
     trips,
     calendarEvents,
     visibleDate,
-    showActivitySessions
 }) {
     const events = []
-
-    const activityIdsWithSessions = new Set(
-        activitySessions
-            .map(session => session.activity_id)
-            .filter(Boolean)
-    )
-
-    if (showActivitySessions) {
-        activitySessions.forEach(session => {
-            if (!session.session_date) return
-
-            const activity = session.activities
-            const member = activity?.family_members
-            const timeRange = formatTimeRange(
-                session.start_time,
-                session.end_time
-            )
-
-            events.push({
-                id: `session-${session.id}`,
-                type: "session",
-                sourceType: "session",
-                sourceId: session.id,
-                canDelete: true,
-                date: getDateOnly(session.session_date),
-                icon: member?.avatar_emoji || "📅",
-                title: activity?.event_name || activity?.name || "Activity session",
-                subtitle: [
-                    timeRange,
-                    member?.name,
-                    session.location
-                ]
-                    .filter(Boolean)
-                    .join(" • "),
-                timeLabel: timeRange,
-                location: session.location || "",
-                sortTime: getMinutesFromTime(session.start_time)
-            })
-        })
-    }
-
-    activities.forEach(activity => {
-        const member = activity.family_members
-        const hasSessions = activityIdsWithSessions.has(activity.id)
-
-        if (activity.registration_open_date) {
-            events.push({
-                id: `activity-${activity.id}-registration-open`,
-                type: "activity",
-                sourceType: "activity",
-                sourceId: activity.id,
-                canDelete: true,
-                date: getDateOnly(activity.registration_open_date),
-                icon: "📣",
-                title: `${activity.name} registration opens`,
-                subtitle: member?.name || "",
-                sortTime: 99999
-            })
-        }
-
-        if (activity.registration_close_date) {
-            events.push({
-                id: `activity-${activity.id}-registration-close`,
-                type: "activity",
-                sourceType: "activity",
-                sourceId: activity.id,
-                canDelete: true,
-                date: getDateOnly(activity.registration_close_date),
-                icon: "⏳",
-                title: `${activity.name} registration closes`,
-                subtitle: member?.name || "",
-                sortTime: 99999
-            })
-        }
-
-        if (!hasSessions && activity.start_date) {
-            const timeRange = formatTimeRange(
-                activity.start_time,
-                activity.end_time
-            )
-
-            events.push({
-                id: `activity-${activity.id}-start`,
-                type: "activity",
-                sourceType: "activity",
-                sourceId: activity.id,
-                canDelete: true,
-                date: getDateOnly(activity.start_date),
-                icon: member?.avatar_emoji || "📅",
-                title: `${activity.name}`,
-                subtitle: [timeRange, member?.name]
-                    .filter(Boolean)
-                    .join(" • "),
-                timeLabel: timeRange,
-                location: activity.location || "",
-                sortTime: getMinutesFromTime(activity.start_time)
-            })
-        }
-
-        if (
-            !hasSessions &&
-            activity.end_date &&
-            activity.end_date !== activity.start_date
-        ) {
-            events.push({
-                id: `activity-${activity.id}-end`,
-                type: "activity",
-                sourceType: "activity",
-                sourceId: activity.id,
-                canDelete: true,
-                date: getDateOnly(activity.end_date),
-                icon: "🏁",
-                title: `${activity.name}`,
-                subtitle: member?.name || "",
-                sortTime: 99999
-            })
-        }
-    })
 
     schoolItems.forEach(item => {
         if (!item.due_date) return
@@ -566,8 +444,6 @@ export default function Calendar() {
         refreshCalendarEvents
     } = useCalendarEvents()
 
-    const showActivitySessions = preferences?.show_activity_sessions !== false
-
     const calendarDays = useMemo(
         () => getCalendarDays(visibleDate, "Sunday"),
         [visibleDate]
@@ -576,24 +452,18 @@ export default function Calendar() {
     const events = useMemo(
         () =>
             buildCalendarEvents({
-                activities,
-                activitySessions,
                 schoolItems,
                 familyMembers,
                 trips,
                 calendarEvents,
                 visibleDate,
-                showActivitySessions
             }),
         [
-            activities,
-            activitySessions,
             schoolItems,
             familyMembers,
             trips,
             calendarEvents,
             visibleDate,
-            showActivitySessions
         ]
     )
 
@@ -976,8 +846,6 @@ export default function Calendar() {
     }
 
     const loading =
-        activitiesLoading ||
-        sessionsLoading ||
         preferencesLoading ||
         calendarEventsLoading
 
