@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { getMealPlans } from "../services/mealService"
+import { getMealPlans, getMeals } from "../services/mealService"
 
 function getTodayDate() {
     const today = new Date()
@@ -19,14 +19,26 @@ export default function useMeals() {
         try {
             setLoading(true)
 
-            const plans = await getMealPlans()
+            const [plans, meals] = await Promise.all([
+                getMealPlans(),
+                getMeals()
+            ])
 
             const tonight =
-                plans.find(
-                    plan => plan.planned_date === getTodayDate()
-                ) || null
+                plans.find(plan => plan.planned_date === getTodayDate()) || null
 
-            setDinnerTonight(tonight)
+            const matchingMeal = tonight?.meal_id
+                ? meals.find(meal => meal.id === tonight.meal_id)
+                : null
+
+            setDinnerTonight(
+                tonight
+                    ? {
+                        ...tonight,
+                        meal: matchingMeal
+                    }
+                    : null
+            )
         } catch (error) {
             console.error(error)
         } finally {

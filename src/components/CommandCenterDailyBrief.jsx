@@ -29,6 +29,9 @@ export default function CommandCenterDailyBrief({
     tonightDinner = null,
     upcomingItems = [],
     attentionCount = 0,
+    onOpenEvents,
+    onOpenTasks,
+    onOpenDinner,
 }) {
     const taskCount = todayTasks.length
     const eventCount = todayEvents.length
@@ -38,19 +41,17 @@ export default function CommandCenterDailyBrief({
 
     const dinnerName =
         tonightDinner?.meal_name ||
+        tonightDinner?.meal?.name ||
         tonightDinner?.name ||
+        tonightDinner?.restaurant_name ||
         "Not set"
 
     return (
         <section className="command-center-brief">
             <div className="brief-header">
-                <p className="brief-eyebrow">
-                    {formatToday()}
-                </p>
+                <p className="brief-eyebrow">{formatToday()}</p>
 
-                <h1>
-                    {getGreeting()}, {householdName}
-                </h1>
+                <h1>{getGreeting()}, {householdName}</h1>
 
                 <p className="brief-subtitle">
                     Here’s what your family needs to know today.
@@ -58,29 +59,41 @@ export default function CommandCenterDailyBrief({
             </div>
 
             <div className="brief-summary-grid">
-                <div className="brief-summary-item">
+                <button
+                    type="button"
+                    className="brief-summary-item brief-summary-button"
+                    onClick={onOpenEvents}
+                >
                     <span className="brief-icon">📅</span>
                     <div>
                         <strong>{eventCount}</strong>
                         <span>{eventCount === 1 ? "event today" : "events today"}</span>
                     </div>
-                </div>
+                </button>
 
-                <div className="brief-summary-item">
+                <button
+                    type="button"
+                    className="brief-summary-item brief-summary-button"
+                    onClick={onOpenTasks}
+                >
                     <span className="brief-icon">✅</span>
                     <div>
                         <strong>{taskCount}</strong>
                         <span>{taskCount === 1 ? "task due" : "tasks due"}</span>
                     </div>
-                </div>
+                </button>
 
-                <div className="brief-summary-item">
+                <button
+                    type="button"
+                    className="brief-summary-item brief-summary-button"
+                    onClick={onOpenDinner}
+                >
                     <span className="brief-icon">🍽️</span>
                     <div>
                         <strong>{dinnerName}</strong>
                         <span>Dinner</span>
                     </div>
-                </div>
+                </button>
             </div>
 
             <div className="brief-digest">
@@ -101,16 +114,11 @@ export default function CommandCenterDailyBrief({
                         <p className="brief-digest-label">Today</p>
 
                         {topEvents.map((event) => (
-                            <div
-                                className="brief-digest-row"
-                                key={event.id}
-                            >
+                            <div className="brief-digest-row" key={event.id}>
                                 <span>{event.icon || "📌"}</span>
                                 <p>
                                     <strong>{getItemTitle(event)}</strong>
-                                    {getItemTime(event) && (
-                                        <> • {getItemTime(event)}</>
-                                    )}
+                                    {getItemTime(event) && <> • {getItemTime(event)}</>}
                                 </p>
                             </div>
                         ))}
@@ -122,10 +130,7 @@ export default function CommandCenterDailyBrief({
                         <p className="brief-digest-label">Coming soon</p>
 
                         {topUpcoming.map((item) => (
-                            <div
-                                className="brief-digest-row"
-                                key={item.id}
-                            >
+                            <div className="brief-digest-row" key={item.id}>
                                 <span>{item.icon || "⏭️"}</span>
                                 <p>
                                     <strong>{getItemTitle(item)}</strong>

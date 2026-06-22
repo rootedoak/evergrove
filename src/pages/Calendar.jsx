@@ -516,7 +516,43 @@ export default function Calendar() {
             setShowSchoolItemForm(false)
             navigate(location.pathname, { replace: true, state: {} })
         }
-    }, [location, navigate])
+
+        if (location.state?.selectedDate) {
+            setSelectedDate(location.state.selectedDate)
+        }
+
+        if (location.state?.calendarEventId) {
+            const existingEvent = calendarEvents.find(
+                calendarEvent => calendarEvent.id === location.state.calendarEventId
+            )
+
+            if (existingEvent) {
+                setEditingCalendarEventId(existingEvent.id)
+
+                setCalendarEventForm({
+                    title: existingEvent.title || "",
+                    event_type: existingEvent.event_type || "Family Event",
+                    start_date: existingEvent.start_date || location.state.selectedDate || "",
+                    end_date: existingEvent.end_date || "",
+                    start_time: existingEvent.start_time || "",
+                    end_time: existingEvent.end_time || "",
+                    location: existingEvent.location || "",
+                    notes: existingEvent.notes || "",
+                    repeats_yearly: Boolean(existingEvent.repeats_yearly),
+                    session_frequency: "none",
+                    session_until: ""
+                })
+
+                setShowCalendarEventForm(true)
+                setShowTaskForm(false)
+                setShowSchoolItemForm(false)
+            }
+        }
+
+        if (location.state?.selectedDate || location.state?.calendarEventId) {
+            navigate(location.pathname, { replace: true, state: {} })
+        }
+    }, [location, navigate, calendarEvents])
 
     function goToPreviousMonth() {
         setVisibleDate(current => {
