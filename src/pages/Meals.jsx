@@ -785,8 +785,19 @@ export default function Meals() {
                                                 className="icon-danger-button"
                                                 type="button"
                                                 onClick={async () => {
-                                                    await deleteMealPlan(plan.id)
-                                                    await loadData()
+                                                    const previousMealPlans = mealPlans
+
+                                                    setMealPlans(current =>
+                                                        current.filter(item => item.id !== plan.id)
+                                                    )
+
+                                                    try {
+                                                        await deleteMealPlan(plan.id)
+                                                    } catch (error) {
+                                                        console.error(error)
+                                                        setMealPlans(previousMealPlans)
+                                                        alert(error.message || "Could not delete meal plan.")
+                                                    }
                                                 }}
                                                 aria-label="Delete meal plan"
                                             >
@@ -1132,8 +1143,21 @@ export default function Meals() {
                                                             className="danger"
                                                             onClick={async () => {
                                                                 setMealMenuOpen(null)
-                                                                await deleteMeal(meal.id)
-                                                                await loadData()
+                                                                const previousMeals = meals
+
+                                                                setMealMenuOpen(null)
+
+                                                                setMeals(current =>
+                                                                    current.filter(item => item.id !== meal.id)
+                                                                )
+
+                                                                try {
+                                                                    await deleteMeal(meal.id)
+                                                                } catch (error) {
+                                                                    console.error(error)
+                                                                    setMeals(previousMeals)
+                                                                    alert(error.message || "Could not delete meal.")
+                                                                }
                                                             }}
                                                         >
                                                             Delete
