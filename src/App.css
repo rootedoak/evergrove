@@ -5555,3 +5555,9 @@ a {
   text-align: left;
   cursor: pointer;
 }
+
+@media (max-width: 768px) {
+  .calendar-detail-add-actions {
+    display: none;
+  }
+}

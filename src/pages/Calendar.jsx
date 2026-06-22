@@ -434,22 +434,60 @@ function formatAgendaDateLabel(dateString) {
     })
 }
 
-function openAddMenuForm(type) {
-    const today = getTodayString()
+function addSessionInterval(dateString, frequency) {
+    const date = createLocalDate(dateString)
 
-    setSelectedDate(today)
-    resetCalendarEventForm(today)
-    resetTaskForm(today)
-    resetActivityForm()
-    resetSchoolItemForm()
+    if (frequency === "daily") {
+        date.setDate(date.getDate() + 1)
+    }
 
-    setShowCalendarEventForm(type === "event")
-    setShowTaskForm(type === "task")
-    setShowActivityForm(type === "activity")
-    setShowSchoolItemForm(type === "school")
+    if (frequency === "weekly") {
+        date.setDate(date.getDate() + 7)
+    }
 
-    setShowAddMenu(false)
+    if (frequency === "monthly") {
+        date.setMonth(date.getMonth() + 1)
+    }
+
+    return formatDateParts(
+        date.getFullYear(),
+        date.getMonth() + 1,
+        date.getDate()
+    )
 }
+
+function buildActivitySessionEvents(baseEvent) {
+    const frequency = baseEvent.session_frequency
+    const startDate = baseEvent.start_date
+    const untilDate = baseEvent.session_until
+
+    if (
+        baseEvent.event_type !== "Activity" ||
+        !frequency ||
+        frequency === "none" ||
+        !startDate ||
+        !untilDate
+    ) {
+        return [baseEvent]
+    }
+
+    const events = []
+    let currentDate = startDate
+
+    while (currentDate <= untilDate) {
+        events.push({
+            ...baseEvent,
+            start_date: currentDate,
+            end_date: currentDate
+        })
+
+        currentDate = addSessionInterval(currentDate, frequency)
+    }
+
+    return events
+}
+
+
 
 export default function Calendar() {
     const navigate = useNavigate()
@@ -468,10 +506,12 @@ export default function Calendar() {
 
     const [calendarEventForm, setCalendarEventForm] = useState({
         title: "",
-        event_type: "Important Date",
+        event_type: "Family Event",
         start_date: "",
         end_date: "",
         repeats_yearly: false,
+        session_frequency: "none",
+        session_until: "",
         start_time: "",
         end_time: "",
         location: "",
@@ -501,6 +541,8 @@ export default function Calendar() {
         name: "",
         family_member_id: "",
         location: "",
+        start_date: "",
+        end_date: "",
         start_time: "",
         end_time: ""
     })
@@ -689,14 +731,16 @@ export default function Calendar() {
 
         setCalendarEventForm({
             title: "",
-            event_type: "Important Date",
+            event_type: "Family Event",
             start_date: date || "",
             end_date: "",
             start_time: "",
             end_time: "",
             location: "",
             notes: "",
-            repeats_yearly: false
+            repeats_yearly: false,
+            session_frequency: "none",
+            session_until: ""
         })
     }
 
@@ -705,7 +749,7 @@ export default function Calendar() {
         setSavingCalendarEvent(true)
 
         try {
-            const payload = {
+            const basePayload = {
                 title: calendarEventForm.title.trim(),
                 event_type: calendarEventForm.event_type,
                 start_date: calendarEventForm.start_date || selectedDate,
@@ -717,10 +761,26 @@ export default function Calendar() {
                 repeats_yearly: calendarEventForm.repeats_yearly
             }
 
+            const sessionPayload = {
+                ...basePayload,
+                session_frequency: calendarEventForm.session_frequency,
+                session_until: calendarEventForm.session_until
+            }
+
             if (editingCalendarEventId) {
-                await updateCalendarEvent(editingCalendarEventId, payload)
+                await updateCalendarEvent(editingCalendarEventId, basePayload)
             } else {
-                await createCalendarEvent(payload)
+                const eventsToCreate = buildActivitySessionEvents(sessionPayload)
+
+                for (const eventToCreate of eventsToCreate) {
+                    const {
+                        session_frequency,
+                        session_until,
+                        ...cleanEvent
+                    } = eventToCreate
+
+                    await createCalendarEvent(cleanEvent)
+                }
             }
 
             await refreshCalendarEvents()
@@ -771,11 +831,13 @@ export default function Calendar() {
         }
     }
 
-    function resetActivityForm() {
+    function resetActivityForm(date = selectedDate) {
         setActivityForm({
             name: "",
             family_member_id: "",
             location: "",
+            start_date: date || "",
+            end_date: date || "",
             start_time: "",
             end_time: ""
         })
@@ -792,8 +854,8 @@ export default function Calendar() {
                     activityForm.family_member_id || null,
                 location:
                     activityForm.location.trim() || null,
-                start_date: selectedDate,
-                end_date: selectedDate,
+                start_date: activityForm.start_date || selectedDate,
+                end_date: activityForm.end_date || activityForm.start_date || selectedDate,
                 start_time:
                     activityForm.start_time || null,
                 end_time:
@@ -819,6 +881,38 @@ export default function Calendar() {
             category: "School",
             notes: ""
         })
+    }
+
+    function openAddMenuForm(type) {
+        const today = getTodayString()
+
+        setSelectedDate(today)
+        setShowAddMenu(false)
+
+        resetCalendarEventForm(today)
+        resetTaskForm(today)
+        resetActivityForm(today)
+        resetSchoolItemForm()
+
+        if (type === "activity") {
+            setCalendarEventForm(current => ({
+                ...current,
+                event_type: "Activity",
+                start_date: today,
+                end_date: today
+            }))
+
+            setShowCalendarEventForm(true)
+            setShowTaskForm(false)
+            setShowActivityForm(false)
+            setShowSchoolItemForm(false)
+            return
+        }
+
+        setShowCalendarEventForm(type === "event")
+        setShowTaskForm(type === "task")
+        setShowActivityForm(false)
+        setShowSchoolItemForm(type === "school")
     }
 
     async function handleCreateSchoolItem(event) {
@@ -976,11 +1070,6 @@ export default function Calendar() {
                                     <button type="button" onClick={() => openAddMenuForm("task")}>
                                         <span>✅</span>
                                         To-Do
-                                    </button>
-
-                                    <button type="button" onClick={() => openAddMenuForm("activity")}>
-                                        <span>🏃</span>
-                                        Activity
                                     </button>
 
                                     <button type="button" onClick={() => openAddMenuForm("school")}>
@@ -1235,14 +1324,55 @@ export default function Calendar() {
                                                 )
                                             }
                                         >
-                                            <option>Important Date</option>
-                                            <option>Visitor</option>
                                             <option>Family Event</option>
-                                            <option>Holiday</option>
+                                            <option>Activity</option>
+                                            <option>School</option>
+                                            <option>Trip</option>
                                             <option>Reminder</option>
+                                            <option>Important Date</option>
+                                            <option>Holiday</option>
+                                            <option>Visitor</option>
                                             <option>Other</option>
                                         </select>
                                     </label>
+
+                                    {calendarEventForm.event_type === "Activity" && (
+                                        <>
+                                            <label>
+                                                Sessions
+                                                <select
+                                                    value={calendarEventForm.session_frequency}
+                                                    onChange={event =>
+                                                        updateCalendarEventForm(
+                                                            "session_frequency",
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                >
+                                                    <option value="none">One-time activity</option>
+                                                    <option value="daily">Daily</option>
+                                                    <option value="weekly">Weekly</option>
+                                                    <option value="monthly">Monthly</option>
+                                                </select>
+                                            </label>
+
+                                            {calendarEventForm.session_frequency !== "none" && (
+                                                <label>
+                                                    Repeat Until
+                                                    <input
+                                                        type="date"
+                                                        value={calendarEventForm.session_until}
+                                                        onChange={event =>
+                                                            updateCalendarEventForm(
+                                                                "session_until",
+                                                                event.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                </label>
+                                            )}
+                                        </>
+                                    )}
 
                                     <label>
                                         Start Date
@@ -1530,6 +1660,34 @@ export default function Calendar() {
                                                 </option>
                                             ))}
                                         </select>
+                                    </label>
+
+                                    <label>
+                                        Start Date
+                                        <input
+                                            type="date"
+                                            value={activityForm.start_date}
+                                            onChange={event =>
+                                                setActivityForm({
+                                                    ...activityForm,
+                                                    start_date: event.target.value
+                                                })
+                                            }
+                                        />
+                                    </label>
+
+                                    <label>
+                                        End Date
+                                        <input
+                                            type="date"
+                                            value={activityForm.end_date}
+                                            onChange={event =>
+                                                setActivityForm({
+                                                    ...activityForm,
+                                                    end_date: event.target.value
+                                                })
+                                            }
+                                        />
                                     </label>
 
                                     <label>

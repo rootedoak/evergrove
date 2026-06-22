@@ -23,7 +23,6 @@ function formatTimelineDate(dateString) {
 }
 
 export default function FamilyTimelineCard({
-    activities = [],
     tasks = [],
     schoolItems = [],
     familyMembers = [],
@@ -33,7 +32,6 @@ export default function FamilyTimelineCard({
     timelineDays = 90
 }) {
     const timeline = buildFamilyTimeline(
-        activities,
         tasks,
         schoolItems,
         familyMembers,

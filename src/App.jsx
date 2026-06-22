@@ -39,7 +39,6 @@ import usePreferences from "./hooks/usePreferences"
 import Login from "./pages/Login"
 import Family from "./pages/Family"
 import Dashboard from "./pages/Dashboard"
-import Activities from "./pages/Activities"
 import Tasks from "./pages/Tasks"
 import Reminders from "./pages/Reminders"
 import SchoolHub from "./pages/School"
@@ -221,7 +220,6 @@ function AppLayout() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/settings/family" element={<Family />} />
-          <Route path="/activities" element={<Activities />} />
           <Route path="/school" element={<SchoolHub />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/meals" element={<Meals />} />

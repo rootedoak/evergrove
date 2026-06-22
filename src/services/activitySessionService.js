@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase"
+import { ensureMyHousehold } from "./householdService"
 
 async function getCurrentUserId() {
     const {
@@ -12,17 +13,23 @@ async function getCurrentUserId() {
     return user.id
 }
 
+async function getCurrentHousehold() {
+    return ensureMyHousehold()
+}
+
 export async function getActivitySessions() {
-    const userId = await getCurrentUserId()
+    const household = await getCurrentHousehold()
 
     const { data, error } = await supabase
         .from("activity_sessions")
         .select(`
             *,
-            activities (
+            activities!inner (
                 id,
                 name,
+                event_name,
                 family_member_id,
+                household_id,
                 family_members (
                     id,
                     name,
@@ -30,7 +37,7 @@ export async function getActivitySessions() {
                 )
             )
         `)
-        .eq("activities.user_id", userId)
+        .eq("activities.household_id", household.id)
         .order("session_date", { ascending: true })
 
     if (error) throw error
