@@ -2757,35 +2757,6 @@ a {
   display: grid;
 }
 
-@media (max-width: 700px) {
-  .home-command-page {
-    gap: 14px;
-  }
-
-  .home-section {
-    border-radius: 16px;
-    padding: 15px;
-  }
-
-  .home-day-group {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .home-day-label {
-    font-size: 0.78rem;
-  }
-
-  .home-suggestion-row {
-    grid-template-columns: 34px minmax(0, 1fr);
-  }
-
-  .home-suggestion-row .secondary-button {
-    grid-column: 2;
-    width: fit-content;
-  }
-}
-
 .home-quick-actions {
   display: flex;
   justify-content: center;
@@ -5849,19 +5820,6 @@ a {
   }
 }
 
-.dashboard-simple-header,
-.dashboard-simple-header * {
-  max-width: 100%;
-}
-
-.home-command-page {
-  display: grid;
-  gap: 18px;
-  max-width: 980px;
-  margin: 0 auto;
-  width: 100%;
-}
-
 @media (max-width: 700px) {
   .home-command-page {
     gap: 14px;
@@ -5876,5 +5834,41 @@ a {
   .home-command-page>* {
     max-width: 100%;
     box-sizing: border-box;
+  }
+
+  .dashboard-simple-header {
+    width: 100%;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .dashboard-simple-header h2 {
+    font-size: clamp(2rem, 8vw, 2.5rem);
+    line-height: 1.05;
+    white-space: normal;
+    overflow-wrap: normal;
+  }
+
+  .home-section {
+    border-radius: 16px;
+    padding: 15px;
+  }
+
+  .home-day-group {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .home-day-label {
+    font-size: 0.78rem;
+  }
+
+  .home-suggestion-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .home-suggestion-row .secondary-button {
+    grid-column: 2;
+    width: fit-content;
   }
 }
