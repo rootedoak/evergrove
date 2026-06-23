@@ -2564,14 +2564,6 @@ a {
   }
 }
 
-.home-command-page {
-  display: grid;
-  gap: 18px;
-  max-width: 980px;
-  margin: 0 auto;
-  width: 100%;
-}
-
 .home-now-banner {
   display: grid;
   gap: 6px;
@@ -5862,29 +5854,27 @@ a {
   max-width: 100%;
 }
 
-@media (max-width: 768px) {
-  .dashboard-simple-header {
-    width: 100%;
-    overflow: hidden;
-    text-align: center;
-  }
-
-  .dashboard-simple-header h2 {
-    max-width: 100%;
-    font-size: clamp(2rem, 9vw, 2.75rem);
-    line-height: 1.05;
-    white-space: normal;
-    overflow-wrap: normal;
-  }
-
-  .home-command-page {
-    margin-left: auto;
-    margin-right: auto;
-  }
+.home-command-page {
+  display: grid;
+  gap: 18px;
+  max-width: 980px;
+  margin: 0 auto;
+  width: 100%;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 700px) {
   .home-command-page {
-    transform: translateX(0);
+    gap: 14px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 12px 96px;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  .home-command-page>* {
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }
