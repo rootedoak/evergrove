@@ -5882,3 +5882,9 @@ a {
     margin-right: auto;
   }
 }
+
+@media (max-width: 768px) {
+  .home-command-page {
+    transform: translateX(0);
+  }
+}
