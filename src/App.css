@@ -5857,10 +5857,6 @@ a {
   }
 }
 
-* {
-  outline: 1px solid rgba(255, 0, 0, 0.2);
-}
-
 .dashboard-simple-header,
 .dashboard-simple-header * {
   max-width: 100%;
