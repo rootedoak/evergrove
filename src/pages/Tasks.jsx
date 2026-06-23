@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react"
-import { Link, useSearchParams } from "react-router-dom"
+import {
+    Link,
+    useSearchParams,
+    useLocation,
+    useNavigate
+} from "react-router-dom"
 
 import { supabase } from "../lib/supabase"
 
@@ -190,7 +195,7 @@ function getOwnershipBadge(task) {
     }
 }
 
-function TaskRow({ task, familyMembers, onComplete, onEdit, onDelete }) {
+function TaskRow({ task, familyMembers, onComplete, onEdit, onDelete, highlighted }) {
     const [menuOpen, setMenuOpen] = useState(false)
 
     const isComplete = task.status === "complete"
@@ -198,7 +203,9 @@ function TaskRow({ task, familyMembers, onComplete, onEdit, onDelete }) {
     const ownership = getOwnershipBadge(task)
 
     return (
-        <div className={`task-command-row task-command-row-compact ${isComplete ? "task-command-row-complete" : ""}`}>
+        <div
+            className={`task-command-row task-command-row-compact ${isComplete ? "task-command-row-complete" : ""} ${highlighted ? "task-command-row-highlighted" : ""}`}
+        >
             <button
                 className="task-check-button"
                 type="button"
@@ -289,6 +296,7 @@ function TaskSection({
     onComplete,
     onEdit,
     onDelete,
+    highlightedTaskId,
     className = "",
     hideWhenEmpty = false
 }) {
@@ -319,6 +327,7 @@ function TaskSection({
                             onComplete={onComplete}
                             onEdit={onEdit}
                             onDelete={onDelete}
+                            highlighted={task.id === highlightedTaskId}
                         />
                     ))}
                 </div>
@@ -330,6 +339,10 @@ function TaskSection({
 export default function Tasks() {
     const { preferences, refreshPreferences } = usePreferences()
     const [searchParams] = useSearchParams()
+
+    const location = useLocation()
+    const navigate = useNavigate()
+
     const tripId = searchParams.get("tripId")
     const dueDateParam = searchParams.get("dueDate")
 
@@ -344,6 +357,8 @@ export default function Tasks() {
     const [editingId, setEditingId] = useState(null)
     const [showCompleted, setShowCompleted] = useState(false)
     const [taskScope, setTaskScope] = useState("mine_family")
+
+    const [highlightedTaskId, setHighlightedTaskId] = useState(null)
 
     const currentMember = familyMembers.find(member => member.user_id === currentUserId)
     const childMemberIds = familyMembers.filter(isChildMember).map(member => member.id)
@@ -411,6 +426,35 @@ export default function Tasks() {
             setShowForm(true)
         }
     }, [dueDateParam, tripId])
+
+    useEffect(() => {
+        const taskId = location.state?.taskId
+
+        if (!taskId || tasks.length === 0) return
+
+        const task = tasks.find(
+            item => item.id === taskId
+        )
+
+        if (!task) return
+
+        if (location.state?.mode === "view") {
+            setShowCompleted(true)
+        } else {
+            startEdit(task)
+        }
+
+        setHighlightedTaskId(task.id)
+
+        setTimeout(() => {
+            setHighlightedTaskId(null)
+        }, 2500)
+
+        navigate(location.pathname, {
+            replace: true,
+            state: {}
+        })
+    }, [location.state, tasks, navigate])
 
     useEffect(() => {
         if (preferences?.task_default_view && !tripId) {
@@ -716,6 +760,7 @@ export default function Tasks() {
                             onComplete={handleComplete}
                             onEdit={startEdit}
                             onDelete={handleDelete}
+                            highlightedTaskId={highlightedTaskId}
                             hideWhenEmpty
                         />
 
@@ -728,6 +773,7 @@ export default function Tasks() {
                             onComplete={handleComplete}
                             onEdit={startEdit}
                             onDelete={handleDelete}
+                            highlightedTaskId={highlightedTaskId}
                             className="task-section-today"
                             hideWhenEmpty
                         />
@@ -741,6 +787,7 @@ export default function Tasks() {
                             onComplete={handleComplete}
                             onEdit={startEdit}
                             onDelete={handleDelete}
+                            highlightedTaskId={highlightedTaskId}
                             hideWhenEmpty
                         />
 
@@ -753,6 +800,7 @@ export default function Tasks() {
                             onComplete={handleComplete}
                             onEdit={startEdit}
                             onDelete={handleDelete}
+                            highlightedTaskId={highlightedTaskId}
                             hideWhenEmpty
                         />
 
@@ -786,6 +834,7 @@ export default function Tasks() {
                                         onComplete={handleComplete}
                                         onEdit={startEdit}
                                         onDelete={handleDelete}
+                                        highlightedTaskId={highlightedTaskId}
                                     />
                                 )}
                             </section>

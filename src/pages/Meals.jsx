@@ -185,6 +185,37 @@ export default function Meals() {
     }, [location, navigate])
 
     useEffect(() => {
+        const mealPlanId = location.state?.mealPlanId
+
+        if (!mealPlanId || mealPlans.length === 0) return
+
+        const mealPlan = mealPlans.find(
+            plan => plan.id === mealPlanId
+        )
+
+        if (!mealPlan) return
+
+        const meal = meals.find(
+            item => item.id === mealPlan.meal_id
+        )
+
+        if (meal) {
+            setMobileTab("meals")
+            startEditMeal(meal)
+
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            })
+        }
+
+        navigate(location.pathname, {
+            replace: true,
+            state: {}
+        })
+    }, [location.state, mealPlans, meals, navigate])
+
+    useEffect(() => {
         function handleResize() {
             setIsMobile(window.innerWidth <= 768)
         }

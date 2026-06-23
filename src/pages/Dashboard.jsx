@@ -27,6 +27,8 @@ import FamilyAnnouncementsCard from "../components/FamilyAnnouncementsCard"
 import useHouseholdFeed from "../hooks/useHouseholdFeed"
 import HouseholdFeedCard from "../components/HouseholdFeedCard"
 
+import { getFeedReadCounts } from "../services/feedService"
+
 function getDateOnly(value) {
     if (!value) return ""
     return String(value).slice(0, 10)
@@ -360,6 +362,8 @@ export default function Dashboard() {
 
     const [briefModal, setBriefModal] = useState(null)
 
+    const [feedReadCounts, setFeedReadCounts] = useState({})
+
     const [editingBriefEventId, setEditingBriefEventId] = useState(null)
 
     const [briefEventForm, setBriefEventForm] = useState({
@@ -649,6 +653,27 @@ export default function Dashboard() {
         loadCurrentUser()
     }, [])
 
+    useEffect(() => {
+        async function loadFeedReadCounts() {
+            if (!Array.isArray(feedEvents) || feedEvents.length === 0) {
+                setFeedReadCounts({})
+                return
+            }
+
+            try {
+                const counts = await getFeedReadCounts(
+                    feedEvents.map(event => event.id)
+                )
+
+                setFeedReadCounts(counts)
+            } catch (error) {
+                console.error("Could not load feed read counts:", error)
+            }
+        }
+
+        loadFeedReadCounts()
+    }, [feedEvents])
+
     return (
         <div className="home-command-page">
             <header className="dashboard-simple-header dashboard-household-header">
@@ -734,6 +759,7 @@ export default function Dashboard() {
             <HouseholdFeedCard
                 feedEvents={feedEvents}
                 loading={feedLoading}
+                readCounts={feedReadCounts}
             />
 
             <FamilyAnnouncementsCard

@@ -108,6 +108,48 @@ async function notifyHouseholdMembers(feedEvent, household, actorUser) {
     }
 }
 
+export async function markFeedEventRead(feedEventId) {
+    const household = await getCurrentHousehold()
+    const user = await getCurrentUser()
+
+    const { error } = await supabase
+        .from("household_feed_reads")
+        .upsert(
+            {
+                household_id: household.id,
+                feed_event_id: feedEventId,
+                user_id: user.id,
+                read_at: new Date().toISOString()
+            },
+            {
+                onConflict: "feed_event_id,user_id"
+            }
+        )
+
+    if (error) throw error
+}
+
+export async function getFeedReadCounts(feedEventIds = []) {
+    const household = await getCurrentHousehold()
+
+    if (feedEventIds.length === 0) return {}
+
+    const { data, error } = await supabase
+        .from("household_feed_reads")
+        .select("feed_event_id")
+        .eq("household_id", household.id)
+        .in("feed_event_id", feedEventIds)
+
+    if (error) throw error
+
+    return (data || []).reduce((counts, row) => {
+        counts[row.feed_event_id] =
+            (counts[row.feed_event_id] || 0) + 1
+
+        return counts
+    }, {})
+}
+
 export async function getFeedEvents(limit = 25) {
     const household = await getCurrentHousehold()
 

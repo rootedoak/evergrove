@@ -5772,3 +5772,52 @@ a {
   width: 100%;
   justify-content: center;
 }
+
+.feed-row-clickable {
+  width: 100%;
+  border: none;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.feed-row-clickable:active {
+  transform: scale(0.99);
+}
+
+.task-command-row-highlighted {
+  outline: 2px solid var(--primary);
+  background: rgba(36, 67, 155, 0.08);
+}
+
+.feed-filter-row button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.feed-filter-row button.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.feed-filter-row {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.feed-seen-by {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}

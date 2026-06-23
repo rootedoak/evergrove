@@ -1515,3 +1515,44 @@ create table if not exists analytics_events (
 
     created_at timestamp with time zone not null default now()
 );
+
+-- CREATE SEEN BY TABLE
+
+create table if not exists household_feed_reads (
+    id uuid primary key default gen_random_uuid(),
+    household_id uuid not null,
+    feed_event_id uuid not null references household_feed(id) on delete cascade,
+    user_id uuid not null,
+    read_at timestamptz default now(),
+
+    unique(feed_event_id, user_id)
+);
+
+alter table household_feed_reads enable row level security;
+
+-- SEEN BY RLS POLICIES
+
+create policy "Household members can view feed reads"
+on household_feed_reads
+for select
+using (
+    household_id in (
+        select household_id
+        from family_members
+        where user_id = auth.uid()
+    )
+);
+
+create policy "Household members can insert feed reads"
+on household_feed_reads
+for insert
+with check (
+    user_id = auth.uid()
+    and household_id in (
+        select household_id
+        from family_members
+        where user_id = auth.uid()
+    )
+);
+
+-- 

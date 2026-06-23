@@ -146,6 +146,7 @@ export async function updateTask(id, updates) {
             reference_type: "task",
             reference_id: data.id,
             metadata: {
+                task_id: data.id,
                 task_title: data.title,
                 family_member_id: data.family_member_id || null,
             },

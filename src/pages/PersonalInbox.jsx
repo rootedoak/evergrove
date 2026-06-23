@@ -4,6 +4,8 @@ import usePersonalInbox from "../hooks/usePersonalInbox"
 import usePersonalReminders from "../hooks/usePersonalReminders"
 import { createPersonalInboxItem } from "../services/personalInboxService"
 
+import { useNavigate } from "react-router-dom"
+
 function getTodayString() {
     const today = new Date()
 
@@ -37,9 +39,66 @@ export default function PersonalInbox() {
         next_due: getTodayString()
     })
 
+    const navigate = useNavigate()
+
     const [savingReminder, setSavingReminder] = useState(false)
 
     const unreadCount = items.filter(item => item.status === "unread").length
+
+    function getInboxDestination(item) {
+        const type = item.related_type || item.item_type
+
+        if (type === "task") return "/tasks"
+        if (type === "calendar_event") return "/calendar"
+        if (type === "school") return "/school"
+        if (type === "trip") return "/trips"
+        if (type === "meal_plan") return "/meals"
+        if (type === "meal") return "/meals"
+        if (type === "shopping") return "/shopping"
+
+        return null
+    }
+
+    async function handleOpenInboxItem(item) {
+        if (item.status === "unread") {
+            await markRead(item.id)
+        }
+
+        const type = item.related_type || item.item_type
+
+        if (type === "task") {
+            navigate("/tasks", {
+                state: {
+                    taskId: item.related_id
+                }
+            })
+            return
+        }
+
+        if (type === "calendar_event") {
+            navigate("/calendar", {
+                state: {
+                    calendarEventId: item.related_id
+                }
+            })
+            return
+        }
+
+        if (type === "meal_plan" || type === "meal") {
+            navigate("/meals", {
+                state: {
+                    mealPlanId: item.related_id
+                }
+            })
+            return
+        }
+
+        const destination = getInboxDestination(item)
+
+        if (destination) {
+            navigate(destination)
+        }
+    }
 
     async function handleCreateReminder(event) {
         event.preventDefault()
@@ -118,6 +177,16 @@ export default function PersonalInbox() {
                                         {item.due_date ? ` • Due ${item.due_date}` : ""}
                                     </small>
                                 </div>
+
+                                {getInboxDestination(item) && (
+                                    <button
+                                        className="secondary-button"
+                                        type="button"
+                                        onClick={() => handleOpenInboxItem(item)}
+                                    >
+                                        Open
+                                    </button>
+                                )}
 
                                 <div className="row-actions">
                                     {item.status === "unread" && (

@@ -31,13 +31,11 @@ export default function FamilyTimelineCard({
     timelineDays = 90
 }) {
     const timeline = buildFamilyTimeline(
-        [],
         Array.isArray(tasks) ? tasks : [],
         Array.isArray(schoolItems) ? schoolItems : [],
         Array.isArray(familyMembers) ? familyMembers : [],
         Array.isArray(trips) ? trips : [],
         timelineDays,
-        [],
         Array.isArray(calendarEvents) ? calendarEvents : []
     ).slice(0, 15)
 
@@ -50,7 +48,10 @@ export default function FamilyTimelineCard({
             ) : (
                 <div className="stack">
                     {timeline.map(event => (
-                        <div key={event.id} className="mini-row">
+                        <div
+                            key={event.id}
+                            className="mini-row"
+                        >
                             <span className="mini-avatar">
                                 {event.icon}
                             </span>
