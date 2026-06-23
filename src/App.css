@@ -5861,3 +5861,24 @@ a {
 .dashboard-simple-header * {
   max-width: 100%;
 }
+
+@media (max-width: 768px) {
+  .dashboard-simple-header {
+    width: 100%;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .dashboard-simple-header h2 {
+    max-width: 100%;
+    font-size: clamp(2rem, 9vw, 2.75rem);
+    line-height: 1.05;
+    white-space: normal;
+    overflow-wrap: normal;
+  }
+
+  .home-command-page {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
