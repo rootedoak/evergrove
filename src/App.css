@@ -5821,3 +5821,52 @@ a {
   font-size: 0.75rem;
   color: var(--muted);
 }
+
+.home-command-page,
+.command-center-brief,
+.command-center-brief * {
+  box-sizing: border-box;
+}
+
+.home-command-page {
+  overflow-x: hidden;
+}
+
+.command-center-brief {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.brief-summary-grid {
+  width: 100%;
+}
+
+.brief-summary-item {
+  width: 100%;
+  min-width: 0;
+}
+
+.brief-digest {
+  width: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .home-command-page {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .command-center-brief,
+  .home-section,
+  .dashboard-card,
+  .timeline-expandable,
+  .card {
+    max-width: 100%;
+  }
+
+  .brief-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
