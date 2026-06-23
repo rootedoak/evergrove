@@ -5822,51 +5822,37 @@ a {
   color: var(--muted);
 }
 
-.home-command-page,
-.command-center-brief,
-.command-center-brief * {
-  box-sizing: border-box;
-}
-
-.home-command-page {
-  overflow-x: hidden;
-}
-
-.command-center-brief {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-}
-
-.brief-summary-grid {
-  width: 100%;
-}
-
-.brief-summary-item {
-  width: 100%;
-  min-width: 0;
-}
-
-.brief-digest {
-  width: 100%;
-  overflow: hidden;
-}
-
 @media (max-width: 768px) {
   .home-command-page {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
 
+  .dashboard-simple-header,
+  .home-now-banner,
   .command-center-brief,
   .home-section,
   .dashboard-card,
-  .timeline-expandable,
-  .card {
+  .timeline-expandable {
+    width: 100%;
     max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
   }
 
-  .brief-summary-grid {
-    grid-template-columns: 1fr;
+  .dashboard-simple-header h2,
+  .command-center-brief h1 {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .brief-summary-item,
+  .home-check-row,
+  .attention-row,
+  .feed-row {
+    min-width: 0;
   }
 }
