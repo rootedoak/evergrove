@@ -191,12 +191,6 @@ a {
   display: none;
 }
 
-.main-content {
-  width: 100%;
-  max-width: 1400px;
-  padding: 28px;
-}
-
 .loading-screen,
 .login-page {
   min-height: 100vh;
@@ -982,10 +976,6 @@ a {
     cursor: pointer;
   }
 
-  .main-content {
-    padding: 76px 18px 28px;
-  }
-
   .grid,
   .briefing-grid {
     grid-template-columns: 1fr;
@@ -1030,22 +1020,15 @@ a {
   }
 }
 
-@media (max-width: 480px) {
-  .main-content {
-    padding-left: 14px;
-    padding-right: 14px;
-  }
+.card-actions {
+  flex-direction: column;
+}
 
-  .card-actions {
-    flex-direction: column;
-  }
-
-  .card-actions button,
-  .secondary-button,
-  .danger-button,
-  .primary-button {
-    width: 100%;
-  }
+.card-actions button,
+.secondary-button,
+.danger-button,
+.primary-button {
+  width: 100%;
 }
 
 .task-badge-row {
@@ -4728,10 +4711,6 @@ a {
     display: none;
   }
 
-  .main-content {
-    padding-bottom: 5.5rem;
-  }
-
   .mobile-bottom-nav {
     position: fixed;
     left: 0;
@@ -5870,5 +5849,32 @@ a {
   .home-suggestion-row .secondary-button {
     grid-column: 2;
     width: fit-content;
+  }
+}
+
+.main-content {
+  width: 100%;
+  max-width: 1400px;
+  min-width: 0;
+  padding: 28px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .main-content {
+    padding: 76px 18px 28px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-bottom: 5.5rem;
   }
 }

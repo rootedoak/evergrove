@@ -1237,6 +1237,43 @@ export default function Dashboard() {
                 </div>
             )}
 
+            {import.meta.env.DEV && (
+                <button
+                    type="button"
+                    style={{
+                        position: "fixed",
+                        right: 12,
+                        bottom: 120,
+                        zIndex: 9999,
+                        padding: "10px 12px",
+                        borderRadius: 999,
+                        border: "1px solid #ccc",
+                        background: "white",
+                        color: "#111",
+                        fontSize: 12
+                    }}
+                    onClick={() => {
+                        const viewport = document.documentElement.clientWidth
+
+                        const offenders = [...document.querySelectorAll("*")]
+                            .filter(element => element.scrollWidth > viewport)
+                            .map(element => ({
+                                tag: element.tagName,
+                                className: String(element.className),
+                                id: element.id,
+                                width: element.scrollWidth,
+                                viewport
+                            }))
+                            .slice(0, 20)
+
+                        alert(JSON.stringify(offenders, null, 2))
+                        console.log("Overflow offenders", offenders)
+                    }}
+                >
+                    Debug width
+                </button>
+            )}
+
             <FloatingQuickActions
                 onAddTask={() =>
                     navigate("/calendar", {
