@@ -27,7 +27,8 @@ const userPreferenceFields = [
     "show_school_items",
     "show_activity_sessions",
     "show_suggested_tasks",
-    "task_default_view"
+    "task_default_view",
+    "has_completed_onboarding",
 ]
 
 async function getCurrentUserId() {
@@ -103,6 +104,29 @@ async function getUserDisplayPreferences(userId) {
     return created
 }
 
+export async function completeOnboarding() {
+    const userId = await getCurrentUserId()
+
+    const { data, error } = await supabase
+        .from("user_display_preferences")
+        .upsert(
+            {
+                user_id: userId,
+                has_completed_onboarding: true,
+                updated_at: new Date().toISOString()
+            },
+            {
+                onConflict: "user_id"
+            }
+        )
+        .select()
+        .single()
+
+    if (error) throw error
+
+    return data
+}
+
 export async function getPreferences() {
     const userId = await getCurrentUserId()
     const household = await getCurrentHousehold()
@@ -129,11 +153,17 @@ export async function updatePreferences(updates) {
     if (Object.keys(householdUpdates).length > 0) {
         const { data, error } = await supabase
             .from("household_preferences")
-            .update({
-                ...householdUpdates,
-                updated_at: new Date().toISOString()
-            })
-            .eq("household_id", household.id)
+            .upsert(
+                {
+                    user_id: userId,
+                    household_id: household.id,
+                    ...householdUpdates,
+                    updated_at: new Date().toISOString()
+                },
+                {
+                    onConflict: "household_id"
+                }
+            )
             .select()
             .single()
 
@@ -145,11 +175,16 @@ export async function updatePreferences(updates) {
     if (Object.keys(userUpdates).length > 0) {
         const { data, error } = await supabase
             .from("user_display_preferences")
-            .update({
-                ...userUpdates,
-                updated_at: new Date().toISOString()
-            })
-            .eq("user_id", userId)
+            .upsert(
+                {
+                    user_id: userId,
+                    ...userUpdates,
+                    updated_at: new Date().toISOString()
+                },
+                {
+                    onConflict: "user_id"
+                }
+            )
             .select()
             .single()
 

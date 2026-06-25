@@ -41,3 +41,30 @@ export async function getCurrentHousehold() {
 export async function ensureMyHousehold() {
     return getCurrentHousehold()
 }
+
+export async function createHousehold(name) {
+    const user = await getCurrentUser()
+
+    const { data: household, error: householdError } = await supabase
+        .from("households")
+        .insert({
+            name: name || "My Household",
+            created_by: user.id
+        })
+        .select()
+        .single()
+
+    if (householdError) throw householdError
+
+    const { error: memberError } = await supabase
+        .from("household_members")
+        .insert({
+            household_id: household.id,
+            user_id: user.id,
+            role: "admin"
+        })
+
+    if (memberError) throw memberError
+
+    return household
+}

@@ -1555,4 +1555,51 @@ with check (
     )
 );
 
--- 
+-- ADD ONBOARDING TO USER PREFERENCES
+
+alter table user_display_preferences
+add column if not exists has_completed_onboarding boolean default false;
+
+-- HOUSEHOLD RLS UPDATE
+
+create policy "Authenticated users can create households"
+on households
+for insert
+to authenticated
+with check (true);
+
+create policy "Users can create their own household membership"
+on household_members
+for insert
+to authenticated
+with check (user_id = auth.uid());
+
+-- INVITE USER RLS
+
+create policy "Invited users can view their pending family invite"
+on family_members
+for select
+to authenticated
+using (
+  invite_status = 'pending'
+  and lower(invite_email) = lower(auth.email())
+);
+
+-- CREATE INVITE TOKENS
+
+alter table family_members
+add column if not exists invite_token text,
+add column if not exists invite_expires_at timestamptz;
+
+create unique index if not exists family_members_invite_token_unique
+on family_members(invite_token)
+where invite_token is not null;
+
+create policy "Anyone authenticated can view pending invite by token"
+on family_members
+for select
+to authenticated
+using (
+  invite_status = 'pending'
+  and invite_token is not null
+);

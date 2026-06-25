@@ -1,17 +1,6 @@
 import { useEffect, useRef, useState } from "react"
-import logo from "./assets/evergrove-logo.svg"
-
-import PWAInstallBanner from "./components/PWAInstallBanner"
-
+import { NavLink, Route, Routes, Navigate, useLocation, useParams } from "react-router-dom"
 import {
-  APP_NAME,
-  APP_VERSION,
-  APP_STATUS
-} from "./config/appConfig"
-
-import { NavLink, Route, Routes } from "react-router-dom"
-import {
-  Bell,
   CalendarDays,
   ClipboardList,
   FolderOpen,
@@ -20,25 +9,34 @@ import {
   Mail,
   Menu,
   MoreHorizontal,
-  Plane,
-  Repeat,
-  School,
   Settings,
   ShoppingCart,
-  User,
   UtensilsCrossed,
   X
 } from "lucide-react"
 
-import Analytics from "./pages/Analytics"
+import logo from "./assets/evergrove-logo.svg"
+
+import "./App.css"
+
+import {
+  APP_NAME,
+  APP_VERSION,
+  APP_STATUS
+} from "./config/appConfig"
 
 import { supabase } from "./lib/supabase"
 import { runFamilyAutomation } from "./utils/runFamilyAutomation"
+
 import usePreferences from "./hooks/usePreferences"
+import usePersonalInbox from "./hooks/usePersonalInbox"
+
+import PWAInstallBanner from "./components/PWAInstallBanner"
+import PersonalInboxEngine from "./components/PersonalInboxEngine"
 
 import Login from "./pages/Login"
-import Family from "./pages/Family"
 import Dashboard from "./pages/Dashboard"
+import Family from "./pages/Family"
 import Tasks from "./pages/Tasks"
 import Reminders from "./pages/Reminders"
 import SchoolHub from "./pages/School"
@@ -51,10 +49,10 @@ import Meals from "./pages/Meals"
 import ShoppingLists from "./pages/ShoppingLists"
 import About from "./pages/About"
 import PersonalInbox from "./pages/PersonalInbox"
-import PersonalInboxEngine from "./components/PersonalInboxEngine"
-import usePersonalInbox from "./hooks/usePersonalInbox"
-
-import "./App.css"
+import Analytics from "./pages/Analytics"
+import Onboarding from "./pages/Onboarding"
+import InvitePage from "./pages/InvitePage"
+import JoinHousehold from "./pages/JoinHousehold"
 
 const navItems = [
   { to: "/", icon: Home, label: "Home", end: true },
@@ -72,10 +70,21 @@ const mobileNavItems = [
   { to: "/", icon: Home, label: "Home", end: true },
   { to: "/tasks", icon: ClipboardList, label: "To-Do" },
   { to: "/calendar", icon: CalendarDays, label: "Calendar" },
-  { to: "/meals", icon: UtensilsCrossed, label: "Meals" },
+  { to: "/meals", icon: UtensilsCrossed, label: "Meals" }
 ]
 
-function NavItem({ to, icon: Icon, label, end, onClick, badge }) {
+function LoadingScreen({ message = "Loading Evergrove..." }) {
+  return (
+    <div className="loading-screen">
+      <div className="loading-card">
+        <div className="brand-mark">E</div>
+        <p>{message}</p>
+      </div>
+    </div>
+  )
+}
+
+function NavItem({ to, icon: Icon, label, end, onClick, badge = 0 }) {
   return (
     <NavLink
       to={to}
@@ -97,10 +106,7 @@ function NavItem({ to, icon: Icon, label, end, onClick, badge }) {
   )
 }
 
-function MobileBottomNav({
-  unreadInboxCount,
-  onMoreClick,
-}) {
+function MobileBottomNav({ unreadInboxCount, onMoreClick }) {
   return (
     <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
       {mobileNavItems.map(item => (
@@ -131,10 +137,94 @@ function MobileBottomNav({
   )
 }
 
+function AuthenticatedInviteRedirect() {
+  const { token } = useParams()
+
+  useEffect(() => {
+    if (token) {
+      window.localStorage.setItem("evergroveInviteToken", token)
+    }
+  }, [token])
+
+  return <Navigate to="/join-household" replace />
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/settings/family" element={<Family />} />
+      <Route path="/school" element={<SchoolHub />} />
+      <Route path="/tasks" element={<Tasks />} />
+      <Route path="/meals" element={<Meals />} />
+      <Route path="/shopping" element={<ShoppingLists />} />
+      <Route path="/routines" element={<Routines />} />
+      <Route path="/reminders" element={<Reminders />} />
+      <Route path="/documents" element={<Documents />} />
+      <Route path="/calendar" element={<CalendarPage />} />
+      <Route path="/trips" element={<Trips />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/personal-inbox" element={<PersonalInbox />} />
+      <Route path="/analytics" element={<Analytics />} />
+      <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/join-household" element={<JoinHousehold />} />
+      <Route path="/invite/:token" element={<AuthenticatedInviteRedirect />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
+
+function PublicRoutes() {
+  return (
+    <Routes>
+      <Route path="/invite/:token" element={<InvitePage />} />
+      <Route path="*" element={<Login onLogin={() => { }} />} />
+    </Routes>
+  )
+}
+
+function OnboardingGuard({ children }) {
+  const location = useLocation()
+  const { preferences, loading } = usePreferences()
+
+  if (loading) {
+    return <LoadingScreen />
+  }
+
+  const hasCompletedOnboarding = preferences?.has_completed_onboarding === true
+
+  if (
+    hasCompletedOnboarding &&
+    location.pathname === "/join-household"
+  ) {
+    window.localStorage.removeItem("evergroveInviteToken")
+    return <Navigate to="/" replace />
+  }
+
+  if (
+    !hasCompletedOnboarding &&
+    location.pathname !== "/onboarding" &&
+    location.pathname !== "/join-household" &&
+    !location.pathname.startsWith("/invite/")
+  ) {
+    return <Navigate to="/onboarding" replace />
+  }
+
+  if (
+    hasCompletedOnboarding &&
+    location.pathname === "/onboarding"
+  ) {
+    return <Navigate to="/" replace />
+
+  }
+
+  return children
+}
+
 function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const { preferences } = usePreferences()
-
   const { items: inboxItems } = usePersonalInbox()
 
   const unreadInboxCount = inboxItems.filter(
@@ -217,30 +307,13 @@ function AppLayout() {
       <PWAInstallBanner />
 
       <main className="main-content">
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/settings/family" element={<Family />} />
-          <Route path="/school" element={<SchoolHub />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/meals" element={<Meals />} />
-          <Route path="/shopping" element={<ShoppingLists />} />
-          <Route path="/routines" element={<Routines />} />
-          <Route path="/reminders" element={<Reminders />} />
-          <Route path="/documents" element={<Documents />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/trips" element={<Trips />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/personal-inbox" element={<PersonalInbox />} />
-          <Route path="/analytics" element={<Analytics />} />
-        </Routes>
+        <AppRoutes />
       </main>
 
       <MobileBottomNav
         unreadInboxCount={unreadInboxCount}
         onMoreClick={() => setMobileNavOpen(true)}
       />
-
     </div>
   )
 }
@@ -253,6 +326,7 @@ export default function App() {
   useEffect(() => {
     async function loadSession() {
       const { data } = await supabase.auth.getSession()
+
       setSession(data.session)
       setCheckingSession(false)
     }
@@ -261,8 +335,8 @@ export default function App() {
 
     const {
       data: { subscription }
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
     })
 
     return () => subscription.unsubscribe()
@@ -279,24 +353,20 @@ export default function App() {
   }, [session])
 
   if (checkingSession) {
-    return (
-      <div className="loading-screen">
-        <div className="loading-card">
-          <div className="brand-mark">E</div>
-          <p>Loading Evergrove...</p>
-        </div>
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   if (!session) {
-    return <Login onLogin={() => { }} />
+    return <PublicRoutes />
   }
 
   return (
     <>
       <PersonalInboxEngine />
-      <AppLayout />
+
+      <OnboardingGuard>
+        <AppLayout />
+      </OnboardingGuard>
     </>
   )
 }

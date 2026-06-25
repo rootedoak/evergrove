@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import {
     createFamilyMember,
+    createPendingInvite,
     deleteFamilyMember,
     getFamilyMembers,
     updateFamilyMember
@@ -49,7 +50,10 @@ function getDefaultAvatar(role) {
 function formatDate(dateString) {
     if (!dateString) return ""
 
-    const [year, month, day] = String(dateString).slice(0, 10).split("-").map(Number)
+    const [year, month, day] = String(dateString)
+        .slice(0, 10)
+        .split("-")
+        .map(Number)
 
     return new Date(year, month - 1, day).toLocaleDateString(undefined, {
         month: "short",
@@ -78,6 +82,21 @@ function sortByName(members) {
 
 function FamilyMemberRow({ member, onEdit, onDelete }) {
     const details = []
+    const isPendingInvite = member.invite_status === "pending"
+
+    function getInviteLink() {
+        if (!member.invite_token) return ""
+        return `${window.location.origin}/invite/${member.invite_token}`
+    }
+
+    async function copyInviteLink() {
+        const inviteLink = getInviteLink()
+
+        if (!inviteLink) return
+
+        await navigator.clipboard.writeText(inviteLink)
+        alert("Invite link copied.")
+    }
 
     if (member.role === "child") {
         if (member.school) details.push(member.school)
@@ -102,33 +121,67 @@ function FamilyMemberRow({ member, onEdit, onDelete }) {
             </span>
 
             <div className="family-member-main">
-                <strong>{member.name}</strong>
+                <strong>
+                    {isPendingInvite ? "Invited Adult" : member.name}
+                </strong>
 
                 <p>
                     {getRoleLabel(member.role)}
-                    {details.length > 0 ? ` • ${details.join(" • ")}` : ""}
+                    {isPendingInvite && member.invite_email
+                        ? ` • ${member.invite_email}`
+                        : details.length > 0
+                            ? ` • ${details.join(" • ")}`
+                            : ""}
                 </p>
 
                 {member.notes && <small>{member.notes}</small>}
+
+                {isPendingInvite && (
+                    <div className="invite-status-row">
+                        <span className="invite-pending-badge">
+                            Invite Pending
+                        </span>
+
+                        {member.invite_token && (
+                            <button
+                                type="button"
+                                className="invite-cancel-link"
+                                onClick={copyInviteLink}
+                            >
+                                Copy Invite Link
+                            </button>
+                        )}
+
+                        <button
+                            type="button"
+                            className="invite-cancel-link"
+                            onClick={() => onDelete(member)}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                )}
             </div>
 
-            <div className="family-row-actions">
-                <button
-                    className="secondary-button"
-                    type="button"
-                    onClick={() => onEdit(member)}
-                >
-                    Edit
-                </button>
+            {!isPendingInvite && (
+                <div className="family-row-actions">
+                    <button
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => onEdit(member)}
+                    >
+                        Edit
+                    </button>
 
-                <button
-                    className="danger-button"
-                    type="button"
-                    onClick={() => onDelete(member)}
-                >
-                    Delete
-                </button>
-            </div>
+                    <button
+                        className="danger-button"
+                        type="button"
+                        onClick={() => onDelete(member)}
+                    >
+                        Delete
+                    </button>
+                </div>
+            )}
         </div>
     )
 }
@@ -170,10 +223,11 @@ export default function Family() {
     const [form, setForm] = useState(initialForm)
     const [saving, setSaving] = useState(false)
     const [editingId, setEditingId] = useState(null)
+    const [inviteEmail, setInviteEmail] = useState("")
+    const [inviting, setInviting] = useState(false)
 
     const isChild = form.role === "child"
     const isPet = form.role === "pet"
-
     const groupedMembers = groupMembers(familyMembers)
 
     async function loadFamilyMembers() {
@@ -265,9 +319,39 @@ export default function Family() {
         }
     }
 
+    async function handleInviteAdult() {
+        if (!inviteEmail.trim()) return
+
+        setInviting(true)
+
+        try {
+            const invite = await createPendingInvite(
+                inviteEmail.trim().toLowerCase()
+            )
+
+            const inviteLink = `${window.location.origin}/invite/${invite.invite_token}`
+
+            await navigator.clipboard.writeText(inviteLink)
+
+            alert(
+                "Invite created!\n\nThe invite link has been copied to your clipboard."
+            )
+
+            setInviteEmail("")
+            await loadFamilyMembers()
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not create invite.")
+        } finally {
+            setInviting(false)
+        }
+    }
+
     async function handleDelete(member) {
         const confirmed = window.confirm(
-            `Delete ${member.name}? This cannot be undone.`
+            member.invite_status === "pending"
+                ? `Cancel invite for ${member.invite_email || member.name}?`
+                : `Delete ${member.name}? This cannot be undone.`
         )
 
         if (!confirmed) return
@@ -310,6 +394,35 @@ export default function Family() {
                     {showForm ? "Cancel" : "+ Add Family Member"}
                 </button>
             </header>
+
+            <section className="card form-card">
+                <h3>Invite Adult</h3>
+
+                <p>
+                    Invite a spouse, partner, or other adult to join your household.
+                </p>
+
+                <div className="form-grid">
+                    <label className="full-width">
+                        Email Address
+                        <input
+                            type="email"
+                            value={inviteEmail}
+                            onChange={event => setInviteEmail(event.target.value)}
+                            placeholder="name@example.com"
+                        />
+                    </label>
+
+                    <button
+                        type="button"
+                        className="primary-button full-width"
+                        disabled={inviting || !inviteEmail.trim()}
+                        onClick={handleInviteAdult}
+                    >
+                        {inviting ? "Creating Invite..." : "Create Invite"}
+                    </button>
+                </div>
+            </section>
 
             {showForm && (
                 <section className="card form-card">
