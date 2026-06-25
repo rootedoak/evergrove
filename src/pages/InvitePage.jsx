@@ -68,7 +68,7 @@ export default function InvitePage() {
             } = await supabase.auth.getSession()
 
             if (!session) {
-                window.location.href = "/"
+                window.location.href = "/?mode=create-account"
                 return
             }
 
@@ -164,8 +164,8 @@ export default function InvitePage() {
                             {joining
                                 ? "Joining..."
                                 : alreadySignedIn
-                                    ? "Join Household"
-                                    : "Create Account or Sign In"}
+                                    ? `Join ${householdName}`
+                                    : "Create Account"}
                         </button>
 
                         {!alreadySignedIn && (

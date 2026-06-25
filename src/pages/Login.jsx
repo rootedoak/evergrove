@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
 
 import logo from "../assets/evergrove-logo.svg"
@@ -18,6 +18,15 @@ export default function Login({ onLogin }) {
     const [inviteCode, setInviteCode] = useState("")
     const [errorMessage, setErrorMessage] = useState("")
     const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search)
+        const modeParam = params.get("mode")
+
+        if (modeParam === "create-account") {
+            setMode(MODES.CREATE_ACCOUNT)
+        }
+    }, [])
 
     function resetForm(nextMode) {
         setMode(nextMode)
@@ -72,7 +81,9 @@ export default function Login({ onLogin }) {
                 email: normalizedEmail,
                 password,
                 options: {
-                    emailRedirectTo: `${window.location.origin}`
+                    emailRedirectTo: localStorage.getItem("evergrove_invite_token")
+                        ? `${window.location.origin}/invite/${localStorage.getItem("evergrove_invite_token")}`
+                        : `${window.location.origin}`
                 }
             })
 
@@ -92,6 +103,13 @@ export default function Login({ onLogin }) {
 
             if (!data.session) {
                 setMode(MODES.VERIFY_EMAIL)
+                return
+            }
+
+            const inviteToken = localStorage.getItem("evergrove_invite_token")
+
+            if (inviteToken) {
+                window.location.href = "/join-household"
                 return
             }
 

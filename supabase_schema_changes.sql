@@ -1603,3 +1603,11 @@ using (
   invite_status = 'pending'
   and invite_token is not null
 );
+
+-- ADD GUIDED WALKTHROUGH TABLE
+
+alter table user_display_preferences
+add column if not exists has_completed_guided_walkthrough boolean default false;
+
+alter table user_display_preferences
+add column if not exists guided_walkthrough_version integer default 1;

@@ -7,6 +7,9 @@ import {
     APP_NAME
 } from "../config/appConfig"
 
+import { useNavigate } from "react-router-dom"
+import { restartOnboarding } from "../services/preferenceService"
+
 export default function About() {
 
     const [savingFeedback, setSavingFeedback] = useState(false)
@@ -58,6 +61,20 @@ export default function About() {
         }
     }
 
+    const navigate = useNavigate()
+
+    async function handleRestartTour() {
+        const confirmed = window.confirm(
+            "Restart the Evergrove guided tour? Your household data will not be changed."
+        )
+
+        if (!confirmed) return
+
+        await restartOnboarding()
+
+        window.location.href = "/dashboard"
+    }
+
     return (
         <div className="page-content about-page">
             <div className="page-header">
@@ -75,6 +92,23 @@ export default function About() {
                     and household management into a single place.
                 </p>
             </div>
+
+            <section className="about-card">
+                <div>
+                    <h2>🎓 Take the Product Tour</h2>
+                    <p>
+                        Walk through Evergrove's guided setup and feature overview again.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    className="primary-button"
+                    onClick={handleRestartTour}
+                >
+                    Take Product Tour
+                </button>
+            </section>
 
             <div className="card">
                 <h2>Current Release</h2>

@@ -29,6 +29,8 @@ const userPreferenceFields = [
     "show_suggested_tasks",
     "task_default_view",
     "has_completed_onboarding",
+    "has_completed_guided_walkthrough",
+    "guided_walkthrough_version",
 ]
 
 async function getCurrentUserId() {
@@ -197,4 +199,36 @@ export async function updatePreferences(updates) {
         ...(savedHouseholdPreferences || {}),
         ...(savedUserDisplayPreferences || {})
     }
+}
+
+export async function completeGuidedWalkthrough() {
+    const userId = await getCurrentUserId()
+
+    const { data, error } = await supabase
+        .from("user_display_preferences")
+        .upsert(
+            {
+                user_id: userId,
+                has_completed_guided_walkthrough: true,
+                guided_walkthrough_version: 1,
+                updated_at: new Date().toISOString()
+            },
+            {
+                onConflict: "user_id"
+            }
+        )
+        .select()
+        .single()
+
+    if (error) throw error
+
+    return data
+}
+
+export async function restartOnboarding() {
+    return updatePreferences({
+        has_completed_onboarding: false,
+        has_completed_guided_walkthrough: false,
+        guided_walkthrough_version: 0,
+    })
 }

@@ -92,7 +92,11 @@ export default function JoinHousehold() {
         window.location.href = "/"
     }
 
-    const householdName = invite?.households?.name || "this household"
+    const householdName =
+        invite?.households?.name ||
+        invite?.household?.name ||
+        invite?.household_name ||
+        "this household"
 
     return (
         <div className="onboarding-page">
@@ -163,7 +167,7 @@ export default function JoinHousehold() {
                             onClick={handleJoin}
                             disabled={joining}
                         >
-                            {joining ? "Joining..." : "Join Household"}
+                            {joining ? "Joining..." : `Join ${householdName}`}
                         </button>
                     </>
                 )}

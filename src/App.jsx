@@ -28,6 +28,8 @@ import {
 import { supabase } from "./lib/supabase"
 import { runFamilyAutomation } from "./utils/runFamilyAutomation"
 
+import GuidedWalkthrough from "./components/GuidedWalkthrough"
+
 import usePreferences from "./hooks/usePreferences"
 import usePersonalInbox from "./hooks/usePersonalInbox"
 
@@ -142,7 +144,7 @@ function AuthenticatedInviteRedirect() {
 
   useEffect(() => {
     if (token) {
-      window.localStorage.setItem("evergroveInviteToken", token)
+      window.localStorage.setItem("evergrove_InviteToken", token)
     }
   }, [token])
 
@@ -186,19 +188,23 @@ function PublicRoutes() {
 
 function OnboardingGuard({ children }) {
   const location = useLocation()
-  const { preferences, loading } = usePreferences()
+  const { preferences, loading, refreshPreferences } = usePreferences()
 
   if (loading) {
     return <LoadingScreen />
   }
 
-  const hasCompletedOnboarding = preferences?.has_completed_onboarding === true
+  const hasCompletedOnboarding =
+    preferences?.has_completed_onboarding === true
+
+  const hasCompletedGuidedWalkthrough =
+    preferences?.has_completed_guided_walkthrough === true
 
   if (
     hasCompletedOnboarding &&
     location.pathname === "/join-household"
   ) {
-    window.localStorage.removeItem("evergroveInviteToken")
+    window.localStorage.removeItem("evergrove_invite_token")
     return <Navigate to="/" replace />
   }
 
@@ -216,10 +222,22 @@ function OnboardingGuard({ children }) {
     location.pathname === "/onboarding"
   ) {
     return <Navigate to="/" replace />
-
   }
 
-  return children
+  return (
+    <>
+      {children}
+
+      {hasCompletedOnboarding &&
+        !hasCompletedGuidedWalkthrough &&
+        location.pathname !== "/join-household" &&
+        !location.pathname.startsWith("/invite/") && (
+          <GuidedWalkthrough
+            onComplete={refreshPreferences}
+          />
+        )}
+    </>
+  )
 }
 
 function AppLayout() {
