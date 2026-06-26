@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 
 import logo from "../assets/evergrove-logo.svg"
 
+import { supabase } from "../lib/supabase"
 import { createHousehold } from "../services/householdService"
 import { createFamilyMember } from "../services/familyService"
 import {
@@ -28,8 +29,7 @@ function detectTimezone() {
 export default function Onboarding() {
     const navigate = useNavigate()
 
-    const totalSteps = 5
-
+    const totalSteps = 6
     const detectedTimezone = useMemo(() => detectTimezone(), [])
 
     const [step, setStep] = useState(1)
@@ -37,6 +37,7 @@ export default function Onboarding() {
 
     const [householdCreated, setHouseholdCreated] = useState(false)
 
+    const [displayName, setDisplayName] = useState("")
     const [householdName, setHouseholdName] = useState("")
     const [timezone, setTimezone] = useState(detectedTimezone)
     const [weekStartsOn, setWeekStartsOn] = useState("sunday")
@@ -50,6 +51,27 @@ export default function Onboarding() {
     const [tripReminders, setTripReminders] = useState(true)
     const [schoolReminders, setSchoolReminders] = useState(true)
     const [showSuggestedTasks, setShowSuggestedTasks] = useState(true)
+
+    async function handleNameStep() {
+        if (!displayName.trim()) return
+
+        setLoading(true)
+
+        try {
+            await supabase.auth.updateUser({
+                data: {
+                    full_name: displayName.trim()
+                }
+            })
+
+            setStep(3)
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not save your name.")
+        } finally {
+            setLoading(false)
+        }
+    }
 
     async function handleHouseholdStep() {
         if (!householdName.trim()) return
@@ -68,7 +90,7 @@ export default function Onboarding() {
                 week_starts_on: weekStartsOn
             })
 
-            setStep(3)
+            setStep(4)
         } catch (error) {
             console.error(error)
             alert(error.message || "Could not save household settings.")
@@ -115,9 +137,9 @@ export default function Onboarding() {
             })
 
             await createFamilyMember({
-                name: "Me",
+                name: displayName.trim(),
                 member_type: "adult",
-                role: "adult",
+                role: "parent",
                 link_to_current_user: true
             })
 
@@ -173,6 +195,33 @@ export default function Onboarding() {
             )}
 
             {step === 2 && (
+                <section>
+                    <h1>What should your family call you?</h1>
+
+                    <p>
+                        This name will appear on tasks, events, announcements, and household activity.
+                    </p>
+
+                    <label>
+                        Your Name
+                        <input
+                            value={displayName}
+                            onChange={(e) => setDisplayName(e.target.value)}
+                            placeholder="First name"
+                            autoFocus
+                        />
+                    </label>
+
+                    <button
+                        onClick={handleNameStep}
+                        disabled={loading || !displayName.trim()}
+                    >
+                        {loading ? "Saving..." : "Continue"}
+                    </button>
+                </section>
+            )}
+
+            {step === 3 && (
                 <section>
                     <h1>Set Up Your Household</h1>
 
@@ -232,7 +281,7 @@ export default function Onboarding() {
                 </section>
             )}
 
-            {step === 3 && (
+            {step === 4 && (
                 <section>
                     <h1>Add Your Family</h1>
 
@@ -248,7 +297,7 @@ export default function Onboarding() {
 
                     <div className="onboarding-choice-grid">
                         {[
-                            { key: "adult", label: "Adult", icon: "👤" },
+                            { key: "parent", label: "Adult", icon: "👤" },
                             { key: "child", label: "Child", icon: "🧒" },
                             { key: "pet", label: "Pet", icon: "🐾" }
                         ].map(option => (
@@ -284,9 +333,7 @@ export default function Onboarding() {
                             >
                                 <div>
                                     <strong>{member.name}</strong>
-                                    <span>
-                                        {member.member_type}
-                                    </span>
+                                    <span>{member.role}</span>
                                 </div>
 
                                 <button
@@ -300,21 +347,21 @@ export default function Onboarding() {
                         ))}
                     </div>
 
-                    <button onClick={() => setStep(4)}>
+                    <button onClick={() => setStep(5)}>
                         Continue
                     </button>
 
                     <button
                         type="button"
                         className="onboarding-skip-button"
-                        onClick={() => setStep(4)}
+                        onClick={() => setStep(5)}
                     >
                         Skip for now
                     </button>
                 </section>
             )}
 
-            {step === 4 && (
+            {step === 5 && (
                 <section>
                     <h1>Choose Your Defaults</h1>
 
@@ -377,13 +424,13 @@ export default function Onboarding() {
                         </label>
                     </div>
 
-                    <button onClick={() => setStep(5)}>
+                    <button onClick={() => setStep(6)}>
                         Continue
                     </button>
                 </section>
             )}
 
-            {step === 5 && (
+            {step === 6 && (
                 <section>
                     <h1>Your Family Command Center Is Ready</h1>
 

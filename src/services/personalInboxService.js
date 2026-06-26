@@ -77,31 +77,42 @@ export async function createPersonalInboxItem(payload) {
 
     if (!shouldCreate) return null
 
+    const inboxPayload = {
+        household_id: payload.household_id || household.id,
+        user_id: recipientUserId,
+        title: payload.title,
+        message: payload.message || null,
+        item_type: itemType,
+        related_type: payload.related_type || null,
+        related_id: payload.related_id || null,
+        due_date: payload.due_date || null,
+        remind_at: payload.remind_at || null,
+        created_by: user.id
+    }
+
     const { error } = await supabase
         .from("personal_inbox_items")
-        .insert({
-            household_id: household.id,
-            user_id: recipientUserId,
-            title: payload.title,
-            message: payload.message || null,
-            item_type: itemType,
-            related_type: payload.related_type || null,
-            related_id: payload.related_id || null,
-            due_date: payload.due_date || null,
-            remind_at: payload.remind_at || null,
-            created_by: user.id
-        })
+        .insert(inboxPayload)
+
+    if (error) {
+        console.error("Inbox insert failed", error, inboxPayload)
+        throw error
+    }
+
+    window.dispatchEvent(new Event("evergrovePersonalInboxUpdated"))
 
     try {
         await sendPushNotificationToUser({
             userId: recipientUserId,
             title: payload.title || "Evergrove",
             body: payload.message || "You have a new Evergrove update.",
-            url: "/inbox"
+            url: "/personal-inbox"
         })
     } catch (pushError) {
         console.error("Push notification failed:", pushError)
     }
+
+    return true
 }
 
 export async function markInboxItemRead(id) {

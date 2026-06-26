@@ -101,6 +101,7 @@ export async function createTaskInboxNotification(task) {
 
     for (const userId of recipientUserIds) {
         await createPersonalInboxItem({
+            household_id: assignedMember.household_id || task.household_id,
             user_id: userId,
             title: "To-Do Added",
             message,

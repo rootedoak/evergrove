@@ -52,6 +52,34 @@ export async function createFamilyMember(member) {
 
     const { link_to_current_user, ...cleanMember } = member
 
+    if (shouldLinkToCurrentUser) {
+        const { data: existingMember, error: existingMemberError } = await supabase
+            .from("family_members")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("household_id", household.id)
+            .maybeSingle()
+
+        if (existingMemberError) throw existingMemberError
+
+        if (existingMember) {
+            const { data, error } = await supabase
+                .from("family_members")
+                .update({
+                    ...cleanMember,
+                    user_id: user.id,
+                    household_id: household.id
+                })
+                .eq("id", existingMember.id)
+                .select()
+                .single()
+
+            if (error) throw error
+
+            return data
+        }
+    }
+
     const { data, error } = await supabase
         .from("family_members")
         .insert([
@@ -167,7 +195,12 @@ export async function acceptPendingInvite(email) {
         .update({
             invite_status: "accepted",
             linked_user_id: user.id,
-            user_id: user.id
+            user_id: user.id,
+            name:
+                user.user_metadata?.full_name ||
+                user.user_metadata?.name ||
+                invite.name ||
+                user.email,
         })
         .eq("id", invite.id)
         .select()
@@ -289,7 +322,12 @@ export async function acceptPendingInviteByToken(inviteToken) {
         .update({
             invite_status: "accepted",
             linked_user_id: user.id,
-            user_id: user.id
+            user_id: user.id,
+            name:
+                user.user_metadata?.full_name ||
+                user.user_metadata?.name ||
+                invite.name ||
+                user.email,
         })
         .eq("id", invite.id)
         .select()

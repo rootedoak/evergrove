@@ -181,7 +181,8 @@ function PublicRoutes() {
   return (
     <Routes>
       <Route path="/invite/:token" element={<InvitePage />} />
-      <Route path="*" element={<Login onLogin={() => { }} />} />
+      <Route path="/login" element={<Login onLogin={() => { }} />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
 }
@@ -342,6 +343,14 @@ export default function App() {
   const automationRanForUserRef = useRef(null)
 
   useEffect(() => {
+    if (!session) return
+
+    if (window.location.pathname === "/login") {
+      window.location.replace("/")
+    }
+  }, [session])
+
+  useEffect(() => {
     async function loadSession() {
       const { data } = await supabase.auth.getSession()
 
@@ -353,8 +362,12 @@ export default function App() {
 
     const {
       data: { subscription }
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession)
+
+      if (event === "SIGNED_IN") {
+        window.history.replaceState({}, "", "/")
+      }
     })
 
     return () => subscription.unsubscribe()

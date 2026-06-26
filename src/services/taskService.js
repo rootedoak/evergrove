@@ -24,7 +24,7 @@ async function getCurrentUserId() {
 
 async function getCurrentHouseholdId(userId) {
     const { data, error } = await supabase
-        .from("family_members")
+        .from("household_members")
         .select("household_id")
         .eq("user_id", userId)
         .limit(1)
@@ -88,14 +88,20 @@ export async function createTask(task) {
     const user = await getCurrentUser()
     const householdId = await getCurrentHouseholdId(user.id)
 
+    if (!householdId) {
+        throw new Error("No household found for current user.")
+    }
+
+    const { household_id, user_id, ...cleanTask } = task
+
     const { data, error } = await supabase
         .from("tasks")
         .insert([
             {
-                ...task,
+                ...cleanTask,
                 user_id: user.id,
-                household_id: task.household_id || householdId,
-                visibility: task.visibility || "household"
+                household_id: householdId,
+                visibility: cleanTask.visibility || "household"
             }
         ])
         .select()
