@@ -6505,3 +6505,102 @@ a {
   font-weight: 700;
   cursor: pointer;
 }
+
+.inbox-item {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  gap: 10px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.inbox-item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: #eef4ff;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+}
+
+.inbox-item-main {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+}
+
+.inbox-item-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.inbox-item-topline strong {
+  font-size: 0.95rem;
+}
+
+.inbox-item-topline span {
+  font-size: 0.7rem;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.inbox-item-main p {
+  margin: 3px 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.inbox-item-main small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.inbox-item-menu {
+  border: 0;
+  background: transparent;
+  font-size: 1.4rem;
+  color: var(--muted);
+}
+
+.inbox-item-actions {
+  position: relative;
+}
+
+.inbox-inline-menu {
+  position: absolute;
+  right: 0;
+  top: 34px;
+  z-index: 20;
+  min-width: 130px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+  padding: 6px;
+}
+
+.inbox-inline-menu button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 9px 10px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text);
+  border-radius: 8px;
+}
+
+.inbox-inline-menu button:hover {
+  background: #f3f6fb;
+}
+
+.inbox-inline-menu .danger-text {
+  color: #b91c1c;
+}

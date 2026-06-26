@@ -24,6 +24,7 @@ function getItemTime(item) {
 
 export default function CommandCenterDailyBrief({
     householdName = "Family",
+    userName = "",
     todayEvents = [],
     todayTasks = [],
     tonightDinner = null,
@@ -51,7 +52,7 @@ export default function CommandCenterDailyBrief({
             <div className="brief-header">
                 <p className="brief-eyebrow">{formatToday()}</p>
 
-                <h1>{getGreeting()}, {householdName}</h1>
+                <h1>{getGreeting()}, {userName || householdName}</h1>
 
                 <p className="brief-subtitle">
                     Here’s what your family needs to know today.

@@ -1,10 +1,8 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 import usePersonalInbox from "../hooks/usePersonalInbox"
 import usePersonalReminders from "../hooks/usePersonalReminders"
-import { createPersonalInboxItem } from "../services/personalInboxService"
-
-import { useNavigate } from "react-router-dom"
 
 function getTodayString() {
     const today = new Date()
@@ -16,11 +14,55 @@ function getTodayString() {
     ].join("-")
 }
 
+function formatDate(dateString) {
+    if (!dateString) return ""
+
+    const [year, month, day] = String(dateString)
+        .slice(0, 10)
+        .split("-")
+        .map(Number)
+
+    return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric"
+    })
+}
+
+function getInboxIcon(itemType) {
+    if (itemType === "task") return "✅"
+    if (itemType === "calendar_event") return "📅"
+    if (itemType === "school") return "🎒"
+    if (itemType === "trip") return "🧳"
+    if (itemType === "meal" || itemType === "meal_plan") return "🍽️"
+    if (itemType === "shopping") return "🛒"
+    if (itemType === "reminder") return "🔔"
+    return "🌿"
+}
+
+function getItemMeta(item) {
+    const parts = []
+
+    if (item.item_type) {
+        parts.push(
+            item.item_type
+                .replaceAll("_", " ")
+                .replace(/\b\w/g, letter => letter.toUpperCase())
+        )
+    }
+
+    if (item.due_date) {
+        parts.push(`Due ${formatDate(item.due_date)}`)
+    }
+
+    return parts.join(" · ")
+}
+
 export default function PersonalInbox() {
+    const navigate = useNavigate()
+
     const {
         items,
         loading: inboxLoading,
-        refreshInbox,
         markRead,
         removeItem
     } = usePersonalInbox()
@@ -32,6 +74,9 @@ export default function PersonalInbox() {
         removeReminder
     } = usePersonalReminders()
 
+    const [selectedItem, setSelectedItem] = useState(null)
+    const [savingReminder, setSavingReminder] = useState(false)
+
     const [reminderForm, setReminderForm] = useState({
         title: "",
         notes: "",
@@ -39,11 +84,8 @@ export default function PersonalInbox() {
         next_due: getTodayString()
     })
 
-    const navigate = useNavigate()
-
-    const [savingReminder, setSavingReminder] = useState(false)
-
     const unreadCount = items.filter(item => item.status === "unread").length
+    const loading = inboxLoading || remindersLoading
 
     function getInboxDestination(item) {
         const type = item.related_type || item.item_type
@@ -63,6 +105,8 @@ export default function PersonalInbox() {
         if (item.status === "unread") {
             await markRead(item.id)
         }
+
+        setSelectedItem(null)
 
         const type = item.related_type || item.item_type
 
@@ -100,6 +144,16 @@ export default function PersonalInbox() {
         }
     }
 
+    async function handleMarkRead(item) {
+        await markRead(item.id)
+        setSelectedItem(null)
+    }
+
+    async function handleDeleteItem(item) {
+        await removeItem(item.id)
+        setSelectedItem(null)
+    }
+
     async function handleCreateReminder(event) {
         event.preventDefault()
         setSavingReminder(true)
@@ -126,8 +180,6 @@ export default function PersonalInbox() {
         }
     }
 
-    const loading = inboxLoading || remindersLoading
-
     return (
         <div className="page-shell">
             <header className="page-header">
@@ -145,67 +197,101 @@ export default function PersonalInbox() {
             </header>
 
             <section className="card">
-                <div className="section-header">
-                    <div>
-                        <p className="card-kicker">Inbox</p>
-                        <h3>
-                            {unreadCount} unread
-                        </h3>
-                    </div>
-                </div>
+                <p className="card-kicker">Inbox</p>
+                <h3>
+                    {unreadCount === 1
+                        ? "1 unread"
+                        : `${unreadCount} unread`}
+                </h3>
 
                 {loading ? (
-                    <p>Loading inbox...</p>
+                    <p className="dashboard-empty">
+                        Loading inbox...
+                    </p>
                 ) : items.length === 0 ? (
                     <p className="dashboard-empty">
-                        Nothing in your inbox yet.
+                        Your inbox is clear.
                     </p>
                 ) : (
-                    <div className="stack-list">
+                    <div className="inbox-list">
                         {items.map(item => (
                             <div
-                                className={`list-row ${item.status === "unread" ? "unread-row" : ""}`}
                                 key={item.id}
+                                className={
+                                    item.status === "unread"
+                                        ? "inbox-item unread"
+                                        : "inbox-item"
+                                }
                             >
-                                <div>
-                                    <strong>{item.title}</strong>
-
-                                    {item.message && <p>{item.message}</p>}
-
-                                    <small>
-                                        {item.item_type}
-                                        {item.due_date ? ` • Due ${item.due_date}` : ""}
-                                    </small>
+                                <div className="inbox-item-icon">
+                                    {getInboxIcon(item.item_type)}
                                 </div>
 
-                                {getInboxDestination(item) && (
-                                    <button
-                                        className="secondary-button"
-                                        type="button"
-                                        onClick={() => handleOpenInboxItem(item)}
-                                    >
-                                        Open
-                                    </button>
-                                )}
+                                <button
+                                    type="button"
+                                    className="inbox-item-main"
+                                    onClick={() => handleOpenInboxItem(item)}
+                                >
+                                    <div className="inbox-item-topline">
+                                        <strong>{item.title}</strong>
 
-                                <div className="row-actions">
-                                    {item.status === "unread" && (
-                                        <button
-                                            className="secondary-button"
-                                            type="button"
-                                            onClick={() => markRead(item.id)}
-                                        >
-                                            Mark Read
-                                        </button>
+                                        {item.status === "unread" && (
+                                            <span>Unread</span>
+                                        )}
+                                    </div>
+
+                                    {item.message && (
+                                        <p>{item.message}</p>
                                     )}
 
+                                    <small>
+                                        {getItemMeta(item)}
+                                    </small>
+                                </button>
+
+                                <div className="inbox-item-actions">
                                     <button
-                                        className="danger-button"
                                         type="button"
-                                        onClick={() => removeItem(item.id)}
+                                        className="inbox-item-menu"
+                                        onClick={() =>
+                                            setSelectedItem(
+                                                selectedItem?.id === item.id
+                                                    ? null
+                                                    : item
+                                            )
+                                        }
+                                        aria-label="Inbox item actions"
                                     >
-                                        Delete
+                                        ⋯
                                     </button>
+
+                                    {selectedItem?.id === item.id && (
+                                        <div className="inbox-inline-menu">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleOpenInboxItem(item)}
+                                            >
+                                                Open
+                                            </button>
+
+                                            {item.status === "unread" && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleMarkRead(item)}
+                                                >
+                                                    Mark Read
+                                                </button>
+                                            )}
+
+                                            <button
+                                                type="button"
+                                                className="danger-text"
+                                                onClick={() => handleDeleteItem(item)}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -310,7 +396,9 @@ export default function PersonalInbox() {
 
                                     <small>
                                         {reminder.frequency}
-                                        {reminder.next_due ? ` • Next due ${reminder.next_due}` : ""}
+                                        {reminder.next_due
+                                            ? ` • Next due ${reminder.next_due}`
+                                            : ""}
                                     </small>
                                 </div>
 

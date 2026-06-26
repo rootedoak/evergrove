@@ -717,6 +717,7 @@ export default function Dashboard() {
                 onOpenTasks={() => setBriefModal("tasks")}
                 onOpenDinner={() => setBriefModal("dinner")}
                 householdName={preferences?.household_name || "Family"}
+                userName={currentMember?.name}
                 todayEvents={todayEvents || []}
                 todayTasks={openTasks.filter(task => task.due_date === todayString)}
                 tonightDinner={dinnerTonight}
