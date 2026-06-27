@@ -5860,14 +5860,11 @@ a {
   box-sizing: border-box;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .main-content {
-    padding: 76px 18px 28px;
     width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    overflow-x: hidden;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
 
@@ -6603,4 +6600,53 @@ a {
 
 .inbox-inline-menu .danger-text {
   color: #b91c1c;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    padding-top: calc(env(safe-area-inset-top) + 16px);
+  }
+
+  .sidebar.open {
+    padding-top: calc(env(safe-area-inset-top) + 16px);
+  }
+}
+
+@media (max-width: 768px) {
+
+  html,
+  body,
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .app-shell,
+  .main-content,
+  .home-command-page,
+  .command-center-brief,
+  .card,
+  .home-section {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .brief-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .brief-summary-item,
+  .brief-summary-button {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .brief-summary-item strong,
+  .brief-summary-item span,
+  .brief-digest-row p {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
 }
