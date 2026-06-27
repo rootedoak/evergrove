@@ -759,53 +759,6 @@ export default function Dashboard() {
                 onCompleteTask={handleCompleteTask}
             />
 
-            {assistantSuggestions.length > 0 && (
-                <HomeSection
-                    eyebrow="💡 Evergrove Assistant"
-                    title="Helpful Suggestions"
-                    count={assistantSuggestions.length}
-                >
-                    <div className="assistant-suggestion-list">
-                        {assistantSuggestions.map(suggestion => (
-                            <div key={suggestion.id} className="assistant-suggestion-card">
-                                <div className="assistant-suggestion-header">
-                                    <span>{suggestion.icon}</span>
-
-                                    <div>
-                                        <strong>
-                                            {suggestion.name} is in {suggestion.daysAway} days
-                                        </strong>
-
-                                        <p>
-                                            Families usually start planning around now. Evergrove has a few ideas to help you get ready.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="assistant-task-list">
-                                    {suggestion.tasks.map(taskTitle => (
-                                        <div
-                                            key={`${suggestion.id}-${taskTitle}`}
-                                            className="assistant-task-row"
-                                        >
-                                            <span>{taskTitle}</span>
-
-                                            <button
-                                                type="button"
-                                                className="secondary-button"
-                                                onClick={() => handleCreateAssistantTask(taskTitle)}
-                                            >
-                                                Add To-Do
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </HomeSection>
-            )}
-
             <HomeSection
                 eyebrow="Today"
                 title="Today's Agenda"
@@ -1306,6 +1259,9 @@ export default function Dashboard() {
             )}
 
             <FloatingQuickActions
+                assistantSuggestions={assistantSuggestions}
+                onAddAssistantTask={handleCreateAssistantTask}
+
                 onAddTask={() =>
                     navigate("/calendar", {
                         state: {
@@ -1341,7 +1297,6 @@ export default function Dashboard() {
                     const button = document.querySelector(".family-announcements-card .secondary-button")
                     button?.click()
                 }}
-            />
-        </div >
+            />       </div >
     )
 }
