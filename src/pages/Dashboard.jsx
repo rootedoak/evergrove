@@ -8,6 +8,8 @@ import CommandCenterDailyBrief from "../components/CommandCenterDailyBrief"
 import CommandCenterNeedsAttention from "../components/CommandCenterNeedsAttention"
 import FloatingQuickActions from "../components/FloatingQuickActions"
 
+import { getEvergroveAssistantSuggestions } from "../utils/evergroveAssistantSuggestions"
+
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../lib/supabase"
 import { filterTasksByScope } from "../utils/taskFilters"
@@ -394,6 +396,8 @@ export default function Dashboard() {
 
     const { dinnerTonight } = useMeals()
 
+    const assistantSuggestions = getEvergroveAssistantSuggestions(45)
+
     const {
         feedEvents,
         loading: feedLoading,
@@ -635,6 +639,22 @@ export default function Dashboard() {
         }
     }
 
+    async function handleCreateAssistantTask(title) {
+        try {
+            await createTask({
+                title,
+                due_date: todayString,
+                visibility: "household",
+                description: "Suggested by Evergrove Assistant."
+            })
+
+            await refreshTasks()
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not create holiday task.")
+        }
+    }
+
     useEffect(() => {
         async function loadCurrentUser() {
             const {
@@ -719,7 +739,7 @@ export default function Dashboard() {
                 householdName={preferences?.household_name || "Family"}
                 userName={currentMember?.name}
                 todayEvents={todayEvents || []}
-                todayTasks={openTasks.filter(task => task.due_date === todayString)}
+                todayTasks={openTasks.filter(task => task.due_date <= todayString)}
                 tonightDinner={dinnerTonight}
                 upcomingItems={upcomingEvents || []}
                 attentionCount={
@@ -738,6 +758,53 @@ export default function Dashboard() {
                 onCreateSuggestedTask={() => { }}
                 onCompleteTask={handleCompleteTask}
             />
+
+            {assistantSuggestions.length > 0 && (
+                <HomeSection
+                    eyebrow="💡 Evergrove Assistant"
+                    title="Helpful Suggestions"
+                    count={assistantSuggestions.length}
+                >
+                    <div className="assistant-suggestion-list">
+                        {assistantSuggestions.map(suggestion => (
+                            <div key={suggestion.id} className="assistant-suggestion-card">
+                                <div className="assistant-suggestion-header">
+                                    <span>{suggestion.icon}</span>
+
+                                    <div>
+                                        <strong>
+                                            {suggestion.name} is in {suggestion.daysAway} days
+                                        </strong>
+
+                                        <p>
+                                            Families usually start planning around now. Evergrove has a few ideas to help you get ready.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="assistant-task-list">
+                                    {suggestion.tasks.map(taskTitle => (
+                                        <div
+                                            key={`${suggestion.id}-${taskTitle}`}
+                                            className="assistant-task-row"
+                                        >
+                                            <span>{taskTitle}</span>
+
+                                            <button
+                                                type="button"
+                                                className="secondary-button"
+                                                onClick={() => handleCreateAssistantTask(taskTitle)}
+                                            >
+                                                Add To-Do
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </HomeSection>
+            )}
 
             <HomeSection
                 eyebrow="Today"

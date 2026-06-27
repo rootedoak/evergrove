@@ -203,3 +203,23 @@ Suggested Offer:
 - Multi-Household Testing
 - Shared Access Validation
 - RLS Auditing
+
+
+# Beta Feedback
+
+## High Priority
+- [ ] RLS policy audit
+- [ ] Personalize Command Center greeting
+- [ ] Mobile safe-area audit
+- [ ] Continue Inbox UI polish
+
+## Medium Priority
+- [ ] CSS modularization
+- [ ] Component library
+- [ ] Animation polish
+- [ ] Design system cleanup
+
+## Future Ideas
+- [ ] User profile photos
+- [ ] Richer household insights
+- [ ] Smart notifications
