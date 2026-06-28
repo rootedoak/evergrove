@@ -708,10 +708,47 @@ export default function Dashboard() {
         }
     }
 
-    const intelligenceContext = createIntelligenceContext({
-        navigate,
-        createAssistantTask: handleCreateAssistantTask,
-    })
+    const intelligenceContext =
+        createIntelligenceContext({
+
+            household: {
+                name: preferences?.household_name || "My Household",
+            },
+
+            user: currentMember,
+
+            data: {
+
+                today: todayString,
+
+                calendar: allEvents,
+
+                tasks: openTasks,
+
+                meals: {
+                    dinnerTonight,
+                },
+
+                family: familyMembers,
+            },
+
+            services: {
+
+                tasks: {
+
+                    create: handleCreateAssistantTask,
+
+                },
+
+            },
+
+            actions: {
+
+                navigate,
+
+            },
+
+        })
 
     async function handleInsightAction(insight) {
         if (!insight?.execute) return

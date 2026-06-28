@@ -1,14 +1,21 @@
 export function createIntelligenceContext({
-    navigate,
-    createAssistantTask,
+    household = null,
+    user = null,
+
+    data = {},
+
+    services = {},
+
+    actions = {},
 }) {
     return {
-        navigate,
-        createAssistantTask,
+        household,
+        user,
 
-        actions: {
-            navigate,
-            createAssistantTask,
-        }
+        data,
+
+        services,
+
+        actions,
     }
 }

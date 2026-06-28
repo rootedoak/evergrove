@@ -5,7 +5,8 @@ function getHour() {
 }
 
 export default function dinnerInsight(context) {
-    const { todayString, dinnerTonight } = context
+    const todayString = context.data.today
+    const dinnerTonight = context.data.meals?.dinnerTonight
 
     if (dinnerTonight) return null
 

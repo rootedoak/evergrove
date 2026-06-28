@@ -1,8 +1,10 @@
 import { getDateStringOffset } from "./dateUtils"
 import { createInsight } from "./createInsight"
+import { getTaskTemplate } from "../utils/taskTemplates"
 
 export default function birthdayInsight(context) {
-    const { todayString, allEvents = [] } = context
+    const todayString = context.data.today
+    const allEvents = context.data.calendar || []
     const tomorrowString = getDateStringOffset(todayString, 1)
 
     const birthday = allEvents.find(event => {
@@ -37,11 +39,11 @@ export default function birthdayInsight(context) {
         description: "You still have time to handle gifts, cake, or family plans.",
         actionLabel: "Create Checklist",
 
-        execute: async ({ createAssistantTask }) => {
+        execute: async (context) => {
             const tasks = getTaskTemplate("birthday", { name })
 
             for (const taskTitle of tasks) {
-                await createAssistantTask(taskTitle)
+                await context.services.tasks.create(taskTitle)
             }
 
             return {

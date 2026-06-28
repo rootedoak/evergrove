@@ -2,7 +2,8 @@ import { getDateStringOffset } from "./dateUtils"
 import { createInsight } from "./createInsight"
 
 export default function tomorrowScheduleInsight(context) {
-    const { todayString, allEvents = [] } = context
+    const todayString = context.data.today
+    const dinnerTonight = context.data.meals?.dinnerTonight
     const tomorrowString = getDateStringOffset(todayString, 1)
 
     const tomorrowEvents = allEvents.filter(event =>
@@ -24,7 +25,7 @@ export default function tomorrowScheduleInsight(context) {
         },
 
         execute: async ({ navigate }) => {
-            navigate("/calendar", {
+            context.actions.navigate("/calendar", {
                 state: {
                     selectedDate: tomorrowString
                 }

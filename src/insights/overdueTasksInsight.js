@@ -1,7 +1,8 @@
 import { createInsight } from "./createInsight"
 
 export default function overdueTasksInsight(context) {
-    const { todayString, openTasks = [] } = context
+    const todayString = context.data.today
+    const dinnerTonight = context.data.meals?.dinnerTonight
 
     const overdueTasks = openTasks.filter(task =>
         task.due_date &&
@@ -21,7 +22,7 @@ export default function overdueTasksInsight(context) {
         actionLabel: "Review To-Dos",
 
         execute: async ({ navigate }) => {
-            navigate("/tasks?filter=overdue")
+            context.actions.navigate("/tasks?filter=overdue")
 
             return {
                 completedTitle: "Overdue to-dos opened",
