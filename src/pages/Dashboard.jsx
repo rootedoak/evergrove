@@ -36,8 +36,10 @@ import AssistantCard from "../components/dashboard/AssistantCard"
 import FeedCard from "../components/dashboard/FeedCard"
 import UpcomingCard from "../components/dashboard/UpcomingCard"
 import InsightCard from "../components/dashboard/InsightCard"
-import { getEvergroveInsights } from "../utils/evergroveInsights"
+import { getEvergroveInsights } from "../insights"
 import { getTaskTemplate } from "../utils/taskTemplates"
+
+import { createIntelligenceContext } from "../intelligence/createIntelligenceContext"
 
 import {
     getCompletedInsightIds,
@@ -706,46 +708,27 @@ export default function Dashboard() {
         }
     }
 
-    function handleInsightAction(insight) {
-        switch (insight.actionType) {
-            case "plan_dinner":
-                setBriefModal("dinner")
-                break
+    const intelligenceContext = createIntelligenceContext({
+        navigate,
+        createAssistantTask: handleCreateAssistantTask,
+    })
 
-            case "view_tomorrow":
-                navigate("/calendar")
-                break
+    async function handleInsightAction(insight) {
+        if (!insight?.execute) return
 
-            case "review_tasks":
-                navigate("/tasks?filter=overdue")
-                break
+        try {
+            const completed = await insight.execute(intelligenceContext)
 
-            case "birthday_checklist": {
-                const name =
-                    insight.payload?.event?.title
-                        ?.replace("'s birthday", "")
-                        ?.replace(" birthday", "") ||
-                    "them"
-
-                const tasks = getTaskTemplate("birthday", { name })
-
-                tasks.forEach(taskTitle => {
-                    handleCreateAssistantTask(taskTitle)
-                })
-
-                setCompletedInsight({
-                    id: insight.id,
-                    completedTitle: "Birthday checklist created",
-                    completedDescription: `${tasks.length} to-dos were added for ${name}.`,
-                    completedActionLabel: "View To-Dos",
-                    onCompletedAction: () => navigate("/tasks")
-                })
-
-                break
-            }
-
-            default:
-                break
+            setCompletedInsight({
+                id: insight.id,
+                ...completed,
+                onCompletedAction: completed?.completedRoute
+                    ? () => navigate(completed.completedRoute)
+                    : undefined,
+            })
+        } catch (error) {
+            console.error("Could not run insight action:", error)
+            alert(error.message || "Could not complete insight action.")
         }
     }
 
