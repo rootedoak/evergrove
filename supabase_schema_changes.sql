@@ -1611,3 +1611,52 @@ add column if not exists has_completed_guided_walkthrough boolean default false;
 
 alter table user_display_preferences
 add column if not exists guided_walkthrough_version integer default 1;
+
+-- CREATE EVERGROVE INSIGHTS TABLE
+
+create table if not exists insight_completions (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  insight_id text not null,
+  completed_by uuid references auth.users(id) on delete set null,
+  completed_at timestamptz not null default now(),
+  expires_at timestamptz,
+  payload jsonb default '{}'::jsonb,
+
+  unique (household_id, insight_id)
+);
+
+alter table insight_completions enable row level security;
+
+create policy "Household members can read insight completions"
+on insight_completions
+for select
+using (
+  household_id in (
+    select household_id
+    from family_members
+    where user_id = auth.uid()
+  )
+);
+
+create policy "Household members can insert insight completions"
+on insight_completions
+for insert
+with check (
+  household_id in (
+    select household_id
+    from family_members
+    where user_id = auth.uid()
+  )
+);
+
+create policy "Household members can update insight completions"
+on insight_completions
+for update
+using (
+  household_id in (
+    select household_id
+    from family_members
+    where user_id = auth.uid()
+  )
+);

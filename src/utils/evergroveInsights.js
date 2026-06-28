@@ -22,7 +22,7 @@ function getHour() {
     return new Date().getHours()
 }
 
-function noDinnerInsight({ dinnerTonight }) {
+function noDinnerInsight({ todayString, dinnerTonight }) {
     if (dinnerTonight) return null
 
     const hour = getHour()
@@ -32,7 +32,7 @@ function noDinnerInsight({ dinnerTonight }) {
     if (hour >= 16) score = 95
 
     return {
-        id: "no-dinner-planned",
+        id: `no-dinner-${todayString}`,
         score,
         icon: "🍽️",
         title: "Dinner is not planned yet",
@@ -52,7 +52,7 @@ function tomorrowScheduleInsight({ todayString, allEvents }) {
     if (tomorrowEvents.length === 0) return null
 
     return {
-        id: "tomorrow-schedule",
+        id: `tomorrow-schedule-${tomorrowString}`,
         score: tomorrowEvents.length >= 3 ? 85 : 60,
         icon: "📅",
         title: `${tomorrowEvents.length} thing${tomorrowEvents.length === 1 ? "" : "s"} tomorrow`,
@@ -75,7 +75,7 @@ function overdueTasksInsight({ todayString, openTasks }) {
     if (overdueTasks.length === 0) return null
 
     return {
-        id: "overdue-tasks",
+        id: `overdue-tasks-${todayString}`,
         score: overdueTasks.length >= 3 ? 90 : 75,
         icon: "⚠️",
         title: `${overdueTasks.length} overdue to-do${overdueTasks.length === 1 ? "" : "s"}`,
@@ -106,7 +106,7 @@ function birthdayTomorrowInsight({ todayString, allEvents }) {
     if (!birthday) return null
 
     return {
-        id: "birthday-tomorrow",
+        id: `birthday-${birthday.sourceId || birthday.id}-${birthday.date}`,
         score: 100,
         icon: "🎂",
         title: `${birthday.title} is tomorrow`,

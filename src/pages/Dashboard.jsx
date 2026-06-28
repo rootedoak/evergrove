@@ -39,6 +39,11 @@ import InsightCard from "../components/dashboard/InsightCard"
 import { getEvergroveInsights } from "../utils/evergroveInsights"
 import { getTaskTemplate } from "../utils/taskTemplates"
 
+import {
+    getCompletedInsightIds,
+    completeInsight,
+} from "../services/insightService"
+
 function getDateOnly(value) {
     if (!value) return ""
     return String(value).slice(0, 10)
@@ -404,15 +409,7 @@ export default function Dashboard() {
     const { dinnerTonight } = useMeals()
 
     const [completedInsight, setCompletedInsight] = useState(null)
-    const [completedInsightIds, setCompletedInsightIds] = useState(() => {
-        try {
-            return JSON.parse(
-                window.localStorage.getItem("evergrove_completed_insights") || "[]"
-            )
-        } catch {
-            return []
-        }
-    })
+    const [completedInsightIds, setCompletedInsightIds] = useState([])
 
     const assistantSuggestions = getEvergroveAssistantSuggestions(45)
 
@@ -794,26 +791,38 @@ export default function Dashboard() {
     useEffect(() => {
         if (!completedInsight) return
 
-        const timeout = window.setTimeout(() => {
-            setCompletedInsightIds(current => [
-                ...new Set([
-                    ...current,
-                    completedInsight.id
-                ])
-            ])
+        const timeout = window.setTimeout(async () => {
+            try {
+                await completeInsight(completedInsight.id)
 
-            setCompletedInsight(null)
+                setCompletedInsightIds(current => [
+                    ...new Set([
+                        ...current,
+                        completedInsight.id
+                    ])
+                ])
+            } catch (error) {
+                console.error("Could not complete insight:", error)
+            } finally {
+                setCompletedInsight(null)
+            }
         }, 5000)
 
         return () => window.clearTimeout(timeout)
     }, [completedInsight])
 
     useEffect(() => {
-        window.localStorage.setItem(
-            "evergrove_completed_insights",
-            JSON.stringify(completedInsightIds)
-        )
-    }, [completedInsightIds])
+        async function loadCompletedInsights() {
+            try {
+                const ids = await getCompletedInsightIds()
+                setCompletedInsightIds(ids)
+            } catch (error) {
+                console.error("Could not load completed insights:", error)
+            }
+        }
+
+        loadCompletedInsights()
+    }, [])
 
     return (
         <AppPage>
