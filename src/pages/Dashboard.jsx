@@ -1,11 +1,11 @@
+import AppPage from "../components/ui/AppPage"
+
 import useTasks from "../hooks/useTasks"
 import useSchoolItems from "../hooks/useSchoolItems"
 import useFamilyMembers from "../hooks/useFamilyMembers"
 import useTrips from "../hooks/useTrips"
 import usePreferences from "../hooks/usePreferences"
 
-import CommandCenterDailyBrief from "../components/CommandCenterDailyBrief"
-import CommandCenterNeedsAttention from "../components/CommandCenterNeedsAttention"
 import FloatingQuickActions from "../components/FloatingQuickActions"
 
 import { getEvergroveAssistantSuggestions } from "../utils/evergroveAssistantSuggestions"
@@ -16,7 +16,7 @@ import { filterTasksByScope } from "../utils/taskFilters"
 
 import useMeals from "../hooks/useMeals"
 import { useNavigate } from "react-router-dom"
-import { completeTask, updateTask, deleteTask } from "../services/taskService"
+import { completeTask, updateTask, deleteTask, createTask } from "../services/taskService"
 
 import useCalendarEvents from "../hooks/useCalendarEvents"
 import { deleteCalendarEvent, updateCalendarEvent } from "../services/calendarEventService"
@@ -27,9 +27,17 @@ import useAnnouncements from "../hooks/useAnnouncements"
 import FamilyAnnouncementsCard from "../components/FamilyAnnouncementsCard"
 
 import useHouseholdFeed from "../hooks/useHouseholdFeed"
-import HouseholdFeedCard from "../components/HouseholdFeedCard"
 
 import { getFeedReadCounts } from "../services/feedService"
+
+import AttentionCard from "../components/dashboard/AttentionCard"
+import TodayCard from "../components/dashboard/TodayCard"
+import AssistantCard from "../components/dashboard/AssistantCard"
+import FeedCard from "../components/dashboard/FeedCard"
+import UpcomingCard from "../components/dashboard/UpcomingCard"
+import InsightCard from "../components/dashboard/InsightCard"
+import { getEvergroveInsights } from "../utils/evergroveInsights"
+import { getTaskTemplate } from "../utils/taskTemplates"
 
 function getDateOnly(value) {
     if (!value) return ""
@@ -303,7 +311,6 @@ function HomeSection({ eyebrow, title, count, children }) {
 function TodayEventRow({ item }) {
     return (
         <div className="home-check-row">
-            <span className="home-check-circle" />
 
             <div>
                 {item.time_label && (
@@ -396,6 +403,17 @@ export default function Dashboard() {
 
     const { dinnerTonight } = useMeals()
 
+    const [completedInsight, setCompletedInsight] = useState(null)
+    const [completedInsightIds, setCompletedInsightIds] = useState(() => {
+        try {
+            return JSON.parse(
+                window.localStorage.getItem("evergrove_completed_insights") || "[]"
+            )
+        } catch {
+            return []
+        }
+    })
+
     const assistantSuggestions = getEvergroveAssistantSuggestions(45)
 
     const {
@@ -420,9 +438,10 @@ export default function Dashboard() {
     const navigate = useNavigate()
 
     const todayString = getTodayString()
+    const greeting = getGreeting()
+
     const weekStartsOn = preferences?.week_starts_on || "sunday"
     const currentWeek = getWeekRange(weekStartsOn)
-    const timelineDays = Number(preferences?.timeline_window_days || 90)
 
     const showBirthdays = preferences?.show_birthdays !== false
     const showTrips = preferences?.show_trips !== false
@@ -447,23 +466,23 @@ export default function Dashboard() {
 
     const happeningNowEvents = todayEvents.filter(isHappeningNow)
 
+    const sevenDaysFromToday = (() => {
+        const date = createLocalDate(todayString)
+        date.setDate(date.getDate() + 7)
+
+        return formatDateParts(
+            date.getFullYear(),
+            date.getMonth() + 1,
+            date.getDate()
+        )
+    })()
+
     const upcomingEvents = allEvents
         .filter(item => {
             return (
                 item.date > todayString &&
-                item.date >= currentWeek.start &&
-                item.date <= currentWeek.end
+                item.date <= sevenDaysFromToday
             )
-        })
-        .sort((a, b) => {
-            const dateDiff = createLocalDate(a.date) - createLocalDate(b.date)
-            if (dateDiff !== 0) return dateDiff
-
-            if ((a.sort_time || 99999) !== (b.sort_time || 99999)) {
-                return (a.sort_time || 99999) - (b.sort_time || 99999)
-            }
-
-            return a.title.localeCompare(b.title)
         })
 
     const upcomingEventsByDate = groupEventsByDate(upcomingEvents)
@@ -500,6 +519,18 @@ export default function Dashboard() {
             if (!b.due_date) return -1
             return createLocalDate(a.due_date) - createLocalDate(b.due_date)
         })
+
+    const insights = getEvergroveInsights({
+        todayString,
+        dinnerTonight,
+        todayEvents,
+        allEvents,
+        openTasks,
+    })
+
+    const visibleInsights = insights.filter(
+        insight => !completedInsightIds.includes(insight.id)
+    )
 
     const dashboardLoading =
         tasksLoading ||
@@ -655,6 +686,72 @@ export default function Dashboard() {
         }
     }
 
+    function getGreeting() {
+        const hour = new Date().getHours()
+
+        if (hour < 12) {
+            return {
+                text: "morning",
+                icon: "☀️"
+            }
+        }
+
+        if (hour < 18) {
+            return {
+                text: "afternoon",
+                icon: "🌤️"
+            }
+        }
+
+        return {
+            text: "evening",
+            icon: "🌙"
+        }
+    }
+
+    function handleInsightAction(insight) {
+        switch (insight.actionType) {
+            case "plan_dinner":
+                setBriefModal("dinner")
+                break
+
+            case "view_tomorrow":
+                navigate("/calendar")
+                break
+
+            case "review_tasks":
+                navigate("/tasks?filter=overdue")
+                break
+
+            case "birthday_checklist": {
+                const name =
+                    insight.payload?.event?.title
+                        ?.replace("'s birthday", "")
+                        ?.replace(" birthday", "") ||
+                    "them"
+
+                const tasks = getTaskTemplate("birthday", { name })
+
+                tasks.forEach(taskTitle => {
+                    handleCreateAssistantTask(taskTitle)
+                })
+
+                setCompletedInsight({
+                    id: insight.id,
+                    completedTitle: "Birthday checklist created",
+                    completedDescription: `${tasks.length} to-dos were added for ${name}.`,
+                    completedActionLabel: "View To-Dos",
+                    onCompletedAction: () => navigate("/tasks")
+                })
+
+                break
+            }
+
+            default:
+                break
+        }
+    }
+
     useEffect(() => {
         async function loadCurrentUser() {
             const {
@@ -694,422 +791,290 @@ export default function Dashboard() {
         loadFeedReadCounts()
     }, [feedEvents])
 
+    useEffect(() => {
+        if (!completedInsight) return
+
+        const timeout = window.setTimeout(() => {
+            setCompletedInsightIds(current => [
+                ...new Set([
+                    ...current,
+                    completedInsight.id
+                ])
+            ])
+
+            setCompletedInsight(null)
+        }, 5000)
+
+        return () => window.clearTimeout(timeout)
+    }, [completedInsight])
+
+    useEffect(() => {
+        window.localStorage.setItem(
+            "evergrove_completed_insights",
+            JSON.stringify(completedInsightIds)
+        )
+    }, [completedInsightIds])
+
     return (
-        <div className="home-command-page">
-            <header className="dashboard-simple-header dashboard-household-header">
-                <div>
-                    <p className="dashboard-household-name">
-                        {preferences?.household_name || "My Household"}
-                    </p>
+        <AppPage>
+            <div className="eg-stack">
+                <header className="eg-dashboard-hero">
+                    <div className="eg-dashboard-topbar">
+                        <button className="eg-menu-button" type="button">
+                            ☰
+                        </button>
 
-                    <h2>Family Command Center</h2>
-
-                    <p className="dashboard-date">
-                        {new Date().toLocaleDateString(undefined, {
-                            weekday: "long",
-                            month: "long",
-                            day: "numeric"
-                        })}
-                    </p>
-
-                    <p className="dashboard-powered-by">
-                        Powered by Evergrove
-                    </p>
-                </div>
-            </header>
-
-            {happeningNowEvents.length > 0 && (
-                <div className="home-now-banner">
-                    {happeningNowEvents.map(item => (
-                        <div key={item.id}>
-                            <strong>Happening now:</strong>{" "}
-                            {item.title}
-                            {item.subtitle && ` • ${item.subtitle}`}
-                            {item.end_time && ` • Ends ${formatTime(item.end_time)}`}
+                        <div className="eg-brand">
+                            <span>🌱</span>
+                            <strong>Evergrove</strong>
                         </div>
-                    ))}
-                </div>
-            )}
 
-            <CommandCenterDailyBrief
-
-                onOpenEvents={() => setBriefModal("events")}
-                onOpenTasks={() => setBriefModal("tasks")}
-                onOpenDinner={() => setBriefModal("dinner")}
-                householdName={preferences?.household_name || "Family"}
-                userName={currentMember?.name}
-                todayEvents={todayEvents || []}
-                todayTasks={openTasks.filter(task => task.due_date <= todayString)}
-                tonightDinner={dinnerTonight}
-                upcomingItems={upcomingEvents || []}
-                attentionCount={
-                    scopedTasks.filter(task => {
-                        if (task.status === "complete") return false
-                        return task.due_date && task.due_date <= todayString
-                    }).length
-                }
-            />
-
-            <CommandCenterNeedsAttention
-                tasks={scopedTasks}
-                schoolItems={schoolItems}
-                taskSuggestions={[]}
-                todayString={todayString}
-                onCreateSuggestedTask={() => { }}
-                onCompleteTask={handleCompleteTask}
-            />
-
-            <HomeSection
-                eyebrow="Today"
-                title="Today's Agenda"
-                count={todayEvents.length}
-            >
-                {dashboardLoading ? (
-                    <EmptyState>Loading today...</EmptyState>
-                ) : todayEvents.length === 0 ? (
-                    <EmptyState>Enjoy your day. Nothing scheduled for today.</EmptyState>
-                ) : (
-                    <div className="home-check-list">
-                        {todayEvents.map(item => (
-                            <TodayEventRow key={item.id} item={item} />
-                        ))}
+                        <button className="eg-bell-button" type="button">
+                            🔔
+                            <span>2</span>
+                        </button>
                     </div>
-                )}
-            </HomeSection>
 
-            <HouseholdFeedCard
-                feedEvents={feedEvents}
-                loading={feedLoading}
-                readCounts={feedReadCounts}
-            />
+                    <div className="eg-greeting-block">
+                        <h1>
+                            Good {greeting.text}, {currentMember?.name || "there"} {greeting.icon}
+                        </h1>
 
-            <FamilyAnnouncementsCard
-                announcements={announcements}
-                loading={announcementsLoading}
-                onAdd={addAnnouncement}
-                onEdit={editAnnouncement}
-                onDelete={removeAnnouncement}
-            />
+                        <p className="eg-household-name">
+                            {preferences?.household_name || "My Household"}
+                        </p>
 
-            <HomeSection
-                eyebrow="This Week"
-                title="Coming Up"
-                count={upcomingEvents.length}
-            >
-                {dashboardLoading ? (
-                    <EmptyState>Loading the week ahead...</EmptyState>
-                ) : upcomingEvents.length === 0 ? (
-                    <EmptyState>Nothing else coming up this week.</EmptyState>
-                ) : (
-                    <div className="home-week-list">
-                        {Object.keys(upcomingEventsByDate).map(date => (
-                            <div className="home-day-group" key={date}>
-                                <div className="home-day-label">
-                                    {formatShortDate(date)}
-                                </div>
-
-                                <div className="home-day-events">
-                                    {upcomingEventsByDate[date].map(item => (
-                                        <UpcomingEventRow key={item.id} item={item} />
-                                    ))}
-                                </div>
+                        <p>
+                            {new Date().toLocaleDateString(undefined, {
+                                weekday: "long",
+                                month: "long",
+                                day: "numeric"
+                            })}
+                        </p>
+                    </div>
+                </header>
+                {happeningNowEvents.length > 0 && (
+                    <div className="eg-now-card">
+                        {happeningNowEvents.map(item => (
+                            <div key={item.id}>
+                                <strong>Happening now:</strong>{" "}
+                                {item.title}
+                                {item.subtitle && ` • ${item.subtitle}`}
+                                {item.end_time && ` • Ends ${formatTime(item.end_time)}`}
                             </div>
                         ))}
                     </div>
                 )}
-            </HomeSection>
 
-            <details className="timeline-expandable">
-                <summary>
-                    <span>Family Timeline</span>
-                    <small>View recent and upcoming family history</small>
-                </summary>
+                <AttentionCard
+                    overdueCount={
+                        scopedTasks.filter(task =>
+                            task.status !== "complete" &&
+                            task.due_date &&
+                            task.due_date < todayString
+                        ).length
+                    }
+                    todayEventsCount={todayEvents.length}
+                    unreadInboxCount={0}
+                    announcementsCount={announcements.length}
 
-                <div className="home-timeline-section">
-                    <FamilyTimelineCard
-                        activities={[]}
-                        tasks={Array.isArray(tasks) ? tasks : []}
-                        schoolItems={showSchoolItems ? schoolItems : []}
-                        familyMembers={showBirthdays ? familyMembers : []}
-                        trips={showTrips && Array.isArray(trips) ? trips : []}
-                        activitySessions={[]}
-                        calendarEvents={Array.isArray(calendarEvents) ? calendarEvents : []}
-                        timelineDays={timelineDays}
+                    onOpenOverdue={() =>
+                        navigate("/tasks?filter=overdue")
+                    }
+
+                    onOpenToday={() =>
+                        navigate("/calendar")
+                    }
+
+                    onOpenInbox={() =>
+                        navigate("/personal-inbox")
+                    }
+
+                    onOpenAnnouncements={() =>
+                        document
+                            .querySelector(".family-announcements-card .secondary-button")
+                            ?.click()
+                    }
+                />
+
+                <TodayCard
+                    events={todayEvents}
+                    tasks={openTasks.filter(task => task.due_date <= todayString)}
+                    dinner={dinnerTonight}
+                    onOpenEvents={() => setBriefModal("events")}
+                    onOpenTasks={() => setBriefModal("tasks")}
+                    onOpenDinner={() => setBriefModal("dinner")}
+                />
+
+                {(visibleInsights.length > 0 || completedInsight) && (
+                    <InsightCard
+                        insight={visibleInsights[0]}
+                        completedInsight={completedInsight}
+                        onAction={handleInsightAction}
                     />
-                </div>
-            </details>
+                )}
 
-            {briefModal && (
-                <div
-                    className="task-action-backdrop"
-                    onClick={() => setBriefModal(null)}
-                >
+                <FeedCard
+                    feedEvents={feedEvents}
+                    loading={feedLoading}
+                    onViewAll={() => navigate("/feed")}
+                />
+
+                <UpcomingCard
+                    events={upcomingEvents}
+                    onOpenCalendar={() => navigate("/calendar")}
+                />
+
+                {briefModal && (
                     <div
-                        className="task-action-sheet"
-                        onClick={event => event.stopPropagation()}
+                        className="task-action-backdrop"
+                        onClick={() => setBriefModal(null)}
                     >
-                        {briefModal === "events" && (
-                            <>
-                                <h3>Events Today</h3>
+                        <div
+                            className="task-action-sheet"
+                            onClick={event => event.stopPropagation()}
+                        >
+                            {briefModal === "events" && (
+                                <>
+                                    <h3>Events Today</h3>
 
-                                {todayEvents.length === 0 ? (
-                                    <p className="muted-text">Nothing scheduled today.</p>
-                                ) : (
-                                    todayEvents.map(event => (
-                                        <div key={event.id} className="mini-row dashboard-event-detail-row">
-                                            {editingBriefEventId === event.sourceId ? (
-                                                <div className="dashboard-task-edit-form">
-                                                    <input
-                                                        className="form-input"
-                                                        value={briefEventForm.title}
-                                                        onChange={inputEvent =>
-                                                            setBriefEventForm({
-                                                                ...briefEventForm,
-                                                                title: inputEvent.target.value
-                                                            })
-                                                        }
-                                                        placeholder="Event title"
-                                                    />
-
-                                                    <select
-                                                        className="form-input"
-                                                        value={briefEventForm.event_type}
-                                                        onChange={inputEvent =>
-                                                            setBriefEventForm({
-                                                                ...briefEventForm,
-                                                                event_type: inputEvent.target.value
-                                                            })
-                                                        }
-                                                    >
-                                                        <option>Family Event</option>
-                                                        <option>Activity</option>
-                                                        <option>School</option>
-                                                        <option>Trip</option>
-                                                        <option>Reminder</option>
-                                                        <option>Important Date</option>
-                                                        <option>Holiday</option>
-                                                        <option>Visitor</option>
-                                                        <option>Other</option>
-                                                    </select>
-
-                                                    <div className="two-column-form">
-                                                        <input
-                                                            className="form-input"
-                                                            type="date"
-                                                            value={briefEventForm.start_date}
-                                                            onChange={inputEvent =>
-                                                                setBriefEventForm({
-                                                                    ...briefEventForm,
-                                                                    start_date: inputEvent.target.value
-                                                                })
-                                                            }
-                                                        />
-
-                                                        <input
-                                                            className="form-input"
-                                                            type="date"
-                                                            value={briefEventForm.end_date}
-                                                            onChange={inputEvent =>
-                                                                setBriefEventForm({
-                                                                    ...briefEventForm,
-                                                                    end_date: inputEvent.target.value
-                                                                })
-                                                            }
-                                                        />
-                                                    </div>
-
-                                                    <div className="two-column-form">
-                                                        <input
-                                                            className="form-input"
-                                                            type="time"
-                                                            value={briefEventForm.start_time}
-                                                            onChange={inputEvent =>
-                                                                setBriefEventForm({
-                                                                    ...briefEventForm,
-                                                                    start_time: inputEvent.target.value
-                                                                })
-                                                            }
-                                                        />
-
-                                                        <input
-                                                            className="form-input"
-                                                            type="time"
-                                                            value={briefEventForm.end_time}
-                                                            onChange={inputEvent =>
-                                                                setBriefEventForm({
-                                                                    ...briefEventForm,
-                                                                    end_time: inputEvent.target.value
-                                                                })
-                                                            }
-                                                        />
-                                                    </div>
-
-                                                    <input
-                                                        className="form-input"
-                                                        value={briefEventForm.location}
-                                                        onChange={inputEvent =>
-                                                            setBriefEventForm({
-                                                                ...briefEventForm,
-                                                                location: inputEvent.target.value
-                                                            })
-                                                        }
-                                                        placeholder="Location"
-                                                    />
-
-                                                    <textarea
-                                                        className="form-input"
-                                                        rows="2"
-                                                        value={briefEventForm.notes}
-                                                        onChange={inputEvent =>
-                                                            setBriefEventForm({
-                                                                ...briefEventForm,
-                                                                notes: inputEvent.target.value
-                                                            })
-                                                        }
-                                                        placeholder="Notes"
-                                                    />
-
-                                                    <label className="checkbox-row">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={briefEventForm.repeats_yearly}
-                                                            onChange={inputEvent =>
-                                                                setBriefEventForm({
-                                                                    ...briefEventForm,
-                                                                    repeats_yearly: inputEvent.target.checked
-                                                                })
-                                                            }
-                                                        />
-
-                                                        <span>Repeat every year</span>
-                                                    </label>
-
-                                                    <div className="button-row">
-                                                        <button
-                                                            type="button"
-                                                            className="primary-button"
-                                                            onClick={() => handleUpdateBriefEvent(event)}
-                                                        >
-                                                            Save
-                                                        </button>
-
-                                                        <button
-                                                            type="button"
-                                                            className="secondary-button"
-                                                            onClick={cancelEditBriefEvent}
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <span className="mini-avatar">
-                                                        {event.icon || "📌"}
-                                                    </span>
-
-                                                    <div className="dashboard-event-detail-content">
-                                                        <strong>{event.title}</strong>
-
-                                                        {event.subtitle && (
-                                                            <p>{event.subtitle}</p>
-                                                        )}
-
-                                                        {event.time_label && (
-                                                            <small>{event.time_label}</small>
-                                                        )}
-
-                                                        {event.detail && (
-                                                            <small>{event.detail}</small>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="dashboard-task-actions">
-                                                        {event.sourceType === "calendar_event" && (
-                                                            <>
-                                                                <button
-                                                                    type="button"
-                                                                    className="dashboard-task-edit"
-                                                                    onClick={() => startEditBriefEvent(event)}
-                                                                >
-                                                                    ✏️
-                                                                </button>
-
-                                                                <button
-                                                                    type="button"
-                                                                    className="dashboard-task-edit danger"
-                                                                    onClick={() => handleDeleteBriefEvent(event)}
-                                                                >
-                                                                    🗑️
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    ))
-                                )}
-
-                                <button type="button" onClick={() => setBriefModal(null)}>
-                                    Close
-                                </button>
-                            </>
-                        )}
-
-                        {briefModal === "tasks" && (
-                            <>
-                                <h3>Tasks Due</h3>
-
-                                {openTasks.filter(task => task.due_date === todayString).length === 0 ? (
-                                    <p className="muted-text">No tasks due today.</p>
-                                ) : (
-                                    openTasks
-                                        .filter(task => task.due_date === todayString)
-                                        .map(task => (
-                                            <div key={task.id} className="mini-row dashboard-task-row">
-                                                {editingBriefTaskId === task.id ? (
+                                    {todayEvents.length === 0 ? (
+                                        <p className="muted-text">Nothing scheduled today.</p>
+                                    ) : (
+                                        todayEvents.map(event => (
+                                            <div key={event.id} className="mini-row dashboard-event-detail-row">
+                                                {editingBriefEventId === event.sourceId ? (
                                                     <div className="dashboard-task-edit-form">
                                                         <input
                                                             className="form-input"
-                                                            value={briefTaskForm.title}
-                                                            onChange={event =>
-                                                                setBriefTaskForm({
-                                                                    ...briefTaskForm,
-                                                                    title: event.target.value
+                                                            value={briefEventForm.title}
+                                                            onChange={inputEvent =>
+                                                                setBriefEventForm({
+                                                                    ...briefEventForm,
+                                                                    title: inputEvent.target.value
                                                                 })
                                                             }
+                                                            placeholder="Event title"
+                                                        />
+
+                                                        <select
+                                                            className="form-input"
+                                                            value={briefEventForm.event_type}
+                                                            onChange={inputEvent =>
+                                                                setBriefEventForm({
+                                                                    ...briefEventForm,
+                                                                    event_type: inputEvent.target.value
+                                                                })
+                                                            }
+                                                        >
+                                                            <option>Family Event</option>
+                                                            <option>Activity</option>
+                                                            <option>School</option>
+                                                            <option>Trip</option>
+                                                            <option>Reminder</option>
+                                                            <option>Important Date</option>
+                                                            <option>Holiday</option>
+                                                            <option>Visitor</option>
+                                                            <option>Other</option>
+                                                        </select>
+
+                                                        <div className="two-column-form">
+                                                            <input
+                                                                className="form-input"
+                                                                type="date"
+                                                                value={briefEventForm.start_date}
+                                                                onChange={inputEvent =>
+                                                                    setBriefEventForm({
+                                                                        ...briefEventForm,
+                                                                        start_date: inputEvent.target.value
+                                                                    })
+                                                                }
+                                                            />
+
+                                                            <input
+                                                                className="form-input"
+                                                                type="date"
+                                                                value={briefEventForm.end_date}
+                                                                onChange={inputEvent =>
+                                                                    setBriefEventForm({
+                                                                        ...briefEventForm,
+                                                                        end_date: inputEvent.target.value
+                                                                    })
+                                                                }
+                                                            />
+                                                        </div>
+
+                                                        <div className="two-column-form">
+                                                            <input
+                                                                className="form-input"
+                                                                type="time"
+                                                                value={briefEventForm.start_time}
+                                                                onChange={inputEvent =>
+                                                                    setBriefEventForm({
+                                                                        ...briefEventForm,
+                                                                        start_time: inputEvent.target.value
+                                                                    })
+                                                                }
+                                                            />
+
+                                                            <input
+                                                                className="form-input"
+                                                                type="time"
+                                                                value={briefEventForm.end_time}
+                                                                onChange={inputEvent =>
+                                                                    setBriefEventForm({
+                                                                        ...briefEventForm,
+                                                                        end_time: inputEvent.target.value
+                                                                    })
+                                                                }
+                                                            />
+                                                        </div>
+
+                                                        <input
+                                                            className="form-input"
+                                                            value={briefEventForm.location}
+                                                            onChange={inputEvent =>
+                                                                setBriefEventForm({
+                                                                    ...briefEventForm,
+                                                                    location: inputEvent.target.value
+                                                                })
+                                                            }
+                                                            placeholder="Location"
                                                         />
 
                                                         <textarea
                                                             className="form-input"
                                                             rows="2"
-                                                            value={briefTaskForm.description}
-                                                            onChange={event =>
-                                                                setBriefTaskForm({
-                                                                    ...briefTaskForm,
-                                                                    description: event.target.value
+                                                            value={briefEventForm.notes}
+                                                            onChange={inputEvent =>
+                                                                setBriefEventForm({
+                                                                    ...briefEventForm,
+                                                                    notes: inputEvent.target.value
                                                                 })
                                                             }
+                                                            placeholder="Notes"
                                                         />
 
-                                                        <input
-                                                            className="form-input"
-                                                            type="date"
-                                                            value={briefTaskForm.due_date}
-                                                            onChange={event =>
-                                                                setBriefTaskForm({
-                                                                    ...briefTaskForm,
-                                                                    due_date: event.target.value
-                                                                })
-                                                            }
-                                                        />
+                                                        <label className="checkbox-row">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={briefEventForm.repeats_yearly}
+                                                                onChange={inputEvent =>
+                                                                    setBriefEventForm({
+                                                                        ...briefEventForm,
+                                                                        repeats_yearly: inputEvent.target.checked
+                                                                    })
+                                                                }
+                                                            />
+
+                                                            <span>Repeat every year</span>
+                                                        </label>
 
                                                         <div className="button-row">
                                                             <button
                                                                 type="button"
                                                                 className="primary-button"
-                                                                onClick={() => handleUpdateBriefTask(task)}
+                                                                onClick={() => handleUpdateBriefEvent(event)}
                                                             >
                                                                 Save
                                                             </button>
@@ -1117,7 +1082,7 @@ export default function Dashboard() {
                                                             <button
                                                                 type="button"
                                                                 className="secondary-button"
-                                                                onClick={cancelEditBriefTask}
+                                                                onClick={cancelEditBriefEvent}
                                                             >
                                                                 Cancel
                                                             </button>
@@ -1125,178 +1090,301 @@ export default function Dashboard() {
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <button
-                                                            type="button"
-                                                            className="dashboard-task-check-circle"
-                                                            onClick={() => handleCompleteTask(task)}
-                                                            aria-label={`Complete ${task.title}`}
-                                                        />
+                                                        <span className="mini-avatar">
+                                                            {event.icon || "📌"}
+                                                        </span>
 
-                                                        <div className="dashboard-task-content">
-                                                            <strong>{task.title}</strong>
+                                                        <div className="dashboard-event-detail-content">
+                                                            <strong>{event.title}</strong>
 
-                                                            {task.description && (
-                                                                <p>{task.description}</p>
+                                                            {event.subtitle && (
+                                                                <p>{event.subtitle}</p>
                                                             )}
 
-                                                            {task.due_date && (
-                                                                <small>Due {task.due_date}</small>
+                                                            {event.time_label && (
+                                                                <small>{event.time_label}</small>
+                                                            )}
+
+                                                            {event.detail && (
+                                                                <small>{event.detail}</small>
                                                             )}
                                                         </div>
 
                                                         <div className="dashboard-task-actions">
-                                                            <button
-                                                                type="button"
-                                                                className="dashboard-task-edit"
-                                                                onClick={() => startEditBriefTask(task)}
-                                                            >
-                                                                ✏️
-                                                            </button>
+                                                            {event.sourceType === "calendar_event" && (
+                                                                <>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="dashboard-task-edit"
+                                                                        onClick={() => startEditBriefEvent(event)}
+                                                                    >
+                                                                        ✏️
+                                                                    </button>
 
-                                                            <button
-                                                                type="button"
-                                                                className="dashboard-task-edit danger"
-                                                                onClick={() => handleDeleteBriefTask(task)}
-                                                            >
-                                                                🗑️
-                                                            </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="dashboard-task-edit danger"
+                                                                        onClick={() => handleDeleteBriefEvent(event)}
+                                                                    >
+                                                                        🗑️
+                                                                    </button>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </>
                                                 )}
                                             </div>
                                         ))
-                                )}
+                                    )}
 
-                                <button type="button" onClick={() => setBriefModal(null)}>
-                                    Close
-                                </button>
-                            </>
-                        )}
+                                    <button type="button" onClick={() => setBriefModal(null)}>
+                                        Close
+                                    </button>
+                                </>
+                            )}
 
-                        {briefModal === "dinner" && (
-                            <>
-                                <h3>Dinner Tonight</h3>
+                            {briefModal === "tasks" && (
+                                <>
+                                    <h3>Tasks Due</h3>
 
-                                {dinnerTonight ? (
-                                    <div className="dashboard-dinner-detail">
-                                        <div className="mini-row">
-                                            <span className="mini-avatar">🍽️</span>
+                                    {openTasks.filter(task => task.due_date === todayString).length === 0 ? (
+                                        <p className="muted-text">No tasks due today.</p>
+                                    ) : (
+                                        openTasks
+                                            .filter(task => task.due_date === todayString)
+                                            .map(task => (
+                                                <div key={task.id} className="mini-row dashboard-task-row">
+                                                    {editingBriefTaskId === task.id ? (
+                                                        <div className="dashboard-task-edit-form">
+                                                            <input
+                                                                className="form-input"
+                                                                value={briefTaskForm.title}
+                                                                onChange={event =>
+                                                                    setBriefTaskForm({
+                                                                        ...briefTaskForm,
+                                                                        title: event.target.value
+                                                                    })
+                                                                }
+                                                            />
 
-                                            <div>
-                                                <strong>{dinnerTonight.meal_name}</strong>
+                                                            <textarea
+                                                                className="form-input"
+                                                                rows="2"
+                                                                value={briefTaskForm.description}
+                                                                onChange={event =>
+                                                                    setBriefTaskForm({
+                                                                        ...briefTaskForm,
+                                                                        description: event.target.value
+                                                                    })
+                                                                }
+                                                            />
 
-                                                {dinnerTonight.meal_category && (
-                                                    <p>{dinnerTonight.meal_category}</p>
+                                                            <input
+                                                                className="form-input"
+                                                                type="date"
+                                                                value={briefTaskForm.due_date}
+                                                                onChange={event =>
+                                                                    setBriefTaskForm({
+                                                                        ...briefTaskForm,
+                                                                        due_date: event.target.value
+                                                                    })
+                                                                }
+                                                            />
+
+                                                            <div className="button-row">
+                                                                <button
+                                                                    type="button"
+                                                                    className="primary-button"
+                                                                    onClick={() => handleUpdateBriefTask(task)}
+                                                                >
+                                                                    Save
+                                                                </button>
+
+                                                                <button
+                                                                    type="button"
+                                                                    className="secondary-button"
+                                                                    onClick={cancelEditBriefTask}
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                className="dashboard-task-check-circle"
+                                                                onClick={() => handleCompleteTask(task)}
+                                                                aria-label={`Complete ${task.title}`}
+                                                            />
+
+                                                            <div className="dashboard-task-content">
+                                                                <strong>{task.title}</strong>
+
+                                                                {task.description && (
+                                                                    <p>{task.description}</p>
+                                                                )}
+
+                                                                {task.due_date && (
+                                                                    <small>Due {task.due_date}</small>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="dashboard-task-actions">
+                                                                <button
+                                                                    type="button"
+                                                                    className="dashboard-task-edit"
+                                                                    onClick={() => startEditBriefTask(task)}
+                                                                >
+                                                                    ✏️
+                                                                </button>
+
+                                                                <button
+                                                                    type="button"
+                                                                    className="dashboard-task-edit danger"
+                                                                    onClick={() => handleDeleteBriefTask(task)}
+                                                                >
+                                                                    🗑️
+                                                                </button>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            ))
+                                    )}
+
+                                    <button type="button" onClick={() => setBriefModal(null)}>
+                                        Close
+                                    </button>
+                                </>
+                            )}
+
+                            {briefModal === "dinner" && (
+                                <>
+                                    <h3>Dinner Tonight</h3>
+
+                                    {dinnerTonight ? (
+                                        <div className="dashboard-dinner-detail">
+                                            <div className="mini-row">
+                                                <span className="mini-avatar">🍽️</span>
+
+                                                <div>
+                                                    <strong>{dinnerTonight.meal_name}</strong>
+
+                                                    {dinnerTonight.meal_category && (
+                                                        <p>{dinnerTonight.meal_category}</p>
+                                                    )}
+
+                                                    {dinnerTonight.notes && (
+                                                        <small>{dinnerTonight.notes}</small>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="dashboard-dinner-actions">
+                                                {(dinnerTonight.recipe_url || dinnerTonight.meal?.recipe_url) && (
+                                                    <a
+                                                        href={
+                                                            (dinnerTonight.recipe_url || dinnerTonight.meal?.recipe_url).startsWith("http")
+                                                                ? (dinnerTonight.recipe_url || dinnerTonight.meal?.recipe_url)
+                                                                : `https://${dinnerTonight.recipe_url || dinnerTonight.meal?.recipe_url}`
+                                                        }
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="secondary-button"
+                                                    >
+                                                        View Recipe
+                                                    </a>
                                                 )}
 
-                                                {dinnerTonight.notes && (
-                                                    <small>{dinnerTonight.notes}</small>
-                                                )}
+                                                <button
+                                                    type="button"
+                                                    className="secondary-button"
+                                                    onClick={() => navigate("/meals")}
+                                                >
+                                                    Open Meals
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    className="secondary-button"
+                                                    onClick={() => navigate("/shopping")}
+                                                >
+                                                    Open Shopping List
+                                                </button>
                                             </div>
                                         </div>
-
-                                        <div className="dashboard-dinner-actions">
-                                            {(dinnerTonight.recipe_url || dinnerTonight.meal?.recipe_url) && (
-                                                <a
-                                                    href={
-                                                        (dinnerTonight.recipe_url || dinnerTonight.meal?.recipe_url).startsWith("http")
-                                                            ? (dinnerTonight.recipe_url || dinnerTonight.meal?.recipe_url)
-                                                            : `https://${dinnerTonight.recipe_url || dinnerTonight.meal?.recipe_url}`
-                                                    }
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="secondary-button"
-                                                >
-                                                    View Recipe
-                                                </a>
-                                            )}
+                                    ) : (
+                                        <div className="dashboard-dinner-detail">
+                                            <p className="muted-text">No dinner planned yet.</p>
 
                                             <button
                                                 type="button"
-                                                className="secondary-button"
-                                                onClick={() => navigate("/meals")}
+                                                className="primary-button"
+                                                onClick={() =>
+                                                    navigate("/meals", {
+                                                        state: {
+                                                            openMealPlanForm: true,
+                                                            selectedDate: todayString
+                                                        }
+                                                    })
+                                                }
                                             >
-                                                Open Meals
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                className="secondary-button"
-                                                onClick={() => navigate("/shopping")}
-                                            >
-                                                Open Shopping List
+                                                Plan Dinner
                                             </button>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="dashboard-dinner-detail">
-                                        <p className="muted-text">No dinner planned yet.</p>
+                                    )}
 
-                                        <button
-                                            type="button"
-                                            className="primary-button"
-                                            onClick={() =>
-                                                navigate("/meals", {
-                                                    state: {
-                                                        openMealPlanForm: true,
-                                                        selectedDate: todayString
-                                                    }
-                                                })
-                                            }
-                                        >
-                                            Plan Dinner
-                                        </button>
-                                    </div>
-                                )}
-
-                                <button type="button" onClick={() => setBriefModal(null)}>
-                                    Close
-                                </button>
-                            </>
-                        )}
+                                    <button type="button" onClick={() => setBriefModal(null)}>
+                                        Close
+                                    </button>
+                                </>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            <FloatingQuickActions
-                assistantSuggestions={assistantSuggestions}
-                onAddAssistantTask={handleCreateAssistantTask}
+                <FloatingQuickActions
+                    assistantSuggestions={assistantSuggestions}
+                    onAddAssistantTask={handleCreateAssistantTask}
 
-                onAddTask={() =>
-                    navigate("/calendar", {
-                        state: {
-                            openTaskForm: true,
-                            selectedDate: todayString
-                        }
-                    })
-                }
-                onAddEvent={() =>
-                    navigate("/calendar", {
-                        state: {
-                            openCalendarEventForm: true,
-                            selectedDate: todayString
-                        }
-                    })
-                }
-                onAddMeal={() =>
-                    navigate("/meals", {
-                        state: {
-                            openMealPlanForm: true,
-                            selectedDate: todayString
-                        }
-                    })
-                }
-                onAddShopping={() =>
-                    navigate("/shopping", {
-                        state: {
-                            openShoppingForm: true
-                        }
-                    })
-                }
-                onAddAnnouncement={() => {
-                    const button = document.querySelector(".family-announcements-card .secondary-button")
-                    button?.click()
-                }}
-            />       </div >
+                    onAddTask={() =>
+                        navigate("/calendar", {
+                            state: {
+                                openTaskForm: true,
+                                selectedDate: todayString
+                            }
+                        })
+                    }
+                    onAddEvent={() =>
+                        navigate("/calendar", {
+                            state: {
+                                openCalendarEventForm: true,
+                                selectedDate: todayString
+                            }
+                        })
+                    }
+                    onAddMeal={() =>
+                        navigate("/meals", {
+                            state: {
+                                openMealPlanForm: true,
+                                selectedDate: todayString
+                            }
+                        })
+                    }
+                    onAddShopping={() =>
+                        navigate("/shopping", {
+                            state: {
+                                openShoppingForm: true
+                            }
+                        })
+                    }
+                    onAddAnnouncement={() => {
+                        const button = document.querySelector(".family-announcements-card .secondary-button")
+                        button?.click()
+                    }}
+                />
+            </div>
+        </AppPage>
     )
 }

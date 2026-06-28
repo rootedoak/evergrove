@@ -1,3 +1,9 @@
+import AppPage from "../components/ui/AppPage"
+import CalendarHeader from "../components/calendar/CalendarHeader"
+import CalendarAgenda from "../components/calendar/CalendarAgenda"
+import CalendarMonth from "../components/calendar/CalendarMonth"
+import CalendarEventDetailSheet from "../components/calendar/CalendarEventDetailSheet"
+
 import { useEffect, useMemo, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 
@@ -168,7 +174,10 @@ function buildCalendarEvents({
             icon: item.family_members?.avatar_emoji || "🎒",
             title: item.title,
             subtitle: item.family_members?.name || item.category || "School",
-            sortTime: 99999
+            sortTime: 99999,
+            start_time: event.start_time,
+            end_time: event.end_time,
+            notes: event.notes || ""
         })
     })
 
@@ -252,7 +261,10 @@ function buildCalendarEvents({
                     title: event.title,
                     subtitle: event.event_type || "Calendar Event",
                     location: event.location || "",
-                    sortTime: getMinutesFromTime(event.start_time)
+                    sortTime: getMinutesFromTime(event.start_time),
+                    start_time: event.start_time,
+                    end_time: event.end_time,
+                    notes: event.notes || ""
                 })
 
                 currentDate.setDate(currentDate.getDate() + 1)
@@ -376,6 +388,8 @@ export default function Calendar() {
     const [selectedDate, setSelectedDate] = useState(null)
 
     const [calendarView, setCalendarView] = useState("agenda")
+
+    const [selectedEvent, setSelectedEvent] = useState(null)
 
     const [showCalendarEventForm, setShowCalendarEventForm] = useState(false)
     const [savingCalendarEvent, setSavingCalendarEvent] = useState(false)
@@ -621,6 +635,38 @@ export default function Calendar() {
         if (event.type === "birthday") {
             navigate("/family")
         }
+    }
+
+    function startEditCalendarEventFromSummary(event) {
+        const existingEvent = calendarEvents.find(
+            calendarEvent => calendarEvent.id === event.sourceId
+        )
+
+        if (!existingEvent) return
+
+        setSelectedEvent(null)
+        setSelectedDate(event.date)
+
+        setEditingCalendarEventId(existingEvent.id)
+
+        setCalendarEventForm({
+            title: existingEvent.title || "",
+            event_type: existingEvent.event_type || "Family Event",
+            start_date: existingEvent.start_date || event.date || "",
+            end_date: existingEvent.end_date || "",
+            start_time: existingEvent.start_time || "",
+            end_time: existingEvent.end_time || "",
+            location: existingEvent.location || "",
+            notes: existingEvent.notes || "",
+            repeats_yearly: Boolean(existingEvent.repeats_yearly),
+            session_frequency: "none",
+            session_until: ""
+        })
+
+        setShowCalendarEventForm(true)
+        setShowTaskForm(false)
+        setShowActivityForm(false)
+        setShowSchoolItemForm(false)
     }
 
     function updateCalendarEventForm(field, value) {
@@ -898,953 +944,746 @@ export default function Calendar() {
     ]
 
     return (
-        <div className="calendar-page">
-            <header className="calendar-header">
-                <div>
-                    <p className="dashboard-household-name">
-                        {preferences?.household_name || "My Household"}
-                    </p>
+        <AppPage>
+            <div className="eg-stack">
 
-                    <h2>Family Calendar</h2>
+                <CalendarHeader
+                    householdName={preferences?.household_name || "My Household"}
+                    calendarView={calendarView}
+                    setCalendarView={setCalendarView}
+                    onAdd={() => setShowAddMenu(true)}
+                />
 
-                    <div className="calendar-view-toggle">
-                        <button
-                            type="button"
-                            className={calendarView === "agenda" ? "active" : ""}
-                            onClick={() => setCalendarView("agenda")}
-                        >
-                            Agenda
-                        </button>
+                {calendarView === "agenda" && (
+                    <CalendarAgenda
+                        loading={loading}
+                        agendaEventsByDate={agendaEventsByDate}
+                        formatAgendaDateLabel={formatAgendaDateLabel}
+                        onSelectEvent={(event) => {
+                            setSelectedDate(null)
+                            setSelectedEvent(event)
+                        }}
+                    />
+                )}
 
-                        <button
-                            type="button"
-                            className={calendarView === "month" ? "active" : ""}
-                            onClick={() => setCalendarView("month")}
-                        >
-                            Month
-                        </button>
-                    </div>
+                {calendarView === "month" && (
+                    <CalendarMonth
+                        loading={loading}
+                        visibleDate={visibleDate}
+                        monthTitle={formatMonthTitle(visibleDate)}
+                        calendarDays={calendarDays}
+                        eventsByDate={eventsByDate}
+                        todayString={todayString}
+                        weekdayLabels={weekdayLabels}
+                        onPreviousMonth={goToPreviousMonth}
+                        onNextMonth={goToNextMonth}
+                        onToday={goToCurrentMonth}
+                        onSelectDate={(dateString) => {
+                            setSelectedDate(dateString)
+                            setShowCalendarEventForm(false)
+                            setShowTaskForm(false)
+                            resetCalendarEventForm(dateString)
+                            resetTaskForm(dateString)
+                        }}
+                    />
+                )}
 
-                    <div className="calendar-destinations">
-
-                        <Link className="calendar-destination-card" to="/trips">
-                            <span>🚗</span>
-
-                            <div>
-                                <strong>Trips</strong>
-                                <p>Travel plans, packing, and checklists.</p>
-                            </div>
-                        </Link>
-
-                        <Link className="calendar-destination-card" to="/school">
-                            <span>🎒</span>
-
-                            <div>
-                                <strong>School</strong>
-                                <p>School dates, forms, and deadlines.</p>
-                            </div>
-                        </Link>
-                    </div>
-
-                    <div className="calendar-fab-wrapper">
-                        {showAddMenu && (
-                            <div
-                                className="calendar-fab-menu-backdrop"
-                                onClick={() => setShowAddMenu(false)}
-                            >
-                                <div
-                                    className="calendar-fab-menu"
-                                    onClick={event => event.stopPropagation()}
-                                >
-                                    <button type="button" onClick={() => openAddMenuForm("event")}>
-                                        <span>📌</span>
-                                        Calendar Event
-                                    </button>
-
-                                    <button type="button" onClick={() => openAddMenuForm("task")}>
-                                        <span>✅</span>
-                                        To-Do
-                                    </button>
-
-                                    <button type="button" onClick={() => openAddMenuForm("school")}>
-                                        <span>🎒</span>
-                                        School Item
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        <button
-                            type="button"
-                            className="mobile-fab calendar-mobile-fab"
-                            onClick={() => setShowAddMenu(current => !current)}
-                            aria-label="Add calendar item"
-                        >
-                            {showAddMenu ? "×" : "+"}
-                        </button>
-                    </div>
-
-                </div>
-            </header>
-
-            {calendarView === "agenda" && (
-                <section className="card calendar-agenda-card">
-                    <div className="calendar-toolbar">
-                        <div>
-                            <p className="card-kicker">Agenda</p>
-                            <h3>Upcoming</h3>
-                        </div>
-
-                        <button
-                            type="button"
-                            className="calendar-today-button"
-                            onClick={() => {
-                                setVisibleDate(new Date())
-                                setCalendarView("month")
-                            }}
-                        >
-                            View Month
-                        </button>
-                    </div>
-
-                    {loading ? (
-                        <p>Loading calendar...</p>
-                    ) : agendaEvents.length === 0 ? (
-                        <p className="dashboard-empty">
-                            Nothing coming up.
-                        </p>
-                    ) : (
-                        <div className="calendar-agenda-list">
-                            {Object.entries(agendaEventsByDate).map(([date, dateEvents]) => (
-                                <section className="calendar-agenda-day" key={date}>
-                                    <h4>{formatAgendaDateLabel(date)}</h4>
-
-                                    <div className="calendar-agenda-events">
-                                        {dateEvents.map(event => (
-                                            <button
-                                                key={event.id}
-                                                type="button"
-                                                className="calendar-agenda-row"
-                                                onClick={() => {
-                                                    setSelectedDate(event.date)
-                                                    setShowCalendarEventForm(false)
-                                                    setShowTaskForm(false)
-                                                    resetCalendarEventForm(event.date)
-                                                    resetTaskForm(event.date)
-                                                }}
-                                            >
-                                                <span className="calendar-agenda-icon">
-                                                    {event.icon}
-                                                </span>
-
-                                                <div>
-                                                    <strong>{event.title}</strong>
-
-                                                    {event.subtitle && (
-                                                        <p>{event.subtitle}</p>
-                                                    )}
-
-                                                    {event.location && (
-                                                        <small>{event.location}</small>
-                                                    )}
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </section>
-                            ))}
-                        </div>
-                    )}
-                </section>
-            )}
-
-            {calendarView === "month" && (
-                <section className="card calendar-card">
-                    <div className="calendar-toolbar">
-                        <div>
-                            <p className="card-kicker">Month View</p>
-                            <h3>{formatMonthTitle(visibleDate)}</h3>
-                        </div>
-
-                        <div className="calendar-controls">
-                            <button
-                                type="button"
-                                className="calendar-nav-button"
-                                onClick={goToPreviousMonth}
-                                aria-label="Previous month"
-                            >
-                                ‹
-                            </button>
-
-                            <button
-                                type="button"
-                                className="calendar-today-button"
-                                onClick={goToCurrentMonth}
-                            >
-                                Today
-                            </button>
-
-                            <button
-                                type="button"
-                                className="calendar-nav-button"
-                                onClick={goToNextMonth}
-                                aria-label="Next month"
-                            >
-                                ›
-                            </button>
-                        </div>
-                    </div>
-
-                    {loading ? (
-                        <p>Loading calendar...</p>
-                    ) : (
-                        <div className="calendar-grid">
-                            {weekdayLabels.map(day => (
-                                <div className="calendar-weekday" key={day}>
-                                    {day}
-                                </div>
-                            ))}
-
-                            {calendarDays.map(day => {
-                                const dayEvents = eventsByDate[day.dateString] || []
-                                const isToday = day.dateString === todayString
-
-                                return (
-                                    <button
-                                        className={`calendar-day calendar-day-button ${day.isCurrentMonth ? "" : "calendar-day-muted"
-                                            } ${isToday ? "calendar-day-today" : ""}`}
-                                        key={day.dateString}
-                                        type="button"
-                                        onClick={() => {
-                                            setSelectedDate(day.dateString)
-                                            setShowCalendarEventForm(false)
-                                            setShowTaskForm(false)
-                                            resetCalendarEventForm(day.dateString)
-                                            resetTaskForm(day.dateString)
-                                        }}
-                                    >
-                                        <div className="calendar-day-number">
-                                            {day.date.getDate()}
-                                        </div>
-
-                                        <div className="calendar-events">
-                                            {dayEvents.slice(0, 4).map(event => (
-                                                <div
-                                                    className="calendar-event"
-                                                    key={event.id}
-                                                    title={[event.title, event.subtitle]
-                                                        .filter(Boolean)
-                                                        .join(" • ")}
-                                                >
-                                                    <span>{event.icon}</span>
-                                                    <strong>{event.title}</strong>
-                                                </div>
-                                            ))}
-
-                                            {dayEvents.length > 4 && (
-                                                <small>
-                                                    +{dayEvents.length - 4} more
-                                                </small>
-                                            )}
-                                        </div>
-                                    </button>
-                                )
-                            })}
-                        </div>
-                    )}
-                </section>
-
-            )}
-
-            {selectedDate && (
-                <div
-                    className="calendar-modal-backdrop"
-                    role="presentation"
-                    onClick={() => setSelectedDate(null)}
-                >
-                    <section
-                        className="calendar-detail-sheet"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-label="Calendar day details"
-                        onClick={event => event.stopPropagation()}
+                {selectedDate && (
+                    <div
+                        className="calendar-modal-backdrop"
+                        role="presentation"
+                        onClick={() => setSelectedDate(null)}
                     >
-                        <div className="calendar-detail-header">
-                            <div>
-                                <p className="card-kicker">Calendar Details</p>
-                                <h3>{formatFullDate(selectedDate)}</h3>
+                        <section
+                            className="calendar-detail-sheet"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Calendar day details"
+                            onClick={event => event.stopPropagation()}
+                        >
+                            <div className="calendar-detail-header">
+                                <div>
+                                    <p className="card-kicker">Calendar Details</p>
+                                    <h3>{formatFullDate(selectedDate)}</h3>
+                                </div>
+
+                                <button
+                                    className="secondary-button"
+                                    type="button"
+                                    onClick={() => setSelectedDate(null)}
+                                >
+                                    Close
+                                </button>
                             </div>
+
+                            {showCalendarEventForm && (
+                                <form
+                                    className="card form-card"
+                                    onSubmit={handleCreateCalendarEvent}
+                                    style={{ marginBottom: "1rem" }}
+                                >
+                                    <h4>Add Calendar Event</h4>
+
+                                    <div className="form-grid">
+                                        <label>
+                                            Title
+                                            <input
+                                                required
+                                                value={calendarEventForm.title}
+                                                onChange={event =>
+                                                    updateCalendarEventForm(
+                                                        "title",
+                                                        event.target.value
+                                                    )
+                                                }
+                                            />
+                                        </label>
+
+                                        <label>
+                                            Type
+                                            <select
+                                                value={calendarEventForm.event_type}
+                                                onChange={event =>
+                                                    updateCalendarEventForm(
+                                                        "event_type",
+                                                        event.target.value
+                                                    )
+                                                }
+                                            >
+                                                <option>Family Event</option>
+                                                <option>Activity</option>
+                                                <option>School</option>
+                                                <option>Trip</option>
+                                                <option>Reminder</option>
+                                                <option>Important Date</option>
+                                                <option>Holiday</option>
+                                                <option>Visitor</option>
+                                                <option>Other</option>
+                                            </select>
+                                        </label>
+
+                                        {calendarEventForm.event_type === "Activity" && (
+                                            <>
+                                                <label>
+                                                    Sessions
+                                                    <select
+                                                        value={calendarEventForm.session_frequency}
+                                                        onChange={event =>
+                                                            updateCalendarEventForm(
+                                                                "session_frequency",
+                                                                event.target.value
+                                                            )
+                                                        }
+                                                    >
+                                                        <option value="none">One-time activity</option>
+                                                        <option value="daily">Daily</option>
+                                                        <option value="weekly">Weekly</option>
+                                                        <option value="monthly">Monthly</option>
+                                                    </select>
+                                                </label>
+
+                                                {calendarEventForm.session_frequency !== "none" && (
+                                                    <label>
+                                                        Repeat Until
+                                                        <input
+                                                            type="date"
+                                                            value={calendarEventForm.session_until}
+                                                            onChange={event =>
+                                                                updateCalendarEventForm(
+                                                                    "session_until",
+                                                                    event.target.value
+                                                                )
+                                                            }
+                                                        />
+                                                    </label>
+                                                )}
+                                            </>
+                                        )}
+
+                                        <label>
+                                            Start Date
+                                            <input
+                                                type="date"
+                                                value={calendarEventForm.start_date}
+                                                onChange={event =>
+                                                    updateCalendarEventForm(
+                                                        "start_date",
+                                                        event.target.value
+                                                    )
+                                                }
+                                            />
+                                        </label>
+
+                                        <label>
+                                            End Date
+                                            <input
+                                                type="date"
+                                                value={calendarEventForm.end_date}
+                                                onChange={event =>
+                                                    updateCalendarEventForm(
+                                                        "end_date",
+                                                        event.target.value
+                                                    )
+                                                }
+                                            />
+                                        </label>
+
+                                        <label>
+                                            Repeat
+                                            <div className="checkbox-row">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={calendarEventForm.repeats_yearly}
+                                                    onChange={event =>
+                                                        updateCalendarEventForm(
+                                                            "repeats_yearly",
+                                                            event.target.checked
+                                                        )
+                                                    }
+                                                />
+
+                                                <span>Repeat every year</span>
+                                            </div>
+                                        </label>
+
+                                        <label>
+                                            Start Time
+                                            <input
+                                                type="time"
+                                                value={calendarEventForm.start_time}
+                                                onChange={event =>
+                                                    updateCalendarEventForm(
+                                                        "start_time",
+                                                        event.target.value
+                                                    )
+                                                }
+                                            />
+                                        </label>
+
+                                        <label>
+                                            End Time
+                                            <input
+                                                type="time"
+                                                value={calendarEventForm.end_time}
+                                                onChange={event =>
+                                                    updateCalendarEventForm(
+                                                        "end_time",
+                                                        event.target.value
+                                                    )
+                                                }
+                                            />
+                                        </label>
+
+                                        <label className="full-width">
+                                            Location
+                                            <input
+                                                value={calendarEventForm.location}
+                                                onChange={event =>
+                                                    updateCalendarEventForm(
+                                                        "location",
+                                                        event.target.value
+                                                    )
+                                                }
+                                            />
+                                        </label>
+
+                                        <label className="full-width">
+                                            Notes
+                                            <textarea
+                                                rows="3"
+                                                value={calendarEventForm.notes}
+                                                onChange={event =>
+                                                    updateCalendarEventForm(
+                                                        "notes",
+                                                        event.target.value
+                                                    )
+                                                }
+                                            />
+                                        </label>
+
+                                        <button
+                                            className="primary-button full-width"
+                                            type="submit"
+                                            disabled={savingCalendarEvent}
+                                        >
+                                            {savingCalendarEvent
+                                                ? "Saving..."
+                                                : editingCalendarEventId
+                                                    ? "Update Calendar Event"
+                                                    : "Save Calendar Event"}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            {showTaskForm && (
+                                <form
+                                    className="card form-card"
+                                    onSubmit={handleCreateTask}
+                                    style={{ marginBottom: "1rem" }}
+                                >
+                                    <h4>Add To-Do</h4>
+
+                                    <div className="form-grid">
+                                        <label>
+                                            Title
+                                            <input
+                                                required
+                                                value={taskForm.title}
+                                                onChange={event =>
+                                                    setTaskForm({
+                                                        ...taskForm,
+                                                        title: event.target.value
+                                                    })
+                                                }
+                                                placeholder="Buy snacks, call hotel, submit form..."
+                                            />
+                                        </label>
+
+                                        <label>
+                                            Due Date
+                                            <input
+                                                type="date"
+                                                value={taskForm.due_date}
+                                                onChange={event =>
+                                                    setTaskForm({
+                                                        ...taskForm,
+                                                        due_date: event.target.value
+                                                    })
+                                                }
+                                            />
+                                        </label>
+
+                                        <label>
+                                            Family Member
+                                            <select
+                                                value={taskForm.family_member_id}
+                                                onChange={event =>
+                                                    setTaskForm({
+                                                        ...taskForm,
+                                                        family_member_id: event.target.value
+                                                    })
+                                                }
+                                            >
+                                                <option value="">No family member selected</option>
+
+                                                {familyMembers.map(member => (
+                                                    <option key={member.id} value={member.id}>
+                                                        {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
+                                                        {member.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </label>
+
+                                        <label>
+                                            Activity
+                                            <select
+                                                value={taskForm.activity_id}
+                                                onChange={event =>
+                                                    setTaskForm({
+                                                        ...taskForm,
+                                                        activity_id: event.target.value
+                                                    })
+                                                }
+                                            >
+                                                <option value="">No activity selected</option>
+
+                                                {activities.map(activity => (
+                                                    <option key={activity.id} value={activity.id}>
+                                                        {activity.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </label>
+
+                                        <label>
+                                            Visibility
+                                            <select
+                                                value={taskForm.visibility}
+                                                onChange={event =>
+                                                    setTaskForm({
+                                                        ...taskForm,
+                                                        visibility: event.target.value
+                                                    })
+                                                }
+                                            >
+                                                <option value="household">Family task</option>
+                                                <option value="private">Private task</option>
+                                            </select>
+                                        </label>
+
+                                        <label className="full-width">
+                                            Notes
+                                            <textarea
+                                                rows="3"
+                                                value={taskForm.description}
+                                                onChange={event =>
+                                                    setTaskForm({
+                                                        ...taskForm,
+                                                        description: event.target.value
+                                                    })
+                                                }
+                                            />
+                                        </label>
+
+                                        <button
+                                            className="primary-button full-width"
+                                            type="submit"
+                                            disabled={savingTask}
+                                        >
+                                            {savingTask ? "Saving..." : "Save To-Do"}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            {showActivityForm && (
+                                <form
+                                    className="card form-card"
+                                    onSubmit={handleCreateActivity}
+                                    style={{ marginBottom: "1rem" }}
+                                >
+                                    <h4>Add Activity</h4>
+
+                                    <div className="form-grid">
+                                        <label>
+                                            Activity
+                                            <input
+                                                required
+                                                value={activityForm.name}
+                                                onChange={event =>
+                                                    setActivityForm({
+                                                        ...activityForm,
+                                                        name: event.target.value
+                                                    })
+                                                }
+                                            />
+                                        </label>
+
+                                        <label>
+                                            Family Member
+                                            <select
+                                                value={activityForm.family_member_id}
+                                                onChange={event =>
+                                                    setActivityForm({
+                                                        ...activityForm,
+                                                        family_member_id:
+                                                            event.target.value
+                                                    })
+                                                }
+                                            >
+                                                <option value="">
+                                                    Select Family Member
+                                                </option>
+
+                                                {familyMembers.map(member => (
+                                                    <option
+                                                        key={member.id}
+                                                        value={member.id}
+                                                    >
+                                                        {member.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </label>
+
+                                        <label>
+                                            Start Date
+                                            <input
+                                                type="date"
+                                                value={activityForm.start_date}
+                                                onChange={event =>
+                                                    setActivityForm({
+                                                        ...activityForm,
+                                                        start_date: event.target.value
+                                                    })
+                                                }
+                                            />
+                                        </label>
+
+                                        <label>
+                                            End Date
+                                            <input
+                                                type="date"
+                                                value={activityForm.end_date}
+                                                onChange={event =>
+                                                    setActivityForm({
+                                                        ...activityForm,
+                                                        end_date: event.target.value
+                                                    })
+                                                }
+                                            />
+                                        </label>
+
+                                        <label>
+                                            Start Time
+                                            <input
+                                                type="time"
+                                                value={activityForm.start_time}
+                                                onChange={event =>
+                                                    setActivityForm({
+                                                        ...activityForm,
+                                                        start_time:
+                                                            event.target.value
+                                                    })
+                                                }
+                                            />
+                                        </label>
+
+                                        <label>
+                                            End Time
+                                            <input
+                                                type="time"
+                                                value={activityForm.end_time}
+                                                onChange={event =>
+                                                    setActivityForm({
+                                                        ...activityForm,
+                                                        end_time:
+                                                            event.target.value
+                                                    })
+                                                }
+                                            />
+                                        </label>
+
+                                        <label className="full-width">
+                                            Location
+                                            <input
+                                                value={activityForm.location}
+                                                onChange={event =>
+                                                    setActivityForm({
+                                                        ...activityForm,
+                                                        location:
+                                                            event.target.value
+                                                    })
+                                                }
+                                            />
+                                        </label>
+
+                                        <button
+                                            className="primary-button full-width"
+                                            type="submit"
+                                            disabled={savingActivity}
+                                        >
+                                            {savingActivity
+                                                ? "Saving..."
+                                                : "Save Activity"}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            {showSchoolItemForm && (
+                                <form
+                                    className="card form-card"
+                                    onSubmit={handleCreateSchoolItem}
+                                    style={{ marginBottom: "1rem" }}
+                                >
+                                    <h4>Add School Item</h4>
+
+                                    <div className="form-grid">
+                                        <label>
+                                            Title
+                                            <input
+                                                required
+                                                value={schoolItemForm.title}
+                                                onChange={event =>
+                                                    setSchoolItemForm({
+                                                        ...schoolItemForm,
+                                                        title: event.target.value
+                                                    })
+                                                }
+                                                placeholder="Field trip form, picture day, project due..."
+                                            />
+                                        </label>
+
+                                        <label>
+                                            Family Member
+                                            <select
+                                                value={schoolItemForm.family_member_id}
+                                                onChange={event =>
+                                                    setSchoolItemForm({
+                                                        ...schoolItemForm,
+                                                        family_member_id: event.target.value
+                                                    })
+                                                }
+                                            >
+                                                <option value="">No family member selected</option>
+
+                                                {familyMembers.map(member => (
+                                                    <option key={member.id} value={member.id}>
+                                                        {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
+                                                        {member.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </label>
+
+                                        <label>
+                                            Category
+                                            <select
+                                                value={schoolItemForm.category}
+                                                onChange={event =>
+                                                    setSchoolItemForm({
+                                                        ...schoolItemForm,
+                                                        category: event.target.value
+                                                    })
+                                                }
+                                            >
+                                                <option>School</option>
+                                                <option>Form</option>
+                                                <option>Deadline</option>
+                                                <option>Event</option>
+                                                <option>Reminder</option>
+                                                <option>Other</option>
+                                            </select>
+                                        </label>
+
+                                        <label className="full-width">
+                                            Notes
+                                            <textarea
+                                                rows="3"
+                                                value={schoolItemForm.notes}
+                                                onChange={event =>
+                                                    setSchoolItemForm({
+                                                        ...schoolItemForm,
+                                                        notes: event.target.value
+                                                    })
+                                                }
+                                            />
+                                        </label>
+
+                                        <button
+                                            className="primary-button full-width"
+                                            type="submit"
+                                            disabled={savingSchoolItem}
+                                        >
+                                            {savingSchoolItem ? "Saving..." : "Save School Item"}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            {selectedEvents.length === 0 ? (
+                                <p className="dashboard-empty">
+                                    Nothing scheduled for this day.
+                                </p>
+                            ) : (
+                                <div className="calendar-detail-list">
+                                    {selectedEvents.map(event => (
+                                        <div className="calendar-detail-row" key={event.id}>
+                                            <span className="calendar-detail-icon">
+                                                {event.icon}
+                                            </span>
+
+                                            <div>
+                                                <strong>{event.title}</strong>
+
+                                                {event.subtitle && <p>{event.subtitle}</p>}
+
+                                                {event.location && <small>{event.location}</small>}
+                                            </div>
+
+                                            <div className="calendar-detail-actions">
+                                                <button
+                                                    className="secondary-button"
+                                                    type="button"
+                                                    onClick={() => handleViewEvent(event)}
+                                                >
+                                                    Manage
+                                                </button>
+
+
+
+                                                {event.canDelete && (
+                                                    <button
+                                                        className="danger-button"
+                                                        type="button"
+                                                        onClick={() => handleDeleteCalendarEvent(event)}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+
+                        <div
+                            className="calendar-detail-add-actions"
+                            onClick={event => event.stopPropagation()}
+                        >
+                            <button
+                                className="secondary-button"
+                                type="button"
+                                onClick={() => {
+                                    setShowCalendarEventForm(current => !current)
+                                    setShowTaskForm(false)
+                                    resetCalendarEventForm(selectedDate)
+                                    resetTaskForm()
+                                }}
+                            >
+                                {showCalendarEventForm ? "Cancel Event" : "+ Calendar Event"}
+                            </button>
 
                             <button
                                 className="secondary-button"
                                 type="button"
-                                onClick={() => setSelectedDate(null)}
+                                onClick={() => {
+                                    setShowTaskForm(current => !current)
+                                    setShowCalendarEventForm(false)
+                                    resetTaskForm()
+                                }}
                             >
-                                Close
+                                {showTaskForm ? "Cancel To-Do" : "+ To-Do"}
+                            </button>
+
+                            <button
+                                className="secondary-button"
+                                type="button"
+                                onClick={() => {
+                                    setShowActivityForm(current => !current)
+
+                                    setShowCalendarEventForm(false)
+                                    setShowTaskForm(false)
+
+                                    resetActivityForm()
+                                }}
+                            >
+                                {showActivityForm
+                                    ? "Cancel Activity"
+                                    : "+ Activity"}
+                            </button>
+
+                            <button
+                                className="secondary-button"
+                                type="button"
+                                onClick={() => {
+                                    setShowSchoolItemForm(current => !current)
+
+                                    setShowCalendarEventForm(false)
+                                    setShowTaskForm(false)
+                                    setShowActivityForm(false)
+
+                                    resetSchoolItemForm()
+                                }}
+                            >
+                                {showSchoolItemForm
+                                    ? "Cancel School Item"
+                                    : "+ School Item"}
                             </button>
                         </div>
-
-                        {showCalendarEventForm && (
-                            <form
-                                className="card form-card"
-                                onSubmit={handleCreateCalendarEvent}
-                                style={{ marginBottom: "1rem" }}
-                            >
-                                <h4>Add Calendar Event</h4>
-
-                                <div className="form-grid">
-                                    <label>
-                                        Title
-                                        <input
-                                            required
-                                            value={calendarEventForm.title}
-                                            onChange={event =>
-                                                updateCalendarEventForm(
-                                                    "title",
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                    </label>
-
-                                    <label>
-                                        Type
-                                        <select
-                                            value={calendarEventForm.event_type}
-                                            onChange={event =>
-                                                updateCalendarEventForm(
-                                                    "event_type",
-                                                    event.target.value
-                                                )
-                                            }
-                                        >
-                                            <option>Family Event</option>
-                                            <option>Activity</option>
-                                            <option>School</option>
-                                            <option>Trip</option>
-                                            <option>Reminder</option>
-                                            <option>Important Date</option>
-                                            <option>Holiday</option>
-                                            <option>Visitor</option>
-                                            <option>Other</option>
-                                        </select>
-                                    </label>
-
-                                    {calendarEventForm.event_type === "Activity" && (
-                                        <>
-                                            <label>
-                                                Sessions
-                                                <select
-                                                    value={calendarEventForm.session_frequency}
-                                                    onChange={event =>
-                                                        updateCalendarEventForm(
-                                                            "session_frequency",
-                                                            event.target.value
-                                                        )
-                                                    }
-                                                >
-                                                    <option value="none">One-time activity</option>
-                                                    <option value="daily">Daily</option>
-                                                    <option value="weekly">Weekly</option>
-                                                    <option value="monthly">Monthly</option>
-                                                </select>
-                                            </label>
-
-                                            {calendarEventForm.session_frequency !== "none" && (
-                                                <label>
-                                                    Repeat Until
-                                                    <input
-                                                        type="date"
-                                                        value={calendarEventForm.session_until}
-                                                        onChange={event =>
-                                                            updateCalendarEventForm(
-                                                                "session_until",
-                                                                event.target.value
-                                                            )
-                                                        }
-                                                    />
-                                                </label>
-                                            )}
-                                        </>
-                                    )}
-
-                                    <label>
-                                        Start Date
-                                        <input
-                                            type="date"
-                                            value={calendarEventForm.start_date}
-                                            onChange={event =>
-                                                updateCalendarEventForm(
-                                                    "start_date",
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                    </label>
-
-                                    <label>
-                                        End Date
-                                        <input
-                                            type="date"
-                                            value={calendarEventForm.end_date}
-                                            onChange={event =>
-                                                updateCalendarEventForm(
-                                                    "end_date",
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                    </label>
-
-                                    <label>
-                                        Repeat
-                                        <div className="checkbox-row">
-                                            <input
-                                                type="checkbox"
-                                                checked={calendarEventForm.repeats_yearly}
-                                                onChange={event =>
-                                                    updateCalendarEventForm(
-                                                        "repeats_yearly",
-                                                        event.target.checked
-                                                    )
-                                                }
-                                            />
-
-                                            <span>Repeat every year</span>
-                                        </div>
-                                    </label>
-
-                                    <label>
-                                        Start Time
-                                        <input
-                                            type="time"
-                                            value={calendarEventForm.start_time}
-                                            onChange={event =>
-                                                updateCalendarEventForm(
-                                                    "start_time",
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                    </label>
-
-                                    <label>
-                                        End Time
-                                        <input
-                                            type="time"
-                                            value={calendarEventForm.end_time}
-                                            onChange={event =>
-                                                updateCalendarEventForm(
-                                                    "end_time",
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                    </label>
-
-                                    <label className="full-width">
-                                        Location
-                                        <input
-                                            value={calendarEventForm.location}
-                                            onChange={event =>
-                                                updateCalendarEventForm(
-                                                    "location",
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                    </label>
-
-                                    <label className="full-width">
-                                        Notes
-                                        <textarea
-                                            rows="3"
-                                            value={calendarEventForm.notes}
-                                            onChange={event =>
-                                                updateCalendarEventForm(
-                                                    "notes",
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                    </label>
-
-                                    <button
-                                        className="primary-button full-width"
-                                        type="submit"
-                                        disabled={savingCalendarEvent}
-                                    >
-                                        {savingCalendarEvent
-                                            ? "Saving..."
-                                            : editingCalendarEventId
-                                                ? "Update Calendar Event"
-                                                : "Save Calendar Event"}
-                                    </button>
-                                </div>
-                            </form>
-                        )}
-
-                        {showTaskForm && (
-                            <form
-                                className="card form-card"
-                                onSubmit={handleCreateTask}
-                                style={{ marginBottom: "1rem" }}
-                            >
-                                <h4>Add To-Do</h4>
-
-                                <div className="form-grid">
-                                    <label>
-                                        Title
-                                        <input
-                                            required
-                                            value={taskForm.title}
-                                            onChange={event =>
-                                                setTaskForm({
-                                                    ...taskForm,
-                                                    title: event.target.value
-                                                })
-                                            }
-                                            placeholder="Buy snacks, call hotel, submit form..."
-                                        />
-                                    </label>
-
-                                    <label>
-                                        Due Date
-                                        <input
-                                            type="date"
-                                            value={taskForm.due_date}
-                                            onChange={event =>
-                                                setTaskForm({
-                                                    ...taskForm,
-                                                    due_date: event.target.value
-                                                })
-                                            }
-                                        />
-                                    </label>
-
-                                    <label>
-                                        Family Member
-                                        <select
-                                            value={taskForm.family_member_id}
-                                            onChange={event =>
-                                                setTaskForm({
-                                                    ...taskForm,
-                                                    family_member_id: event.target.value
-                                                })
-                                            }
-                                        >
-                                            <option value="">No family member selected</option>
-
-                                            {familyMembers.map(member => (
-                                                <option key={member.id} value={member.id}>
-                                                    {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
-                                                    {member.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-
-                                    <label>
-                                        Activity
-                                        <select
-                                            value={taskForm.activity_id}
-                                            onChange={event =>
-                                                setTaskForm({
-                                                    ...taskForm,
-                                                    activity_id: event.target.value
-                                                })
-                                            }
-                                        >
-                                            <option value="">No activity selected</option>
-
-                                            {activities.map(activity => (
-                                                <option key={activity.id} value={activity.id}>
-                                                    {activity.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-
-                                    <label>
-                                        Visibility
-                                        <select
-                                            value={taskForm.visibility}
-                                            onChange={event =>
-                                                setTaskForm({
-                                                    ...taskForm,
-                                                    visibility: event.target.value
-                                                })
-                                            }
-                                        >
-                                            <option value="household">Family task</option>
-                                            <option value="private">Private task</option>
-                                        </select>
-                                    </label>
-
-                                    <label className="full-width">
-                                        Notes
-                                        <textarea
-                                            rows="3"
-                                            value={taskForm.description}
-                                            onChange={event =>
-                                                setTaskForm({
-                                                    ...taskForm,
-                                                    description: event.target.value
-                                                })
-                                            }
-                                        />
-                                    </label>
-
-                                    <button
-                                        className="primary-button full-width"
-                                        type="submit"
-                                        disabled={savingTask}
-                                    >
-                                        {savingTask ? "Saving..." : "Save To-Do"}
-                                    </button>
-                                </div>
-                            </form>
-                        )}
-
-                        {showActivityForm && (
-                            <form
-                                className="card form-card"
-                                onSubmit={handleCreateActivity}
-                                style={{ marginBottom: "1rem" }}
-                            >
-                                <h4>Add Activity</h4>
-
-                                <div className="form-grid">
-                                    <label>
-                                        Activity
-                                        <input
-                                            required
-                                            value={activityForm.name}
-                                            onChange={event =>
-                                                setActivityForm({
-                                                    ...activityForm,
-                                                    name: event.target.value
-                                                })
-                                            }
-                                        />
-                                    </label>
-
-                                    <label>
-                                        Family Member
-                                        <select
-                                            value={activityForm.family_member_id}
-                                            onChange={event =>
-                                                setActivityForm({
-                                                    ...activityForm,
-                                                    family_member_id:
-                                                        event.target.value
-                                                })
-                                            }
-                                        >
-                                            <option value="">
-                                                Select Family Member
-                                            </option>
-
-                                            {familyMembers.map(member => (
-                                                <option
-                                                    key={member.id}
-                                                    value={member.id}
-                                                >
-                                                    {member.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-
-                                    <label>
-                                        Start Date
-                                        <input
-                                            type="date"
-                                            value={activityForm.start_date}
-                                            onChange={event =>
-                                                setActivityForm({
-                                                    ...activityForm,
-                                                    start_date: event.target.value
-                                                })
-                                            }
-                                        />
-                                    </label>
-
-                                    <label>
-                                        End Date
-                                        <input
-                                            type="date"
-                                            value={activityForm.end_date}
-                                            onChange={event =>
-                                                setActivityForm({
-                                                    ...activityForm,
-                                                    end_date: event.target.value
-                                                })
-                                            }
-                                        />
-                                    </label>
-
-                                    <label>
-                                        Start Time
-                                        <input
-                                            type="time"
-                                            value={activityForm.start_time}
-                                            onChange={event =>
-                                                setActivityForm({
-                                                    ...activityForm,
-                                                    start_time:
-                                                        event.target.value
-                                                })
-                                            }
-                                        />
-                                    </label>
-
-                                    <label>
-                                        End Time
-                                        <input
-                                            type="time"
-                                            value={activityForm.end_time}
-                                            onChange={event =>
-                                                setActivityForm({
-                                                    ...activityForm,
-                                                    end_time:
-                                                        event.target.value
-                                                })
-                                            }
-                                        />
-                                    </label>
-
-                                    <label className="full-width">
-                                        Location
-                                        <input
-                                            value={activityForm.location}
-                                            onChange={event =>
-                                                setActivityForm({
-                                                    ...activityForm,
-                                                    location:
-                                                        event.target.value
-                                                })
-                                            }
-                                        />
-                                    </label>
-
-                                    <button
-                                        className="primary-button full-width"
-                                        type="submit"
-                                        disabled={savingActivity}
-                                    >
-                                        {savingActivity
-                                            ? "Saving..."
-                                            : "Save Activity"}
-                                    </button>
-                                </div>
-                            </form>
-                        )}
-
-                        {showSchoolItemForm && (
-                            <form
-                                className="card form-card"
-                                onSubmit={handleCreateSchoolItem}
-                                style={{ marginBottom: "1rem" }}
-                            >
-                                <h4>Add School Item</h4>
-
-                                <div className="form-grid">
-                                    <label>
-                                        Title
-                                        <input
-                                            required
-                                            value={schoolItemForm.title}
-                                            onChange={event =>
-                                                setSchoolItemForm({
-                                                    ...schoolItemForm,
-                                                    title: event.target.value
-                                                })
-                                            }
-                                            placeholder="Field trip form, picture day, project due..."
-                                        />
-                                    </label>
-
-                                    <label>
-                                        Family Member
-                                        <select
-                                            value={schoolItemForm.family_member_id}
-                                            onChange={event =>
-                                                setSchoolItemForm({
-                                                    ...schoolItemForm,
-                                                    family_member_id: event.target.value
-                                                })
-                                            }
-                                        >
-                                            <option value="">No family member selected</option>
-
-                                            {familyMembers.map(member => (
-                                                <option key={member.id} value={member.id}>
-                                                    {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
-                                                    {member.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-
-                                    <label>
-                                        Category
-                                        <select
-                                            value={schoolItemForm.category}
-                                            onChange={event =>
-                                                setSchoolItemForm({
-                                                    ...schoolItemForm,
-                                                    category: event.target.value
-                                                })
-                                            }
-                                        >
-                                            <option>School</option>
-                                            <option>Form</option>
-                                            <option>Deadline</option>
-                                            <option>Event</option>
-                                            <option>Reminder</option>
-                                            <option>Other</option>
-                                        </select>
-                                    </label>
-
-                                    <label className="full-width">
-                                        Notes
-                                        <textarea
-                                            rows="3"
-                                            value={schoolItemForm.notes}
-                                            onChange={event =>
-                                                setSchoolItemForm({
-                                                    ...schoolItemForm,
-                                                    notes: event.target.value
-                                                })
-                                            }
-                                        />
-                                    </label>
-
-                                    <button
-                                        className="primary-button full-width"
-                                        type="submit"
-                                        disabled={savingSchoolItem}
-                                    >
-                                        {savingSchoolItem ? "Saving..." : "Save School Item"}
-                                    </button>
-                                </div>
-                            </form>
-                        )}
-
-                        {selectedEvents.length === 0 ? (
-                            <p className="dashboard-empty">
-                                Nothing scheduled for this day.
-                            </p>
-                        ) : (
-                            <div className="calendar-detail-list">
-                                {selectedEvents.map(event => (
-                                    <div className="calendar-detail-row" key={event.id}>
-                                        <span className="calendar-detail-icon">
-                                            {event.icon}
-                                        </span>
-
-                                        <div>
-                                            <strong>{event.title}</strong>
-
-                                            {event.subtitle && <p>{event.subtitle}</p>}
-
-                                            {event.location && <small>{event.location}</small>}
-                                        </div>
-
-                                        <div className="calendar-detail-actions">
-                                            <button
-                                                className="secondary-button"
-                                                type="button"
-                                                onClick={() => handleViewEvent(event)}
-                                            >
-                                                Manage
-                                            </button>
-
-
-
-                                            {event.canDelete && (
-                                                <button
-                                                    className="danger-button"
-                                                    type="button"
-                                                    onClick={() => handleDeleteCalendarEvent(event)}
-                                                >
-                                                    Delete
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </section>
-
-                    <div
-                        className="calendar-detail-add-actions"
-                        onClick={event => event.stopPropagation()}
-                    >
-                        <button
-                            className="secondary-button"
-                            type="button"
-                            onClick={() => {
-                                setShowCalendarEventForm(current => !current)
-                                setShowTaskForm(false)
-                                resetCalendarEventForm(selectedDate)
-                                resetTaskForm()
-                            }}
-                        >
-                            {showCalendarEventForm ? "Cancel Event" : "+ Calendar Event"}
-                        </button>
-
-                        <button
-                            className="secondary-button"
-                            type="button"
-                            onClick={() => {
-                                setShowTaskForm(current => !current)
-                                setShowCalendarEventForm(false)
-                                resetTaskForm()
-                            }}
-                        >
-                            {showTaskForm ? "Cancel To-Do" : "+ To-Do"}
-                        </button>
-
-                        <button
-                            className="secondary-button"
-                            type="button"
-                            onClick={() => {
-                                setShowActivityForm(current => !current)
-
-                                setShowCalendarEventForm(false)
-                                setShowTaskForm(false)
-
-                                resetActivityForm()
-                            }}
-                        >
-                            {showActivityForm
-                                ? "Cancel Activity"
-                                : "+ Activity"}
-                        </button>
-
-                        <button
-                            className="secondary-button"
-                            type="button"
-                            onClick={() => {
-                                setShowSchoolItemForm(current => !current)
-
-                                setShowCalendarEventForm(false)
-                                setShowTaskForm(false)
-                                setShowActivityForm(false)
-
-                                resetSchoolItemForm()
-                            }}
-                        >
-                            {showSchoolItemForm
-                                ? "Cancel School Item"
-                                : "+ School Item"}
-                        </button>
                     </div>
-                </div>
-            )}
-        </div>
+                )}
+                <CalendarEventDetailSheet
+                    event={selectedEvent}
+                    open={Boolean(selectedEvent)}
+                    onClose={() => setSelectedEvent(null)}
+                    onEdit={startEditCalendarEventFromSummary}
+                />
+            </div>
+        </AppPage>
     )
 }

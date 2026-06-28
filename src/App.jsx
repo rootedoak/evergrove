@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Route, Routes, Navigate, useLocation, useParams } from "react-router-dom"
 import {
+  BarChart3,
   CalendarDays,
   ClipboardList,
   FolderOpen,
   Home,
   Info,
   Mail,
-  Menu,
   MoreHorizontal,
+  Repeat,
   Settings,
   ShoppingCart,
+  User,
+  Users,
   UtensilsCrossed,
   X
 } from "lucide-react"
@@ -56,6 +59,8 @@ import Onboarding from "./pages/Onboarding"
 import InvitePage from "./pages/InvitePage"
 import JoinHousehold from "./pages/JoinHousehold"
 
+import UIKit from "./pages/UIKit"
+
 const navItems = [
   { to: "/", icon: Home, label: "Home", end: true },
   { to: "/personal-inbox", icon: Mail, label: "Inbox" },
@@ -72,7 +77,20 @@ const mobileNavItems = [
   { to: "/", icon: Home, label: "Home", end: true },
   { to: "/tasks", icon: ClipboardList, label: "To-Do" },
   { to: "/calendar", icon: CalendarDays, label: "Calendar" },
-  { to: "/meals", icon: UtensilsCrossed, label: "Meals" }
+  { to: "/meals", icon: UtensilsCrossed, label: "Meals" },
+  { to: "/personal-inbox", icon: Mail, label: "Inbox" }
+]
+
+const moreNavItems = [
+  { to: "/profile", icon: User, label: "Profile" },
+  { to: "/settings/family", icon: Users, label: "Family" },
+  { to: "/shopping", icon: ShoppingCart, label: "Shopping" },
+  { to: "/documents", icon: FolderOpen, label: "Documents" },
+  { to: "/trips", icon: CalendarDays, label: "Trips" },
+  { to: "/school", icon: ClipboardList, label: "School" },
+  { to: "/routines", icon: Repeat, label: "Routines" },
+  { to: "/analytics", icon: BarChart3, label: "Analytics" },
+  { to: "/about", icon: Info, label: "About" }
 ]
 
 function LoadingScreen({ message = "Loading Evergrove..." }) {
@@ -118,6 +136,7 @@ function MobileBottomNav({ unreadInboxCount, onMoreClick }) {
           icon={item.icon}
           label={item.label}
           end={item.end}
+          badge={item.to === "/personal-inbox" ? unreadInboxCount : 0}
         />
       ))}
 
@@ -128,14 +147,60 @@ function MobileBottomNav({ unreadInboxCount, onMoreClick }) {
       >
         <MoreHorizontal size={18} />
         <span>More</span>
-
-        {unreadInboxCount > 0 && (
-          <span className="nav-inbox-badge">
-            {unreadInboxCount}
-          </span>
-        )}
       </button>
     </nav>
+  )
+}
+
+function MobileMoreSheet({ open, onClose }) {
+  if (!open) return null
+
+  return (
+    <div className="eg-bottom-sheet-backdrop" onClick={onClose}>
+      <div className="eg-bottom-sheet" onClick={event => event.stopPropagation()}>
+        <div className="eg-sheet-handle" />
+
+        <div className="eg-sheet-header">
+          <div>
+            <h3>More</h3>
+            <p>Everything else in Evergrove</p>
+          </div>
+
+          <button type="button" className="eg-icon-button" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="eg-more-grid">
+          {moreNavItems.map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className="eg-more-item"
+              onClick={onClose}
+            >
+              <span>
+                <item.icon size={22} />
+              </span>
+
+              <strong>{item.label}</strong>
+            </NavLink>
+          ))}
+        </div>
+        <div className="eg-more-footer">
+          <button
+            type="button"
+            className="eg-button danger lg"
+            onClick={async () => {
+              await supabase.auth.signOut()
+              onClose()
+            }}
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -173,6 +238,7 @@ function AppRoutes() {
       <Route path="/join-household" element={<JoinHousehold />} />
       <Route path="/invite/:token" element={<AuthenticatedInviteRedirect />} />
       <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/uikit" element={<UIKit />} />
     </Routes>
   )
 }
@@ -254,25 +320,8 @@ function AppLayout() {
 
   return (
     <div className="app-shell">
-      <button
-        className="mobile-nav-toggle"
-        type="button"
-        onClick={() => setMobileNavOpen(true)}
-        aria-label="Open navigation"
-      >
-        <Menu size={22} />
-      </button>
 
-      {mobileNavOpen && (
-        <button
-          className="mobile-nav-backdrop"
-          type="button"
-          onClick={() => setMobileNavOpen(false)}
-          aria-label="Close navigation"
-        />
-      )}
-
-      <aside className={mobileNavOpen ? "sidebar open" : "sidebar"}>
+      <aside className="sidebar">
         <div className="sidebar-top">
           <div className="brand sidebar-household-brand">
             <img
@@ -286,15 +335,6 @@ function AppLayout() {
               <p>Family Command Center</p>
             </div>
           </div>
-
-          <button
-            className="sidebar-close"
-            type="button"
-            onClick={() => setMobileNavOpen(false)}
-            aria-label="Close navigation"
-          >
-            <X size={20} />
-          </button>
         </div>
 
         <nav className="nav" aria-label="Primary navigation">
@@ -328,6 +368,11 @@ function AppLayout() {
       <main className="main-content">
         <AppRoutes />
       </main>
+
+      <MobileMoreSheet
+        open={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+      />
 
       <MobileBottomNav
         unreadInboxCount={unreadInboxCount}

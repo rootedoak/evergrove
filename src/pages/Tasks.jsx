@@ -1,3 +1,26 @@
+import ListRow from "../components/ui/ListRow"
+import StatusBadge from "../components/ui/StatusBadge"
+import EmptyState from "../components/ui/EmptyState"
+
+import AppPage from "../components/ui/AppPage"
+import PageHeader from "../components/ui/PageHeader"
+import Button from "../components/ui/Button"
+
+import TextField from "../components/ui/TextField"
+import TextAreaField from "../components/ui/TextAreaField"
+import SelectField from "../components/ui/SelectField"
+import FormSection from "../components/ui/FormSection"
+
+import BottomSheet from "../components/ui/BottomSheet"
+import SectionCard from "../components/ui/SectionCard"
+
+import {
+    CalendarDays,
+    CheckCircle2,
+    Lock,
+    User
+} from "lucide-react"
+
 import { useEffect, useMemo, useState } from "react"
 import {
     Link,
@@ -195,98 +218,6 @@ function getOwnershipBadge(task) {
     }
 }
 
-function TaskRow({ task, familyMembers, onComplete, onEdit, onDelete, highlighted }) {
-    const [menuOpen, setMenuOpen] = useState(false)
-
-    const isComplete = task.status === "complete"
-    const meta = getTaskMeta(task, familyMembers)
-    const ownership = getOwnershipBadge(task)
-
-    return (
-        <div
-            className={`task-command-row task-command-row-compact ${isComplete ? "task-command-row-complete" : ""} ${highlighted ? "task-command-row-highlighted" : ""}`}
-        >
-            <button
-                className="task-check-button"
-                type="button"
-                onClick={() => !isComplete && onComplete(task)}
-                disabled={isComplete}
-                aria-label={isComplete ? "To-Do complete" : "Complete To-Do"}
-            >
-                {isComplete ? "✓" : ""}
-            </button>
-
-            <div className="task-command-main">
-                <div className="task-title-line task-title-line-compact">
-                    <strong>{task.title}</strong>
-                </div>
-
-                <div className="task-compact-meta">
-                    <span className="task-owner-badge task-owner-badge-compact">
-                        {ownership.icon} {ownership.label}
-                    </span>
-
-                    {meta && <span>{meta}</span>}
-                </div>
-
-                {task.description && (
-                    <small className="task-description-compact">
-                        {task.description}
-                    </small>
-                )}
-            </div>
-
-            <div className="task-row-menu">
-                <button
-                    type="button"
-                    className="task-menu-button"
-                    onClick={() => setMenuOpen(true)}
-                    aria-label="Open task actions"
-                >
-                    ⋮
-                </button>
-
-                {menuOpen && (
-                    <div className="task-action-backdrop" onClick={() => setMenuOpen(false)}>
-                        <div
-                            className="task-action-sheet"
-                            onClick={(event) => event.stopPropagation()}
-                        >
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setMenuOpen(false)
-                                    onEdit(task)
-                                }}
-                            >
-                                Edit
-                            </button>
-
-                            <button
-                                type="button"
-                                className="danger"
-                                onClick={() => {
-                                    setMenuOpen(false)
-                                    onDelete(task)
-                                }}
-                            >
-                                Delete
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setMenuOpen(false)}
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    )
-}
-
 function TaskSection({
     title,
     subtitle,
@@ -297,30 +228,32 @@ function TaskSection({
     onEdit,
     onDelete,
     highlightedTaskId,
-    className = "",
     hideWhenEmpty = false
 }) {
-    if (hideWhenEmpty && tasks.length === 0) {
-        return null
-    }
+    if (hideWhenEmpty && tasks.length === 0) return null
 
     return (
-        <section className={`task-command-section ${className}`}>
-            <div className="task-section-header">
+        <section className="eg-card">
+            <div className="eg-row-between">
                 <div>
-                    <h3>{title}</h3>
-                    {subtitle && <p>{subtitle}</p>}
+                    <h2 className="eg-section-title">{title}</h2>
+                    {subtitle && <p className="eg-task-section-subtitle">{subtitle}</p>}
                 </div>
 
-                <span>{tasks.length}</span>
+                <StatusBadge tone={tasks.length > 0 ? "primary" : "neutral"}>
+                    {tasks.length}
+                </StatusBadge>
             </div>
 
             {tasks.length === 0 ? (
-                <p className="dashboard-empty">{emptyText}</p>
+                <EmptyState
+                    title={emptyText}
+                    message="You're clear here."
+                />
             ) : (
-                <div className="task-command-list">
+                <div className="eg-task-list">
                     {tasks.map(task => (
-                        <TaskRow
+                        <TaskListRow
                             key={task.id}
                             task={task}
                             familyMembers={familyMembers}
@@ -333,6 +266,73 @@ function TaskSection({
                 </div>
             )}
         </section>
+    )
+}
+
+function TaskListRow({
+    task,
+    familyMembers,
+    onComplete,
+    onEdit,
+    onDelete,
+    highlighted
+}) {
+    const isComplete = task.status === "complete"
+    const meta = getTaskMeta(task, familyMembers)
+    const ownership = getOwnershipBadge(task)
+
+    return (
+        <ListRow
+            completed={isComplete}
+            title={task.title}
+            subtitle={task.description}
+            meta={meta}
+            icon={
+                <button
+                    type="button"
+                    className={`eg-task-check ${isComplete ? "complete" : ""}`}
+                    onClick={(event) => {
+                        event.stopPropagation()
+                        if (!isComplete) onComplete(task)
+                    }}
+                    disabled={isComplete}
+                    aria-label={isComplete ? "To-Do complete" : "Complete To-Do"}
+                >
+                    {isComplete && <CheckCircle2 size={18} />}
+                </button>
+            }
+            action={
+                <div className="eg-task-actions">
+                    <StatusBadge tone={task.visibility === "private" ? "warning" : "neutral"}>
+                        {task.visibility === "private" ? (
+                            <>
+                                <Lock size={12} /> Private
+                            </>
+                        ) : (
+                            <>
+                                <User size={12} /> {ownership.label}
+                            </>
+                        )}
+                    </StatusBadge>
+
+                    <button
+                        type="button"
+                        className="eg-text-button"
+                        onClick={() => onEdit(task)}
+                    >
+                        Edit
+                    </button>
+
+                    <button
+                        type="button"
+                        className="eg-text-button danger"
+                        onClick={() => onDelete(task)}
+                    >
+                        Delete
+                    </button>
+                </div>
+            }
+        />
     )
 }
 
@@ -476,7 +476,6 @@ export default function Tasks() {
         })
         setEditingId(null)
         setShowForm(true)
-        window.scrollTo({ top: 0, behavior: "smooth" })
     }
 
     function resetForm() {
@@ -492,7 +491,6 @@ export default function Tasks() {
         setEditingId(task.id)
         setForm(normalizeTask(task))
         setShowForm(true)
-        window.scrollTo({ top: 0, behavior: "smooth" })
     }
 
     async function handleTaskScopeChange(scope) {
@@ -566,41 +564,25 @@ export default function Tasks() {
     }
 
     return (
-        <div className="tasks-command-page">
-            <header className="calendar-header tasks-command-header">
-                <div>
-                    <p className="dashboard-household-name">
-                        {tripId ? "Trip Checklist" : "To-Do's"}
-                    </p>
-
-                    <h2>
-                        {tripId
-                            ? selectedTrip?.name || "Trip Checklist"
-                            : "Family To-Do's"}
-                    </h2>
-
-                    <p className="tasks-header-counts">
-                        {groupedTasks.overdue.length} Overdue •{" "}
-                        {groupedTasks.today.length} Today •{" "}
-                        {openCount} Open
-                    </p>
-                </div>
-
-                <button
-                    type="button"
-                    className="primary-button tasks-header-add-button"
-                    onClick={() => {
-                        if (showForm) {
-                            resetForm()
-                            return
-                        }
-
-                        openNewTaskForm()
-                    }}
-                >
-                    {showForm ? "Cancel" : "+ Add To-Do"}
-                </button>
-            </header>
+        <AppPage>
+            <PageHeader
+                eyebrow={tripId ? "Trip" : "Family"}
+                title={tripId ? "Trip Checklist" : "To-Dos"}
+                subtitle={`${groupedTasks.overdue.length} overdue • ${groupedTasks.today.length} today • ${openCount} open`}
+                action={
+                    <Button
+                        onClick={() => {
+                            if (showForm) {
+                                resetForm()
+                            } else {
+                                openNewTaskForm()
+                            }
+                        }}
+                    >
+                        {showForm ? "Cancel" : "+ Add"}
+                    </Button>
+                }
+            />
 
             {!tripId && (
                 <section className="task-scope-filter task-scope-filter-compact">
@@ -637,108 +619,93 @@ export default function Tasks() {
                 </section>
             )}
 
-            {showForm && (
-                <section className="card form-card">
-                    <h3>{editingId ? "Edit To-Do" : "Add To-Do"}</h3>
-
-                    <form className="form-grid" onSubmit={handleSubmit}>
-                        <label>
-                            Title
-                            <input
+            <BottomSheet open={showForm} onClose={resetForm}>
+                <SectionCard title={editingId ? "Edit To-Do" : "Add To-Do"}>
+                    <form onSubmit={handleSubmit}>
+                        <FormSection>
+                            <TextField
+                                label="Title"
                                 value={form.title}
-                                onChange={event => updateForm("title", event.target.value)}
+                                onChange={value => updateForm("title", value)}
                                 placeholder="Register for basketball"
                                 required
                             />
-                        </label>
 
-                        <label>
-                            Due Date
-                            <input
+                            <TextField
+                                label="Due Date"
                                 type="date"
                                 value={form.due_date}
-                                onChange={event => updateForm("due_date", event.target.value)}
+                                onChange={value => updateForm("due_date", value)}
                             />
-                        </label>
 
-                        <label>
-                            Family Member
-                            <select
+                            <SelectField
+                                label="Family Member"
                                 value={form.family_member_id}
-                                onChange={event =>
-                                    updateForm("family_member_id", event.target.value)
-                                }
-                            >
-                                <option value="">No family member selected</option>
-                                {familyMembers.map(member => (
-                                    <option key={member.id} value={member.id}>
-                                        {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
-                                        {member.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-
-                        <label>
-                            Activity
-                            <select
-                                value={form.activity_id}
-                                onChange={event =>
-                                    updateForm("activity_id", event.target.value)
-                                }
-                            >
-                                <option value="">No activity selected</option>
-                                {activities.map(activity => (
-                                    <option key={activity.id} value={activity.id}>
-                                        {activity.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-
-                        <label>
-                            Status
-                            <select
-                                value={form.status}
-                                onChange={event => updateForm("status", event.target.value)}
-                            >
-                                <option value="open">Open</option>
-                                <option value="complete">Complete</option>
-                            </select>
-                        </label>
-
-                        <label>
-                            Visibility
-                            <select
-                                value={form.visibility}
-                                onChange={event => updateForm("visibility", event.target.value)}
-                            >
-                                <option value="household">Family task</option>
-                                <option value="private">Private task</option>
-                            </select>
-                        </label>
-
-                        <label className="full-width">
-                            Description
-                            <textarea
-                                value={form.description}
-                                onChange={event =>
-                                    updateForm("description", event.target.value)
-                                }
-                                rows="3"
+                                onChange={value => updateForm("family_member_id", value)}
+                                options={[
+                                    { value: "", label: "No family member selected" },
+                                    ...familyMembers.map(member => ({
+                                        value: member.id,
+                                        label: `${member.avatar_emoji ? `${member.avatar_emoji} ` : ""}${member.name}`
+                                    }))
+                                ]}
                             />
-                        </label>
 
-                        <button className="primary-button full-width" type="submit" disabled={saving}>
-                            {saving
-                                ? "Saving..."
-                                : editingId
-                                    ? "Save Changes"
-                                    : "Save To-Do"}
-                        </button>
+                            <SelectField
+                                label="Activity"
+                                value={form.activity_id}
+                                onChange={value => updateForm("activity_id", value)}
+                                options={[
+                                    { value: "", label: "No activity selected" },
+                                    ...activities.map(activity => ({
+                                        value: activity.id,
+                                        label: activity.name
+                                    }))
+                                ]}
+                            />
+
+                            <SelectField
+                                label="Status"
+                                value={form.status}
+                                onChange={value => updateForm("status", value)}
+                                options={[
+                                    { value: "open", label: "Open" },
+                                    { value: "complete", label: "Complete" }
+                                ]}
+                            />
+
+                            <SelectField
+                                label="Visibility"
+                                value={form.visibility}
+                                onChange={value => updateForm("visibility", value)}
+                                options={[
+                                    { value: "household", label: "Family task" },
+                                    { value: "private", label: "Private task" }
+                                ]}
+                            />
+
+                            <TextAreaField
+                                label="Description"
+                                value={form.description}
+                                onChange={value => updateForm("description", value)}
+                                rows={3}
+                            />
+
+                            <Button
+                                type="submit"
+                                size="lg"
+                                disabled={saving}
+                            >
+                                {saving
+                                    ? "Saving..."
+                                    : editingId
+                                        ? "Save Changes"
+                                        : "Save To-Do"}
+                            </Button>
+                        </FormSection>
                     </form>
-                </section>
-            )}
+                </SectionCard>
+            </BottomSheet>
 
             <section className="card task-command-card">
                 {loading ? (
@@ -853,6 +820,6 @@ export default function Tasks() {
                     +
                 </button>
             )}
-        </div>
+        </AppPage>
     )
 }

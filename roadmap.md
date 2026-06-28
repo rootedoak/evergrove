@@ -223,3 +223,13 @@ Suggested Offer:
 - [ ] User profile photos
 - [ ] Richer household insights
 - [ ] Smart notifications
+
+## Dashboard Feed v2 Data Wiring
+
+- Return actor/member display name from household feed query
+- Return actor/member avatar_url
+- Fall back to initials when no image exists
+- Add avatar_url to family_members
+- Add profile image upload from Settings/Profile
+- Use profile image in Dashboard feed
+- Use same avatar pattern across comments, household feed, and member selectors

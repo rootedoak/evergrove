@@ -1,4 +1,14 @@
 import { useState } from "react"
+import {
+    CalendarDays,
+    CheckSquare,
+    Megaphone,
+    Plus,
+    ShoppingCart,
+    Sparkles,
+    Utensils,
+    X,
+} from "lucide-react"
 
 export default function FloatingQuickActions({
     assistantSuggestions = [],
@@ -35,107 +45,70 @@ export default function FloatingQuickActions({
     return (
         <div className="dashboard-fab-wrapper">
             {open && !showAssistant && (
-                <div
-                    className="dashboard-fab-menu-backdrop"
-                    onClick={close}
-                >
-                    <div
-                        className="dashboard-fab-menu"
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <button
-                            type="button"
-                            onClick={() => handleAction(onAddTask)}
-                        >
-                            <span>✅</span>
-                            To-Do
-                        </button>
+                <div className="eg-bottom-sheet-backdrop" onClick={close}>
+                    <div className="eg-bottom-sheet" onClick={event => event.stopPropagation()}>
+                        <div className="eg-sheet-handle" />
 
-                        <button
-                            type="button"
-                            onClick={() => handleAction(onAddEvent)}
-                        >
-                            <span>📅</span>
-                            Calendar Event
-                        </button>
+                        <div className="eg-sheet-header">
+                            <div>
+                                <h3>Quick Add</h3>
+                                <p>Add something to Evergrove</p>
+                            </div>
 
-                        <button
-                            type="button"
-                            onClick={() => handleAction(onAddMeal)}
-                        >
-                            <span>🍽️</span>
-                            Meal
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => handleAction(onAddShopping)}
-                        >
-                            <span>🛒</span>
-                            Shopping Item
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => handleAction(onAddAnnouncement)}
-                        >
-                            <span>📢</span>
-                            Announcement
-                        </button>
-
-                        {hasSuggestions && (
-                            <button
-                                type="button"
-                                className="quick-action-assistant"
-                                onClick={() => setShowAssistant(true)}
-                            >
-                                <span className="assistant-menu-icon">💡</span>
-
-                                <div>
-                                    <strong>Evergrove Assistant</strong>
-                                    <small>Ideas to help your family</small>
-                                </div>
-
-                                <em>{suggestionCount}</em>
+                            <button type="button" className="eg-icon-button" onClick={close}>
+                                <X size={20} />
                             </button>
-                        )}
+                        </div>
+
+                        <div className="eg-quick-action-list">
+                            <QuickAction icon={<CheckSquare />} label="To-Do" onClick={() => handleAction(onAddTask)} />
+                            <QuickAction icon={<CalendarDays />} label="Calendar Event" onClick={() => handleAction(onAddEvent)} />
+                            <QuickAction icon={<Utensils />} label="Meal" onClick={() => handleAction(onAddMeal)} />
+                            <QuickAction icon={<ShoppingCart />} label="Shopping Item" onClick={() => handleAction(onAddShopping)} />
+                            <QuickAction icon={<Megaphone />} label="Announcement" onClick={() => handleAction(onAddAnnouncement)} />
+
+                            {hasSuggestions && (
+                                <button
+                                    type="button"
+                                    className="eg-quick-action-row assistant"
+                                    onClick={() => setShowAssistant(true)}
+                                >
+                                    <span>
+                                        <Sparkles size={22} />
+                                    </span>
+
+                                    <div>
+                                        <strong>Evergrove Assistant</strong>
+                                        <small>Ideas to help your family</small>
+                                    </div>
+
+                                    <em>{suggestionCount}</em>
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
 
             {open && showAssistant && (
-                <div
-                    className="dashboard-fab-menu-backdrop"
-                    onClick={close}
-                >
-                    <div
-                        className="assistant-bottom-sheet"
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <div className="sheet-handle" />
+                <div className="eg-bottom-sheet-backdrop" onClick={close}>
+                    <div className="eg-bottom-sheet" onClick={event => event.stopPropagation()}>
+                        <div className="eg-sheet-handle" />
 
-                        <div className="assistant-sheet-header">
+                        <div className="eg-sheet-header">
                             <div>
-                                <p className="card-kicker">💡 Evergrove Assistant</p>
-                                <h3>Ideas to help your family stay ahead</h3>
+                                <h3>Evergrove Assistant</h3>
+                                <p>Ideas to help your family stay ahead</p>
                             </div>
 
-                            <button
-                                type="button"
-                                className="assistant-sheet-close"
-                                onClick={close}
-                                aria-label="Close assistant"
-                            >
-                                ×
+                            <button type="button" className="eg-icon-button" onClick={close}>
+                                <X size={20} />
                             </button>
                         </div>
 
                         <div className="assistant-suggestion-list">
                             {assistantSuggestions.map(suggestion => (
-                                <div
-                                    key={suggestion.id}
-                                    className="assistant-suggestion-card"
-                                >
+                                <div key={suggestion.id} className="assistant-suggestion-card">
                                     <div className="assistant-suggestion-header">
                                         <span>{suggestion.icon}</span>
 
@@ -146,22 +119,18 @@ export default function FloatingQuickActions({
 
                                             <p>
                                                 Families usually start planning around now.
-                                                Evergrove has a few ideas to help you get ready.
                                             </p>
                                         </div>
                                     </div>
 
                                     <div className="assistant-task-list">
                                         {suggestion.tasks.map(taskTitle => (
-                                            <div
-                                                key={`${suggestion.id}-${taskTitle}`}
-                                                className="assistant-task-row"
-                                            >
+                                            <div key={`${suggestion.id}-${taskTitle}`} className="assistant-task-row">
                                                 <span>{taskTitle}</span>
 
                                                 <button
                                                     type="button"
-                                                    className="secondary-button"
+                                                    className="eg-button-secondary"
                                                     onClick={() => handleAddAssistantTask(taskTitle)}
                                                 >
                                                     Add To-Do
@@ -178,16 +147,25 @@ export default function FloatingQuickActions({
 
             <button
                 type="button"
-                className="floating-action-button"
+                className="eg-fab"
                 aria-label="Open quick actions"
                 onClick={() => setOpen(current => !current)}
             >
-                {open ? "×" : "+"}
+                {open ? <X size={30} /> : <Plus size={32} />}
 
                 {!open && hasSuggestions && (
                     <span className="fab-assistant-indicator">💡</span>
                 )}
             </button>
         </div>
+    )
+}
+
+function QuickAction({ icon, label, onClick }) {
+    return (
+        <button type="button" className="eg-quick-action-row" onClick={onClick}>
+            <span>{icon}</span>
+            <strong>{label}</strong>
+        </button>
     )
 }
