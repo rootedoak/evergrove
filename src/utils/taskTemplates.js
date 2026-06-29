@@ -26,6 +26,45 @@ const taskTemplates = {
         "Plan Christmas meal",
         "Check Christmas decorations",
     ],
+
+    christmas_gifts: [
+        "Make Christmas gift list",
+        "Set Christmas gift budget",
+        "Buy Christmas gifts",
+    ],
+
+    christmas_shopping: [
+        "Check Christmas shopping list",
+        "Buy stocking stuffers",
+        "Pick up wrapping paper",
+    ],
+
+    christmas_meal: [
+        "Plan Christmas meal",
+        "Make Christmas grocery list",
+        "Confirm who is coming for Christmas",
+    ],
+
+    christmas_final: [
+        "Wrap remaining Christmas presents",
+        "Prepare Christmas Eve items",
+        "Charge camera or phone for pictures",
+    ],
+
+    independence_day_prep: [
+        "Plan July 4th meal",
+        "Buy drinks and ice",
+        "Buy fireworks",
+        "Pick up grilling supplies",
+        "Check outdoor chairs and shade",
+    ],
+
+    independence_day_final: [
+        "Charge phone for pictures",
+        "Set out sunscreen",
+        "Pack cooler",
+        "Review July 4th plans",
+    ],
 }
 
 export function getTaskTemplate(type, values = {}) {

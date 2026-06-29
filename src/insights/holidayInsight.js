@@ -1,54 +1,74 @@
 import { createInsight } from "./createInsight"
 import { getTaskTemplate } from "../utils/taskTemplates"
 import { createLocalDate } from "./dateUtils"
+import { holidayDefinitions } from "../intelligence/holidayDefinitions"
 
-function getChristmasDate(year) {
-    return `${year}-12-25`
+function getHolidayDate(year, holiday) {
+    return [
+        year,
+        String(holiday.month).padStart(2, "0"),
+        String(holiday.day).padStart(2, "0"),
+    ].join("-")
 }
 
-function getDaysUntil(dateString) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+function getDaysUntil(fromDateString, targetDateString) {
+    const fromDate = createLocalDate(fromDateString)
+    fromDate.setHours(0, 0, 0, 0)
 
-    const target = createLocalDate(dateString)
-    target.setHours(0, 0, 0, 0)
+    const targetDate = createLocalDate(targetDateString)
+    targetDate.setHours(0, 0, 0, 0)
 
-    return Math.round((target - today) / (1000 * 60 * 60 * 24))
+    return Math.round((targetDate - fromDate) / (1000 * 60 * 60 * 24))
+}
+
+function getActiveHolidayMoment(daysUntil, holiday) {
+    return holiday.moments
+        .filter(moment =>
+            daysUntil <= moment.daysBefore &&
+            daysUntil >= 0
+        )
+        .sort((a, b) => a.daysBefore - b.daysBefore)[0]
 }
 
 export default function holidayInsight(context) {
     const todayString = context.data.today
     const year = Number(todayString.slice(0, 4))
 
-    const christmasDate = getChristmasDate(year)
-    const daysUntilChristmas = getDaysUntil(christmasDate)
+    const possibleInsights = holidayDefinitions
+        .map(holiday => {
+            const holidayDate = getHolidayDate(year, holiday)
+            const daysUntil = getDaysUntil(todayString, holidayDate)
 
-    if (daysUntilChristmas < 0 || daysUntilChristmas > 45) {
-        return null
-    }
+            const activeMoment = getActiveHolidayMoment(daysUntil, holiday)
 
-    return createInsight({
-        id: `holiday-christmas-${year}`,
-        category: "holidays",
-        score: daysUntilChristmas <= 7 ? 98 : 88,
-        icon: "🎄",
-        title: `Christmas is ${daysUntilChristmas === 0 ? "today" : `in ${daysUntilChristmas} days`}`,
-        description: "Evergrove can help your family get ready without the last-minute scramble.",
-        actionLabel: "Create Christmas Checklist",
+            if (!activeMoment) return null
 
-        execute: async (context) => {
-            const tasks = getTaskTemplate("christmas")
+            return createInsight({
+                id: `holiday-${holiday.id}-${activeMoment.template}-${year}`,
+                category: "holidays",
+                score: (activeMoment.priority || 50) + activeMoment.score,
+                icon: holiday.icon,
+                title: activeMoment.title,
+                description: activeMoment.description,
+                actionLabel: activeMoment.actionLabel,
 
-            for (const taskTitle of tasks) {
-                await context.services.tasks.create(taskTitle)
-            }
+                execute: async (context) => {
+                    const tasks = getTaskTemplate(activeMoment.template)
 
-            return {
-                completedTitle: "Christmas checklist created",
-                completedDescription: `${tasks.length} to-dos were added for your household.`,
-                completedActionLabel: "View To-Dos",
-                completedRoute: "/tasks",
-            }
-        },
-    })
+                    for (const taskTitle of tasks) {
+                        await context.services.tasks.create(taskTitle)
+                    }
+
+                    return {
+                        completedTitle: `${holiday.name} checklist created`,
+                        completedDescription: `${tasks.length} to-dos were added for ${holiday.name}.`,
+                        completedActionLabel: "View To-Dos",
+                        completedRoute: "/tasks",
+                    }
+                },
+            })
+        })
+        .filter(Boolean)
+
+    return possibleInsights.sort((a, b) => b.score - a.score)[0] || null
 }
