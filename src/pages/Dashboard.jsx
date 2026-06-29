@@ -843,19 +843,10 @@ export default function Dashboard() {
             <div className="eg-stack">
                 <header className="eg-dashboard-hero">
                     <div className="eg-dashboard-topbar">
-                        <button className="eg-menu-button" type="button">
-                            ☰
-                        </button>
-
                         <div className="eg-brand">
                             <span>🌱</span>
                             <strong>Evergrove</strong>
                         </div>
-
-                        <button className="eg-bell-button" type="button">
-                            🔔
-                            <span>2</span>
-                        </button>
                     </div>
 
                     <div className="eg-greeting-block">

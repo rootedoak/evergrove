@@ -1,21 +1,20 @@
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { Plus } from "lucide-react"
 
 import { getFamilyMembers } from "../services/familyService"
 import { createTask } from "../services/taskService"
-import {
-    createTrip,
-    deleteTrip,
-    updateTrip
-} from "../services/tripService"
-import {
-    createTripPlan,
-    deleteTripPlan,
-    getTripPlans
-} from "../services/tripPlanService"
+import { createTrip, deleteTrip, updateTrip } from "../services/tripService"
+import { createTripPlan, deleteTripPlan, getTripPlans } from "../services/tripPlanService"
 
 import useTasks from "../hooks/useTasks"
 import useTrips from "../hooks/useTrips"
+
+import AppPage from "../components/ui/AppPage"
+import PageHeader from "../components/ui/PageHeader"
+import SectionCard from "../components/ui/SectionCard"
+import Button from "../components/ui/Button"
+import InsightCard from "../components/dashboard/InsightCard"
 
 const initialForm = {
     name: "",
@@ -152,32 +151,21 @@ function normalizeTrip(trip) {
     }
 }
 
-function TripSection({
-    title,
-    subtitle,
-    trips,
-    emptyText,
-    renderTripRow
-}) {
+function TripSection({ title, subtitle, trips, emptyText, renderTripRow }) {
     return (
-        <section className="trip-command-section">
-            <div className="trip-section-header">
-                <div>
-                    <h3>{title}</h3>
-                    {subtitle && <p>{subtitle}</p>}
-                </div>
-
-                <span>{trips.length}</span>
-            </div>
-
+        <SectionCard
+            title={title}
+            subtitle={subtitle}
+            count={trips.length}
+        >
             {trips.length === 0 ? (
                 <p className="dashboard-empty">{emptyText}</p>
             ) : (
-                <div className="trip-command-list">
+                <div className="eg-stack">
                     {trips.map(trip => renderTripRow(trip))}
                 </div>
             )}
-        </section>
+        </SectionCard>
     )
 }
 
@@ -209,6 +197,8 @@ export default function Trips() {
         groupedTrips.upcoming.length +
         groupedTrips.later.length +
         groupedTrips.unscheduled.length
+
+    const [tripMenuOpen, setTripMenuOpen] = useState(null)
 
     useEffect(() => {
         async function loadMembers() {
@@ -388,7 +378,6 @@ export default function Trips() {
 
     async function handleCreatePlan(event, trip) {
         event.preventDefault()
-
         if (!planForm.title.trim()) return
 
         setSavingPlan(true)
@@ -450,7 +439,6 @@ export default function Trips() {
                     <div className="trip-plan-groups">
                         {planCategories.map(category => {
                             const categoryPlans = groupedPlans[category] || []
-
                             if (categoryPlans.length === 0) return null
 
                             return (
@@ -463,17 +451,17 @@ export default function Trips() {
                                                 <div>
                                                     <p className="card-kicker">{plan.category}</p>
                                                     <strong>{plan.title}</strong>
-
                                                     {plan.notes && <p>{plan.notes}</p>}
                                                 </div>
 
-                                                <button
-                                                    className="danger-button trip-plan-delete"
+                                                <Button
+                                                    variant="danger"
+                                                    size="sm"
                                                     type="button"
                                                     onClick={() => handleDeletePlan(plan)}
                                                 >
                                                     Delete
-                                                </button>
+                                                </Button>
                                             </div>
                                         ))}
                                     </div>
@@ -536,13 +524,13 @@ export default function Trips() {
                         />
                     </label>
 
-                    <button
-                        className="primary-button full-width"
+                    <Button
+                        className="full-width"
                         type="submit"
                         disabled={savingPlan}
                     >
                         {savingPlan ? "Adding..." : "+ Add Plan"}
-                    </button>
+                    </Button>
                 </form>
             </div>
         )
@@ -572,72 +560,116 @@ export default function Trips() {
                         {trip.destination ? ` • ${trip.destination}` : ""}
                     </p>
 
-                    <small>{getCountdownLabel(trip)}</small>
-
                     {attendees && <small>{attendees}</small>}
                     {trip.notes && <small>{trip.notes}</small>}
-
                 </div>
 
                 <div className="trip-command-status">
-                    {hasChecklist ? (
+                    <span className="status-pill status-primary">
+                        {getCountdownLabel(trip)}
+                    </span>
+
+                    {hasChecklist && (
                         <span className="status-pill status-neutral">
-                            Checklist • {checklist.complete}/{checklist.total} complete
-                        </span>
-                    ) : (
-                        <span className="status-pill status-muted">
-                            No checklist
+                            {checklist.complete}/{checklist.total} complete
                         </span>
                     )}
 
-                    <span className="status-pill status-muted">
-                        Plans • {plans.length}
-                    </span>
+                    {plans.length > 0 && (
+                        <span className="status-pill status-muted">
+                            {plans.length} plan{plans.length === 1 ? "" : "s"}
+                        </span>
+                    )}
                 </div>
 
                 <div className="trip-command-actions">
-                    <button
-                        className="secondary-button"
+                    <Button
+                        variant="secondary"
+                        size="sm"
                         type="button"
                         onClick={() => toggleExpandedTrip(trip.id)}
                     >
                         {isExpanded ? "Hide Plans" : "Plans"}
-                    </button>
+                    </Button>
 
                     {hasChecklist ? (
-                        <button
-                            className="secondary-button"
+                        <Button
+                            variant="secondary"
+                            size="sm"
                             type="button"
                             onClick={() => handleViewChecklist(trip)}
                         >
                             Checklist
-                        </button>
+                        </Button>
                     ) : (
-                        <button
-                            className="secondary-button"
+                        <Button
+                            variant="secondary"
+                            size="sm"
                             type="button"
                             onClick={() => handleCreateChecklist(trip)}
                         >
                             Create Checklist
-                        </button>
+                        </Button>
                     )}
 
-                    <button
-                        className="secondary-button"
-                        type="button"
-                        onClick={() => startEditTrip(trip)}
-                    >
-                        Edit
-                    </button>
+                    <div className="eg-overflow-menu-wrap">
+                        <button
+                            type="button"
+                            className="eg-overflow-button"
+                            onClick={() =>
+                                setTripMenuOpen(current =>
+                                    current === trip.id ? null : trip.id
+                                )
+                            }
+                            aria-label="Open trip actions"
+                        >
+                            ⋮
+                        </button>
 
-                    <button
-                        className="danger-button"
-                        type="button"
-                        onClick={() => handleDelete(trip)}
-                    >
-                        Delete
-                    </button>
+                        {tripMenuOpen === trip.id && (
+                            <div
+                                className="task-action-backdrop"
+                                onClick={() => setTripMenuOpen(null)}
+                            >
+                                <div
+                                    className="task-action-sheet"
+                                    onClick={event => event.stopPropagation()}
+                                >
+                                    <h3>{trip.name}</h3>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setTripMenuOpen(null)
+                                            startEditTrip(trip)
+                                        }}
+                                    >
+                                        Edit Trip
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="danger"
+                                        onClick={() => {
+                                            setTripMenuOpen(null)
+                                            handleDelete(trip)
+                                        }}
+                                    >
+                                        Delete Trip
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setTripMenuOpen(null)}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
+
                 {isExpanded && (
                     <div className="trip-command-expanded">
                         {renderTripPlans(trip)}
@@ -648,194 +680,218 @@ export default function Trips() {
     }
 
     return (
-        <div className="trips-command-page">
-            <header className="calendar-header trips-command-header">
-                <div>
-                    <p className="dashboard-household-name">Trips</p>
-                    <h2>Family Trips</h2>
+        <AppPage>
+            <PageHeader
+                eyebrow="Trips"
+                title="Family Trips"
+                subtitle={`${activeTripCount} active • ${groupedTrips.upcoming.length} upcoming • ${groupedTrips.past.length} past`}
+                action={
+                    <Button
+                        size="sm"
+                        onClick={() => {
+                            if (showForm) {
+                                resetForm()
+                            } else {
+                                startAddTrip()
+                            }
+                        }}
+                    >
+                        <Plus size={16} />
+                        {showForm ? "Cancel" : "Add"}
+                    </Button>
+                }
+            />
 
-                    <p className="trips-header-summary">
-                        {activeTripCount} active • {groupedTrips.upcoming.length} upcoming •{" "}
-                        {groupedTrips.past.length} past
-                    </p>
-                </div>
-
-                <button
-                    type="button"
-                    className="primary-button"
-                    onClick={() => {
-                        if (showForm) {
-                            resetForm()
+            <div className="eg-stack">
+                <InsightCard
+                    insight={{
+                        title:
+                            groupedTrips.upcoming.length > 0
+                                ? `${groupedTrips.upcoming[0].name} is ${getCountdownLabel(groupedTrips.upcoming[0]).toLowerCase()}`
+                                : "No upcoming trips",
+                        description:
+                            groupedTrips.upcoming.length > 0
+                                ? "Review your checklist and plans before you leave."
+                                : "Start planning your next family adventure.",
+                        actionLabel:
+                            groupedTrips.upcoming.length > 0
+                                ? "Open Trip"
+                                : "Add Trip"
+                    }}
+                    onAction={() => {
+                        if (groupedTrips.upcoming.length > 0) {
+                            toggleExpandedTrip(groupedTrips.upcoming[0].id)
                         } else {
                             startAddTrip()
                         }
                     }}
-                >
-                    {showForm ? "Cancel" : "+ Add Trip"}
-                </button>
-            </header>
+                />
 
-            {showForm && (
-                <section className="card form-card">
-                    <h3>{editingTripId ? "Edit Trip" : "Add Trip"}</h3>
+                {showForm && (
+                    <SectionCard
+                        title={editingTripId ? "Edit Trip" : "Add Trip"}
+                        subtitle="Add the key trip details and who is going."
+                    >
+                        <form className="form-grid" onSubmit={handleSubmit}>
+                            <label>
+                                Trip Name
+                                <input
+                                    value={form.name}
+                                    onChange={event =>
+                                        setForm({
+                                            ...form,
+                                            name: event.target.value
+                                        })
+                                    }
+                                    placeholder="Summer vacation"
+                                    required
+                                />
+                            </label>
 
-                    <form className="form-grid" onSubmit={handleSubmit}>
-                        <label>
-                            Trip Name
-                            <input
-                                value={form.name}
-                                onChange={event =>
-                                    setForm({
-                                        ...form,
-                                        name: event.target.value
-                                    })
-                                }
-                                placeholder="Summer vacation"
-                                required
-                            />
-                        </label>
+                            <label>
+                                Destination
+                                <input
+                                    value={form.destination}
+                                    onChange={event =>
+                                        setForm({
+                                            ...form,
+                                            destination: event.target.value
+                                        })
+                                    }
+                                    placeholder="Dallas, TX"
+                                />
+                            </label>
 
-                        <label>
-                            Destination
-                            <input
-                                value={form.destination}
-                                onChange={event =>
-                                    setForm({
-                                        ...form,
-                                        destination: event.target.value
-                                    })
-                                }
-                                placeholder="Dallas, TX"
-                            />
-                        </label>
+                            <label>
+                                Start Date
+                                <input
+                                    type="date"
+                                    value={form.start_date}
+                                    onChange={event =>
+                                        setForm({
+                                            ...form,
+                                            start_date: event.target.value
+                                        })
+                                    }
+                                />
+                            </label>
 
-                        <label>
-                            Start Date
-                            <input
-                                type="date"
-                                value={form.start_date}
-                                onChange={event =>
-                                    setForm({
-                                        ...form,
-                                        start_date: event.target.value
-                                    })
-                                }
-                            />
-                        </label>
+                            <label>
+                                End Date
+                                <input
+                                    type="date"
+                                    value={form.end_date}
+                                    onChange={event =>
+                                        setForm({
+                                            ...form,
+                                            end_date: event.target.value
+                                        })
+                                    }
+                                />
+                            </label>
 
-                        <label>
-                            End Date
-                            <input
-                                type="date"
-                                value={form.end_date}
-                                onChange={event =>
-                                    setForm({
-                                        ...form,
-                                        end_date: event.target.value
-                                    })
-                                }
-                            />
-                        </label>
+                            <div className="full-width trip-member-picker">
+                                <strong>Who's Going?</strong>
 
-                        <div className="full-width trip-member-picker">
-                            <strong>Who's Going?</strong>
+                                <div className="trip-member-grid">
+                                    {familyMembers.map(member => (
+                                        <label
+                                            className={
+                                                selectedMembers.includes(member.id)
+                                                    ? "trip-member-chip selected"
+                                                    : "trip-member-chip"
+                                            }
+                                            key={member.id}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedMembers.includes(member.id)}
+                                                onChange={() => toggleMember(member.id)}
+                                            />
 
-                            <div className="trip-member-grid">
-                                {familyMembers.map(member => (
-                                    <label
-                                        className={
-                                            selectedMembers.includes(member.id)
-                                                ? "trip-member-chip selected"
-                                                : "trip-member-chip"
-                                        }
-                                        key={member.id}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedMembers.includes(member.id)}
-                                            onChange={() => toggleMember(member.id)}
-                                        />
-
-                                        <span>
-                                            {member.avatar_emoji || "👤"} {member.name}
-                                        </span>
-                                    </label>
-                                ))}
+                                            <span>
+                                                {member.avatar_emoji || "👤"} {member.name}
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
 
-                        <label className="full-width">
-                            Notes
-                            <textarea
-                                rows="3"
-                                value={form.notes}
-                                onChange={event =>
-                                    setForm({
-                                        ...form,
-                                        notes: event.target.value
-                                    })
-                                }
-                            />
-                        </label>
+                            <label className="full-width">
+                                Notes
+                                <textarea
+                                    rows="3"
+                                    value={form.notes}
+                                    onChange={event =>
+                                        setForm({
+                                            ...form,
+                                            notes: event.target.value
+                                        })
+                                    }
+                                />
+                            </label>
 
-                        <button
-                            className="primary-button full-width"
-                            type="submit"
-                            disabled={saving}
-                        >
-                            {saving
-                                ? "Saving..."
-                                : editingTripId
-                                    ? "Save Changes"
-                                    : "Save Trip"}
-                        </button>
-                    </form>
-                </section>
-            )}
-
-            <section className="card trips-command-card">
-                {loading ? (
-                    <p>Loading trips...</p>
-                ) : trips.length === 0 ? (
-                    <p className="dashboard-empty">No trips planned yet.</p>
-                ) : (
-                    <>
-                        <TripSection
-                            title="Upcoming"
-                            subtitle="Trips coming up in the next 30 days."
-                            trips={groupedTrips.upcoming}
-                            emptyText="No trips coming up soon."
-                            renderTripRow={renderTripRow}
-                        />
-
-                        <TripSection
-                            title="Later"
-                            subtitle="Future travel plans."
-                            trips={groupedTrips.later}
-                            emptyText="No later trips."
-                            renderTripRow={renderTripRow}
-                        />
-
-                        <TripSection
-                            title="Unscheduled"
-                            subtitle="Saved without a date."
-                            trips={groupedTrips.unscheduled}
-                            emptyText="No unscheduled trips."
-                            renderTripRow={renderTripRow}
-                        />
-
-                        {groupedTrips.past.length > 0 && (
-                            <TripSection
-                                title="Past"
-                                subtitle="Completed trips."
-                                trips={groupedTrips.past}
-                                emptyText="No past trips."
-                                renderTripRow={renderTripRow}
-                            />
-                        )}
-                    </>
+                            <Button
+                                className="full-width"
+                                type="submit"
+                                disabled={saving}
+                            >
+                                {saving
+                                    ? "Saving..."
+                                    : editingTripId
+                                        ? "Save Changes"
+                                        : "Save Trip"}
+                            </Button>
+                        </form>
+                    </SectionCard>
                 )}
-            </section>
-        </div>
+
+                <SectionCard title="Trips" subtitle="Upcoming, later, unscheduled, and past travel plans.">
+                    {loading ? (
+                        <p>Loading trips...</p>
+                    ) : trips.length === 0 ? (
+                        <p className="dashboard-empty">No trips planned yet.</p>
+                    ) : (
+                        <>
+                            <div className="eg-stack">
+                                <TripSection
+                                    title="Upcoming"
+                                    subtitle="Trips coming up in the next 30 days."
+                                    trips={groupedTrips.upcoming}
+                                    emptyText="No trips coming up soon."
+                                    renderTripRow={renderTripRow}
+                                />
+
+                                <TripSection
+                                    title="Later"
+                                    subtitle="Future travel plans."
+                                    trips={groupedTrips.later}
+                                    emptyText="No later trips."
+                                    renderTripRow={renderTripRow}
+                                />
+
+                                <TripSection
+                                    title="Unscheduled"
+                                    subtitle="Saved without a date."
+                                    trips={groupedTrips.unscheduled}
+                                    emptyText="No unscheduled trips."
+                                    renderTripRow={renderTripRow}
+                                />
+
+                                {groupedTrips.past.length > 0 && (
+                                    <TripSection
+                                        title="Past"
+                                        subtitle="Completed trips."
+                                        trips={groupedTrips.past}
+                                        emptyText="No past trips."
+                                        renderTripRow={renderTripRow}
+                                    />
+                                )}
+                            </div>
+                        </>
+                    )}
+                </SectionCard>
+            </div>
+        </AppPage>
     )
 }

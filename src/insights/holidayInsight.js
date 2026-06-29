@@ -4,11 +4,43 @@ import { createLocalDate } from "./dateUtils"
 import { holidayDefinitions } from "../intelligence/holidayDefinitions"
 
 function getHolidayDate(year, holiday) {
+    if (holiday.type === "nth-weekday") {
+        return getNthWeekdayOfMonth(
+            year,
+            holiday.month,
+            holiday.weekday,
+            holiday.occurrence
+        )
+    }
+
     return [
         year,
         String(holiday.month).padStart(2, "0"),
         String(holiday.day).padStart(2, "0"),
     ].join("-")
+}
+
+function getNthWeekdayOfMonth(year, month, weekday, occurrence) {
+    const date = new Date(year, month - 1, 1)
+    let count = 0
+
+    while (date.getMonth() === month - 1) {
+        if (date.getDay() === weekday) {
+            count += 1
+
+            if (count === occurrence) {
+                return [
+                    date.getFullYear(),
+                    String(date.getMonth() + 1).padStart(2, "0"),
+                    String(date.getDate()).padStart(2, "0"),
+                ].join("-")
+            }
+        }
+
+        date.setDate(date.getDate() + 1)
+    }
+
+    return null
 }
 
 function getDaysUntil(fromDateString, targetDateString) {

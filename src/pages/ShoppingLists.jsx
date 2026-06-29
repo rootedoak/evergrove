@@ -7,6 +7,7 @@ import {
     ShoppingCart,
     Trash2
 } from "lucide-react"
+
 import usePreferences from "../hooks/usePreferences"
 import {
     archiveShoppingList,
@@ -17,6 +18,12 @@ import {
     getShoppingLists,
     toggleShoppingListItem
 } from "../services/shoppingService"
+
+import AppPage from "../components/ui/AppPage"
+import PageHeader from "../components/ui/PageHeader"
+import Button from "../components/ui/Button"
+import InsightCard from "../components/dashboard/InsightCard"
+import SectionCard from "../components/ui/SectionCard"
 
 const defaultShoppingCategoryOrder = [
     "Produce",
@@ -62,9 +69,7 @@ export default function ShoppingLists() {
     const [shoppingMode, setShoppingMode] = useState(false)
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
     const [selectedItemInfo, setSelectedItemInfo] = useState(null)
-
     const [showListForm, setShowListForm] = useState(false)
-    const [showShoppingFabMenu, setShowShoppingFabMenu] = useState(false)
 
     const [itemForm, setItemForm] = useState({
         name: "",
@@ -103,9 +108,7 @@ export default function ShoppingLists() {
 
         window.addEventListener("resize", handleResize)
 
-        return () => {
-            window.removeEventListener("resize", handleResize)
-        }
+        return () => window.removeEventListener("resize", handleResize)
     }, [])
 
     useEffect(() => {
@@ -204,6 +207,7 @@ export default function ShoppingLists() {
 
         setNewListTitle("")
         setSelectedListId(list.id)
+        setShowListForm(false)
         await loadData()
     }
 
@@ -245,447 +249,394 @@ export default function ShoppingLists() {
         await loadData()
     }
 
+    function handleHeaderAdd() {
+        if (!selectedList) {
+            setShowListForm(true)
+            return
+        }
+
+        setShoppingMode(false)
+
+        setTimeout(() => {
+            addItemRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            })
+        }, 100)
+    }
+
     if (loading) {
         return <p className="muted-text">Loading shopping lists...</p>
     }
 
     return (
-        <div className="tasks-command-page">
-            <header className="calendar-header">
-                <div>
-                    <p className="dashboard-household-name">Shopping</p>
-                    <h2>Shopping Lists</h2>
-                    <p>
-                        Build shared household shopping lists for groceries, errands, and weekly needs.
-                    </p>
-                </div>
-            </header>
+        <AppPage>
+            <PageHeader
+                eyebrow="Shopping"
+                title="Shopping Lists"
+                subtitle="Build shared household shopping lists for groceries, errands, and weekly needs."
+                action={
+                    <Button size="sm" onClick={handleHeaderAdd}>
+                        <Plus size={16} />
+                        Add
+                    </Button>
+                }
+            />
 
-            {error && <div className="error-banner">{error}</div>}
+            <div className="eg-stack">
+                {error && <div className="error-banner">{error}</div>}
 
-            {!isMobile && (
-                <div className="dashboard-grid">
-                    <section className="panel hero-panel">
-                        <div className="panel-icon">
-                            <ShoppingCart size={22} />
-                        </div>
+                <InsightCard
+                    insight={{
+                        title: selectedList
+                            ? `${openItemCount} item${openItemCount === 1 ? "" : "s"} remaining`
+                            : "No shopping list selected",
+                        description: selectedList
+                            ? `${completionPercentage}% complete • ${selectedList.title}`
+                            : "Create a shopping list or generate one from Meals.",
+                        actionLabel: selectedList
+                            ? "Start Shopping"
+                            : "Create List"
+                    }}
+                    onAction={() => {
+                        if (selectedList) {
+                            setShoppingMode(true)
+                        } else {
+                            setShowListForm(true)
+                        }
+                    }}
+                />
 
-                        <div>
-                            <p className="eyebrow">Selected List</p>
-                            <h3>{selectedList?.title || "No shopping list yet"}</h3>
+                {showListForm && !shoppingMode && (
+                    <SectionCard
+                        title="Create Shopping List"
+                        subtitle="Start a new household shopping list."
+                        actions={<ShoppingCart size={20} />}
+                    >
+                        <form
+                            ref={createListRef}
+                            onSubmit={handleCreateList}
+                            className="form-stack"
+                        >
+                            <div className="two-column-form">
+                                <input
+                                    className="form-input"
+                                    value={newListTitle}
+                                    onChange={event => setNewListTitle(event.target.value)}
+                                    placeholder="Example: Weekly Groceries"
+                                />
 
-                            {selectedList ? (
-                                <div>
-                                    <p className="muted-text">
-                                        {openItemCount} remaining • {completedItemCount} completed
-                                    </p>
+                                <Button type="submit">
+                                    <Plus size={16} />
+                                    Create List
+                                </Button>
+                            </div>
+                        </form>
+                    </SectionCard>
+                )}
 
-                                    <div className="shopping-progress-bar">
-                                        <div
-                                            className="shopping-progress-fill"
-                                            style={{ width: `${completionPercentage}%` }}
-                                        />
-                                    </div>
+                {shoppingLists.length > 0 ? (
+                    <SectionCard
+                        title={shoppingMode ? "Shopping Mode" : "Shopping Lists"}
+                        subtitle={
+                            shoppingMode
+                                ? "Tap items as you shop."
+                                : "Select a list, then manage its items."
+                        }
+                        action={
+                            <div className="eg-actions-row">
+                                <Button
+                                    size="sm"
+                                    variant={shoppingMode ? "secondary" : "primary"}
+                                    onClick={() => setShoppingMode(current => !current)}
+                                    disabled={!selectedList}
+                                >
+                                    {shoppingMode ? "Exit Shopping" : "Start Shopping"}
+                                </Button>
 
-                                    <p className="muted-text">
-                                        {completionPercentage}% complete
-                                    </p>
-                                </div>
-                            ) : (
-                                <p className="muted-text">
-                                    Create or select a shopping list.
-                                </p>
-                            )}
-                        </div>
-                    </section>
-
-                    <section className="panel stat-panel">
-                        <ShoppingCart size={22} />
-
-                        <div>
-                            <p className="eyebrow">Lists</p>
-                            <h3>{shoppingLists.length}</h3>
-                            <p className="muted-text">total lists</p>
-                        </div>
-                    </section>
-                </div>
-            )}
-
-            {showListForm && !shoppingMode && (
-                <section className="panel" ref={createListRef}>
-                    <div className="section-heading">
-                        <div>
-                            <h3>Create Shopping List</h3>
-                            <p>Start a new household shopping list.</p>
-                        </div>
-
-                        <ShoppingCart size={20} />
-                    </div>
-
-                    <form onSubmit={handleCreateList} className="form-stack">
-                        <div className="two-column-form">
-                            <input
-                                className="form-input"
-                                value={newListTitle}
-                                onChange={event => setNewListTitle(event.target.value)}
-                                placeholder="Example: Weekly Groceries"
-                            />
-
-                            <button className="primary-button" type="submit">
-                                <Plus size={16} />
-                                Create List
-                            </button>
-                        </div>
-                    </form>
-                </section>
-            )}
-
-            {shoppingLists.length > 0 ? (
-                <section className="panel">
-                    <div className="section-heading">
-                        <div>
-                            <h3>{shoppingMode ? "Shopping Mode" : "Shopping Lists"}</h3>
-                            <p>
-                                {shoppingMode
-                                    ? "Tap items as you shop."
-                                    : "Select a list, then manage its items."}
-                            </p>
-                        </div>
-
-                        <div className="button-row">
-                            <button
-                                className={shoppingMode ? "primary-button" : "secondary-button"}
-                                type="button"
-                                onClick={() => setShoppingMode(!shoppingMode)}
-                                disabled={!selectedList}
-                            >
-                                Shopping Mode
-                            </button>
-
-                            {!shoppingMode && (
-                                <>
-                                    <button
-                                        className="secondary-button"
-                                        type="button"
-                                        onClick={handleArchiveSelectedList}
-                                        disabled={!selectedList}
-                                    >
-                                        <Archive size={16} />
-                                        Archive
-                                    </button>
-
-                                    <button
-                                        className="secondary-button"
-                                        type="button"
-                                        onClick={handleDeleteSelectedList}
-                                        disabled={!selectedList}
-                                    >
-                                        <Trash2 size={16} />
-                                        Delete
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className={shoppingMode ? "shopping-mode-layout" : "shopping-master-detail"}>
-                        {!shoppingMode && (
-                            <div className="shopping-list-sidebar">
-                                {sortedShoppingLists.map(list => {
-                                    const stats = getListStats(list)
-                                    const isSelected = list.id === selectedListId
-
-                                    return (
-                                        <button
-                                            key={list.id}
-                                            type="button"
-                                            onClick={() => setSelectedListId(list.id)}
-                                            className={
-                                                isSelected
-                                                    ? "shopping-list-card selected"
-                                                    : "shopping-list-card"
-                                            }
+                                {!shoppingMode && (
+                                    <>
+                                        <Button
+                                            size="sm"
+                                            variant="secondary"
+                                            onClick={handleArchiveSelectedList}
+                                            disabled={!selectedList}
                                         >
+                                            <Archive size={16} />
+                                            Archive
+                                        </Button>
+
+                                        <Button
+                                            size="sm"
+                                            variant="secondary"
+                                            onClick={handleDeleteSelectedList}
+                                            disabled={!selectedList}
+                                        >
+                                            <Trash2 size={16} />
+                                            Delete
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        }
+                    >
+                        <div className={shoppingMode ? "shopping-mode-layout" : "shopping-master-detail"}>
+                            {!shoppingMode && (
+                                <div className="shopping-list-sidebar">
+                                    {sortedShoppingLists.map(list => {
+                                        const stats = getListStats(list)
+                                        const isSelected = list.id === selectedListId
+
+                                        return (
+                                            <button
+                                                key={list.id}
+                                                type="button"
+                                                onClick={() => setSelectedListId(list.id)}
+                                                className={
+                                                    isSelected
+                                                        ? "shopping-list-card selected"
+                                                        : "shopping-list-card"
+                                                }
+                                            >
+                                                <div className="eg-shopping-list-card-content">
+                                                    <strong>{list.title}</strong>
+
+                                                    <span>
+                                                        {stats.remaining} remaining
+                                                        {stats.completed > 0
+                                                            ? ` • ${stats.completed} done`
+                                                            : ""}
+                                                    </span>
+
+                                                    <div className="shopping-progress-bar">
+                                                        <div
+                                                            className="shopping-progress-fill"
+                                                            style={{ width: `${stats.percent}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            )}
+
+                            <div className="shopping-list-detail">
+                                {selectedList ? (
+                                    <>
+                                        <div className="eg-shopping-current-summary compact">
                                             <div>
-                                                <p className="row-title">{list.title}</p>
+                                                <h3>{selectedList.title}</h3>
 
-                                                <p className="row-subtitle">
-                                                    {stats.remaining} remaining
-                                                    {stats.completed > 0
-                                                        ? ` • ${stats.completed} done`
-                                                        : ""}
-                                                </p>
+                                                <span>
+                                                    {openItemCount} remaining • {completedItemCount} completed
+                                                </span>
+                                            </div>
 
-                                                <div className="shopping-progress-bar">
-                                                    <div
-                                                        className="shopping-progress-fill"
-                                                        style={{ width: `${stats.percent}%` }}
+                                            <strong>{completionPercentage}%</strong>
+                                        </div>
+
+                                        <div className="shopping-progress-bar">
+                                            <div
+                                                className="shopping-progress-fill"
+                                                style={{ width: `${completionPercentage}%` }}
+                                            />
+                                        </div>
+
+                                        <div className="shopping-progress-bar">
+                                            <div
+                                                className="shopping-progress-fill"
+                                                style={{ width: `${completionPercentage}%` }}
+                                            />
+                                        </div>
+
+                                        {!shoppingMode && (
+                                            <form
+                                                ref={addItemRef}
+                                                onSubmit={handleCreateItem}
+                                                className="form-stack shopping-item-form"
+                                            >
+                                                <div className="three-column-form">
+                                                    <input
+                                                        className="form-input"
+                                                        value={itemForm.name}
+                                                        onChange={event =>
+                                                            setItemForm({
+                                                                ...itemForm,
+                                                                name: event.target.value
+                                                            })
+                                                        }
+                                                        placeholder="Item"
                                                     />
+
+                                                    <input
+                                                        className="form-input"
+                                                        value={itemForm.quantity}
+                                                        onChange={event =>
+                                                            setItemForm({
+                                                                ...itemForm,
+                                                                quantity: event.target.value
+                                                            })
+                                                        }
+                                                        placeholder="Quantity"
+                                                    />
+
+                                                    <select
+                                                        className="form-input"
+                                                        value={itemForm.category}
+                                                        onChange={event =>
+                                                            setItemForm({
+                                                                ...itemForm,
+                                                                category: event.target.value
+                                                            })
+                                                        }
+                                                    >
+                                                        <option value="">Category</option>
+
+                                                        {shoppingCategoryOrder.map(category => (
+                                                            <option key={category} value={category}>
+                                                                {category}
+                                                            </option>
+                                                        ))}
+                                                    </select>
                                                 </div>
 
+                                                <Button variant="secondary" type="submit">
+                                                    <Plus size={16} />
+                                                    Add Item
+                                                </Button>
+                                            </form>
+                                        )}
+
+                                        <div className="list-stack grocery-list-stack">
+                                            {itemsByCategory.length === 0 ? (
                                                 <p className="muted-text">
-                                                    {stats.percent}% complete
+                                                    No items on this list yet.
                                                 </p>
-                                            </div>
-                                        </button>
-                                    )
-                                })}
-                            </div>
-                        )}
+                                            ) : (
+                                                itemsByCategory.map(([category, items]) => (
+                                                    <div key={category} className="grocery-category-group">
+                                                        <div className="grocery-category-header">
+                                                            <h4>{category}</h4>
+                                                            <span>
+                                                                {items.length} item{items.length === 1 ? "" : "s"}
+                                                            </span>
+                                                        </div>
 
-                        <div className="shopping-list-detail">
-                            {selectedList ? (
-                                <>
-                                    <div className="shopping-detail-header">
-                                        <div>
-                                            <p className="eyebrow">Current List</p>
-                                            <h3>{selectedList.title}</h3>
-
-                                            <p className="muted-text">
-                                                {openItemCount} remaining • {completedItemCount} completed
-                                            </p>
-
-                                            <div className="shopping-progress-bar">
-                                                <div
-                                                    className="shopping-progress-fill"
-                                                    style={{ width: `${completionPercentage}%` }}
-                                                />
-                                            </div>
-
-                                            <p className="muted-text">
-                                                {completionPercentage}% complete
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {!shoppingMode && (
-                                        <form
-                                            ref={addItemRef}
-                                            onSubmit={handleCreateItem}
-                                            className="form-stack shopping-item-form"
-                                        >
-                                            <div className="three-column-form">
-                                                <input
-                                                    className="form-input"
-                                                    value={itemForm.name}
-                                                    onChange={event =>
-                                                        setItemForm({
-                                                            ...itemForm,
-                                                            name: event.target.value
-                                                        })
-                                                    }
-                                                    placeholder="Item"
-                                                />
-
-                                                <input
-                                                    className="form-input"
-                                                    value={itemForm.quantity}
-                                                    onChange={event =>
-                                                        setItemForm({
-                                                            ...itemForm,
-                                                            quantity: event.target.value
-                                                        })
-                                                    }
-                                                    placeholder="Quantity"
-                                                />
-
-                                                <select
-                                                    className="form-input"
-                                                    value={itemForm.category}
-                                                    onChange={event =>
-                                                        setItemForm({
-                                                            ...itemForm,
-                                                            category: event.target.value
-                                                        })
-                                                    }
-                                                >
-                                                    <option value="">Category</option>
-                                                    {shoppingCategoryOrder.map(category => (
-                                                        <option key={category} value={category}>
-                                                            {category}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
-                                            <button className="secondary-button" type="submit">
-                                                <Plus size={16} />
-                                                Add Item
-                                            </button>
-                                        </form>
-                                    )}
-
-                                    <div className="list-stack grocery-list-stack">
-                                        {itemsByCategory.length === 0 ? (
-                                            <p className="muted-text">
-                                                No items on this list yet.
-                                            </p>
-                                        ) : (
-                                            itemsByCategory.map(([category, items]) => (
-                                                <div key={category} className="grocery-category-group">
-                                                    <div className="grocery-category-header">
-                                                        <h4>{category}</h4>
-                                                        <span>
-                                                            {items.length} item{items.length === 1 ? "" : "s"}
-                                                        </span>
-                                                    </div>
-
-                                                    {items.map(item => (
-                                                        <div
-                                                            key={item.id}
-                                                            className={
-                                                                shoppingMode
-                                                                    ? "list-row consolidated-grocery-row shopping-mode-item"
-                                                                    : "list-row consolidated-grocery-row"
-                                                            }
-                                                        >
-                                                            <button
+                                                        {items.map(item => (
+                                                            <div
+                                                                key={item.id}
                                                                 className={
-                                                                    item.checked
-                                                                        ? "check-button checked"
-                                                                        : "check-button"
+                                                                    shoppingMode
+                                                                        ? "eg-shopping-item-row shopping-mode-item"
+                                                                        : "eg-shopping-item-row"
                                                                 }
-                                                                type="button"
-                                                                onClick={async () => {
-                                                                    await toggleShoppingListItem(
-                                                                        item.id,
-                                                                        !item.checked
-                                                                    )
-                                                                    await loadData()
-                                                                }}
                                                             >
-                                                                {item.checked && <Check size={14} />}
-                                                            </button>
-
-                                                            <button
-                                                                type="button"
-                                                                className="row-grow shopping-item-info-trigger"
-                                                                onClick={() => setSelectedItemInfo(item)}
-                                                            >
-                                                                <p
+                                                                <button
                                                                     className={
                                                                         item.checked
-                                                                            ? "row-title completed"
-                                                                            : "row-title"
+                                                                            ? "check-button checked"
+                                                                            : "check-button"
                                                                     }
-                                                                >
-                                                                    {item.quantity ? `${item.quantity} ` : ""}
-                                                                    {item.name}
-                                                                </p>
-                                                            </button>
-
-                                                            {!shoppingMode && (
-                                                                <button
-                                                                    className="icon-danger-button"
                                                                     type="button"
                                                                     onClick={async () => {
-                                                                        await deleteShoppingListItem(item.id)
+                                                                        await toggleShoppingListItem(
+                                                                            item.id,
+                                                                            !item.checked
+                                                                        )
                                                                         await loadData()
                                                                     }}
                                                                 >
-                                                                    <Trash2 size={16} />
+                                                                    {item.checked && <Check size={14} />}
                                                                 </button>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                </>
-                            ) : (
-                                <p className="muted-text">
-                                    Select a shopping list to view details.
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                </section>
-            ) : (
-                <section className="panel">
-                    <p className="muted-text">
-                        No shopping lists yet. Create one above or generate one from the Meals page.
-                    </p>
-                </section>
-            )}
 
-            {!shoppingMode && (
-                <div className="shopping-fab-wrapper">
-                    {showShoppingFabMenu && (
-                        <div
-                            className="shopping-fab-menu-backdrop"
-                            onClick={() => setShowShoppingFabMenu(false)}
-                        >
-                            <div
-                                className="shopping-fab-menu"
-                                onClick={event => event.stopPropagation()}
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowShoppingFabMenu(false)
-                                        setShowListForm(true)
+                                                                <button
+                                                                    type="button"
+                                                                    className="row-grow shopping-item-info-trigger"
+                                                                    onClick={() => setSelectedItemInfo(item)}
+                                                                >
+                                                                    <p
+                                                                        className={
+                                                                            item.checked
+                                                                                ? "row-title completed"
+                                                                                : "row-title"
+                                                                        }
+                                                                    >
+                                                                        {item.quantity ? `${item.quantity} ` : ""}
+                                                                        {item.name}
+                                                                    </p>
+                                                                </button>
 
-                                        setTimeout(() => {
-                                            createListRef.current?.scrollIntoView({
-                                                behavior: "smooth",
-                                                block: "center"
-                                            })
-                                        }, 100)
-                                    }}
-                                >
-                                    <span>🛒</span>
-                                    Create List
-                                </button>
+                                                                {!shoppingMode && (
+                                                                    <button
+                                                                        className="icon-danger-button"
+                                                                        type="button"
+                                                                        onClick={async () => {
+                                                                            await deleteShoppingListItem(item.id)
+                                                                            await loadData()
+                                                                        }}
+                                                                    >
+                                                                        <Trash2 size={16} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <p className="muted-text">
+                                        Select a shopping list to view details.
+                                    </p>
+                                )}
                             </div>
                         </div>
-                    )}
+                    </SectionCard>
+                ) : (
+                    <SectionCard>
+                        <p className="muted-text">
+                            No shopping lists yet. Create one above or generate one from the Meals page.
+                        </p>
+                    </SectionCard>
+                )}
 
-                    <button
-                        type="button"
-                        className="shopping-mobile-fab"
-                        onClick={() => setShowShoppingFabMenu(current => !current)}
-                        aria-label="Shopping actions"
-                    >
-                        {showShoppingFabMenu ? "×" : "+"}
-                    </button>
-                </div>
-            )}
-
-            {selectedItemInfo && (
-                <div
-                    className="task-action-backdrop"
-                    onClick={() => setSelectedItemInfo(null)}
-                >
+                {selectedItemInfo && (
                     <div
-                        className="task-action-sheet"
-                        onClick={event => event.stopPropagation()}
+                        className="task-action-backdrop"
+                        onClick={() => setSelectedItemInfo(null)}
                     >
-                        <h3>{selectedItemInfo.name}</h3>
-
-                        <p className="muted-text">
-                            {selectedItemInfo.quantity
-                                ? `Quantity: ${selectedItemInfo.quantity}`
-                                : "No quantity listed"}
-                        </p>
-
-                        <p className="muted-text">
-                            Category: {selectedItemInfo.category || "Uncategorized"}
-                        </p>
-
-                        <p className="muted-text">
-                            Used in: {getItemMealSource(selectedItemInfo) || "No linked meal found"}
-                        </p>
-
-                        <button
-                            type="button"
-                            onClick={() => setSelectedItemInfo(null)}
+                        <div
+                            className="task-action-sheet"
+                            onClick={event => event.stopPropagation()}
                         >
-                            Close
-                        </button>
+                            <h3>{selectedItemInfo.name}</h3>
+
+                            <p className="muted-text">
+                                {selectedItemInfo.quantity
+                                    ? `Quantity: ${selectedItemInfo.quantity}`
+                                    : "No quantity listed"}
+                            </p>
+
+                            <p className="muted-text">
+                                Category: {selectedItemInfo.category || "Uncategorized"}
+                            </p>
+
+                            <p className="muted-text">
+                                Used in: {getItemMealSource(selectedItemInfo) || "No linked meal found"}
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={() => setSelectedItemInfo(null)}
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )}
+            </div>
+        </AppPage>
     )
 }

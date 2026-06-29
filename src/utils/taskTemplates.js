@@ -65,6 +65,38 @@ const taskTemplates = {
         "Pack cooler",
         "Review July 4th plans",
     ],
+
+    halloween_prep: [
+        "Decide on Halloween costumes",
+        "Buy Halloween candy",
+        "Check Halloween decorations",
+    ],
+
+    halloween_final: [
+        "Set out costumes",
+        "Charge phone for pictures",
+        "Prepare candy bowl",
+    ],
+
+    thanksgiving_prep: [
+        "Plan Thanksgiving menu",
+        "Confirm who is coming for Thanksgiving",
+        "Make Thanksgiving grocery list",
+        "Check serving dishes and cookware",
+    ],
+
+    thanksgiving_shopping: [
+        "Buy Thanksgiving groceries",
+        "Pick up drinks and ice",
+        "Check pantry staples",
+    ],
+
+    thanksgiving_final: [
+        "Thaw turkey if needed",
+        "Clean main gathering areas",
+        "Set out serving dishes",
+        "Prep make-ahead sides",
+    ],
 }
 
 export function getTaskTemplate(type, values = {}) {

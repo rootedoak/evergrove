@@ -2,7 +2,7 @@ export default function PageHeader({
     eyebrow,
     title,
     subtitle,
-    action,
+    action
 }) {
     return (
         <header className="eg-page-header">

@@ -72,4 +72,71 @@ export const holidayDefinitions = [
             },
         ],
     },
+
+    {
+        id: "halloween",
+        name: "Halloween",
+        month: 10,
+        day: 31,
+        icon: "🎃",
+        moments: [
+            {
+                daysBefore: 30,
+                priority: 60,
+                score: 82,
+                title: "Halloween is coming up",
+                description: "Now is a good time to plan costumes, candy, and decorations.",
+                actionLabel: "Create Halloween Checklist",
+                template: "halloween_prep",
+            },
+            {
+                daysBefore: 3,
+                priority: 60,
+                score: 96,
+                title: "Halloween is almost here",
+                description: "A quick final checklist can help the night go smoothly.",
+                actionLabel: "Create Final Checklist",
+                template: "halloween_final",
+            },
+        ],
+    },
+
+    {
+        id: "thanksgiving",
+        name: "Thanksgiving",
+        type: "nth-weekday",
+        month: 11,
+        weekday: 4, // Thursday
+        occurrence: 4,
+        icon: "🦃",
+        moments: [
+            {
+                daysBefore: 30,
+                priority: 68,
+                score: 84,
+                title: "Thanksgiving is coming up",
+                description: "Now is a good time to plan the menu, guests, and grocery list.",
+                actionLabel: "Create Thanksgiving Checklist",
+                template: "thanksgiving_prep",
+            },
+            {
+                daysBefore: 10,
+                priority: 68,
+                score: 90,
+                title: "Thanksgiving shopping is coming up",
+                description: "A shopping checklist can help avoid last-minute grocery runs.",
+                actionLabel: "Create Shopping Checklist",
+                template: "thanksgiving_shopping",
+            },
+            {
+                daysBefore: 3,
+                priority: 68,
+                score: 98,
+                title: "Thanksgiving is almost here",
+                description: "A final prep checklist can help the day feel calmer.",
+                actionLabel: "Create Final Checklist",
+                template: "thanksgiving_final",
+            },
+        ],
+    },
 ]

@@ -917,6 +917,9 @@
 }
 
 .eg-page-header-action {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
     flex-shrink: 0;
 }
 
@@ -1697,4 +1700,761 @@ button.eg-attention-metric {
 
 .eg-insight-card {
     transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.eg-search-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface-soft, #f8fafc);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 999px;
+    padding: 0.7rem 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.eg-search-field input {
+    border: 0;
+    outline: 0;
+    background: transparent;
+    width: 100%;
+    font: inherit;
+    color: var(--text, #0f172a);
+}
+
+.eg-saved-meal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.eg-saved-meal-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 1rem;
+    background: var(--surface, #ffffff);
+}
+
+.eg-saved-meal-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+
+.eg-saved-meal-main strong {
+    display: block;
+    color: var(--text, #0f172a);
+    font-size: 0.95rem;
+    line-height: 1.2;
+}
+
+.eg-saved-meal-main p {
+    margin: 0.15rem 0 0;
+    color: var(--muted, #64748b);
+    font-size: 0.8rem;
+}
+
+.eg-saved-meal-main span {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--muted, #64748b);
+    font-size: 0.78rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.eg-meal-avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 2.25rem;
+    border-radius: 999px;
+    background: var(--surface-soft, #f8fafc);
+    display: grid;
+    place-items: center;
+    color: var(--primary, #2563eb);
+}
+
+.eg-overflow-button {
+    border: 0;
+    background: transparent;
+    color: var(--muted, #64748b);
+    font-size: 1.4rem;
+    line-height: 1;
+    padding: 0.25rem 0.4rem;
+    cursor: pointer;
+}
+
+.eg-meal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.9rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 1rem;
+    background: var(--surface-soft, #f8fafc);
+}
+
+.eg-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 0.6fr;
+    gap: 0.65rem;
+}
+
+.eg-check-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--muted, #64748b);
+    font-size: 0.9rem;
+}
+
+.eg-ingredient-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.eg-section-mini-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--text, #0f172a);
+}
+
+.eg-section-mini-header span {
+    color: var(--muted, #64748b);
+    font-size: 0.8rem;
+}
+
+.eg-ingredient-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.eg-ingredient-row {
+    display: grid;
+    grid-template-columns: 1fr 0.7fr 0.8fr auto;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.eg-mini-danger {
+    border: 0;
+    background: transparent;
+    color: var(--danger, #dc2626);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.eg-actions-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+
+    .eg-form-grid,
+    .eg-ingredient-row {
+        grid-template-columns: 1fr;
+    }
+
+    .eg-saved-meal-row {
+        padding: 0.7rem;
+    }
+}
+
+.eg-meal-week-list.compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.eg-meal-day-row-wrap {
+    position: relative;
+}
+
+.eg-meal-day-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.8rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 1rem;
+    background: var(--surface, #ffffff);
+    text-align: left;
+    cursor: pointer;
+}
+
+.eg-meal-day-date {
+    width: 3.75rem;
+    flex: 0 0 3.75rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.eg-meal-day-date strong {
+    font-size: 0.9rem;
+    color: var(--text, #0f172a);
+}
+
+.eg-meal-day-date span {
+    font-size: 0.72rem;
+    color: var(--muted, #64748b);
+}
+
+.eg-meal-day-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.eg-meal-day-main .muted {
+    color: var(--muted, #64748b);
+}
+
+.eg-meal-add-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--surface-soft, #f8fafc);
+    color: var(--primary, #2563eb);
+    font-weight: 700;
+}
+
+.eg-meal-plan-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.eg-meal-plan-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--text, #0f172a);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.eg-meal-plan-pill span {
+    flex: 0 0 auto;
+}
+
+.eg-meal-plan-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem 0;
+}
+
+.eg-danger-icon-button {
+    border: 0;
+    background: transparent;
+    color: var(--danger, #dc2626);
+    cursor: pointer;
+    padding: 0.25rem;
+}
+
+.eg-quick-add-panel {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 1rem;
+    background: var(--surface-soft, #f8fafc);
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.eg-info-tile {
+    width: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 1rem;
+
+    padding: 1rem;
+
+    border: none;
+
+    border-radius: 18px;
+
+    background: var(--surface);
+
+    cursor: pointer;
+
+    text-align: left;
+
+    transition: .15s ease;
+}
+
+.eg-info-tile:hover {
+    background: var(--surface-soft);
+}
+
+.eg-info-icon {
+    width: 44px;
+
+    height: 44px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 14px;
+
+    background: var(--surface-soft);
+
+    color: var(--primary);
+}
+
+.eg-info-content {
+    flex: 1;
+}
+
+.eg-info-title {
+    margin: 0;
+
+    font-size: .8rem;
+
+    color: var(--muted);
+}
+
+.eg-info-value {
+    margin: .15rem 0;
+
+    font-size: 1.15rem;
+
+    font-weight: 600;
+
+    color: var(--text);
+}
+
+.eg-info-subtitle {
+    margin: 0;
+
+    font-size: .82rem;
+
+    color: var(--muted);
+}
+
+.eg-info-action {
+    font-size: .8rem;
+
+    color: var(--primary);
+
+    font-weight: 600;
+}
+
+.eg-tonight-card {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.eg-tonight-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 1rem;
+    display: grid;
+    place-items: center;
+    background: var(--surface-soft, #f8fafc);
+    color: var(--primary, #2563eb);
+    flex: 0 0 auto;
+}
+
+.eg-tonight-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.eg-tonight-content p {
+    margin: 0;
+    color: var(--muted, #64748b);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.eg-tonight-content h2 {
+    margin: 0.15rem 0;
+    color: var(--text, #0f172a);
+    font-size: 1.25rem;
+    line-height: 1.15;
+}
+
+.eg-tonight-content span {
+    display: block;
+    color: var(--muted, #64748b);
+    font-size: 0.85rem;
+}
+
+.eg-meal-hero {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.eg-meal-hero-icon {
+    width: 3rem;
+    height: 3rem;
+    flex: 0 0 3rem;
+    display: grid;
+    place-items: center;
+    border-radius: 1rem;
+    background: var(--surface-soft, #f8fafc);
+    color: var(--primary, #2563eb);
+}
+
+.eg-meal-hero-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.eg-meal-hero-label {
+    margin: 0;
+    color: var(--muted, #64748b);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.eg-meal-hero-content h2 {
+    margin: 0.15rem 0;
+    color: var(--text, #0f172a);
+    font-size: 1.35rem;
+    line-height: 1.15;
+}
+
+.eg-meal-hero-message {
+    margin: 0;
+    color: var(--muted, #64748b);
+    font-size: 0.9rem;
+}
+
+.eg-meal-status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+    margin: 1rem 0;
+}
+
+.eg-meal-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 1rem;
+    background: var(--surface-soft, #f8fafc);
+    color: var(--text, #0f172a);
+}
+
+.eg-meal-status svg {
+    color: var(--primary, #2563eb);
+    flex: 0 0 auto;
+}
+
+.eg-meal-status strong {
+    display: block;
+    font-size: 0.9rem;
+    line-height: 1.1;
+}
+
+.eg-meal-status span {
+    display: block;
+    color: var(--muted, #64748b);
+    font-size: 0.72rem;
+}
+
+.eg-meal-actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .eg-meal-status-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .eg-meal-status {
+        padding: 0.65rem 0.75rem;
+    }
+}
+
+.eg-meal-message {
+    margin: 1rem 0;
+
+    padding: 1rem;
+
+    border-radius: 14px;
+
+    background: rgba(37, 99, 235, 0.08);
+
+    color: var(--text);
+}
+
+.eg-assistant-insight-card {
+    background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 38%),
+        linear-gradient(180deg, rgba(37, 99, 235, 0.10), rgba(37, 99, 235, 0.05));
+    border: 1px solid rgba(37, 99, 235, 0.14);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.eg-assistant-insight {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+}
+
+.eg-assistant-insight-icon {
+    width: 3rem;
+    height: 3rem;
+    flex: 0 0 3rem;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--primary, #2563eb);
+    color: white;
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
+}
+
+.eg-assistant-insight-content {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+}
+
+.eg-assistant-insight-eyebrow {
+    margin: 0 0 0.55rem;
+    color: var(--muted, #64748b);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.eg-assistant-insight-content h2 {
+    margin: 0;
+    color: var(--text, #0f172a);
+    font-size: 1.25rem;
+    line-height: 1.2;
+}
+
+.eg-assistant-insight-content>p:not(.eg-assistant-insight-eyebrow) {
+    margin: 0.55rem auto 0;
+    max-width: 28rem;
+    color: var(--muted, #64748b);
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+.eg-assistant-insight-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.eg-grocery-summary-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 1rem;
+    background: var(--surface-soft, #f8fafc);
+    text-align: left;
+    cursor: pointer;
+}
+
+.eg-grocery-summary-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: white;
+}
+
+.eg-grocery-summary-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.eg-grocery-summary-content strong {
+    display: block;
+    color: var(--text, #0f172a);
+    font-size: 0.95rem;
+}
+
+.eg-grocery-summary-content span {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--muted, #64748b);
+    font-size: 0.82rem;
+}
+
+.eg-grocery-summary-action {
+    color: var(--primary, #2563eb);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.eg-shopping-list-card-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    text-align: left;
+}
+
+.eg-shopping-list-card-content strong {
+    color: var(--text, #0f172a);
+    font-size: 0.95rem;
+}
+
+.eg-shopping-list-card-content span {
+    color: var(--muted, #64748b);
+    font-size: 0.8rem;
+}
+
+.eg-shopping-current-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.65rem;
+}
+
+.eg-shopping-current-summary p {
+    margin: 0;
+    color: var(--muted, #64748b);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.eg-shopping-current-summary h3 {
+    margin: 0.2rem 0;
+    color: var(--text, #0f172a);
+    font-size: 1.1rem;
+}
+
+.eg-shopping-current-summary span {
+    color: var(--muted, #64748b);
+    font-size: 0.85rem;
+}
+
+.eg-shopping-current-summary strong {
+    color: var(--primary, #2563eb);
+    font-size: 1rem;
+}
+
+.eg-shopping-item-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 1rem;
+    background: var(--surface, #ffffff);
+}
+
+.eg-shopping-item-row .shopping-item-info-trigger {
+    border: 0;
+    background: transparent;
+    text-align: left;
+    padding: 0;
+    cursor: pointer;
+}
+
+.eg-shopping-item-row .row-title {
+    margin: 0;
+}
+
+.eg-shopping-item-row.shopping-mode-item {
+    padding: 0.9rem;
+}
+
+.eg-shopping-current-summary.compact {
+    margin-top: 0.25rem;
+}
+
+.eg-shopping-current-summary.compact h3 {
+    margin-top: 0;
+}
+
+.trip-command-row {
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 1rem;
+    background: var(--surface, #ffffff);
+    padding: 0.9rem;
+    gap: 0.75rem;
+}
+
+.trip-command-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--surface-soft, #f8fafc);
+    flex: 0 0 auto;
+}
+
+.trip-command-main strong {
+    color: var(--text, #0f172a);
+    font-size: 0.98rem;
+}
+
+.trip-command-main p,
+.trip-command-main small {
+    color: var(--muted, #64748b);
+}
+
+.trip-command-actions {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+.trip-command-row {
+    text-align: left;
+}
+
+.trip-command-main {
+    text-align: left;
+}
+
+.trip-command-status {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
 }
