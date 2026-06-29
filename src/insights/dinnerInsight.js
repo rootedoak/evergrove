@@ -25,8 +25,8 @@ export default function dinnerInsight(context) {
         description: "A quick dinner plan can help the evening go smoother.",
         actionLabel: "Plan Dinner",
 
-        execute: async ({ navigate }) => {
-            navigate("/meals")
+        execute: async (context) => {
+            context.actions.navigate("/meals")
 
             return {
                 completedTitle: "Meal planning opened",

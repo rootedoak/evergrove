@@ -18,6 +18,14 @@ const taskTemplates = {
         "Check weather",
         "Charge devices",
     ],
+
+    christmas: [
+        "Make Christmas gift list",
+        "Buy Christmas gifts",
+        "Wrap Christmas presents",
+        "Plan Christmas meal",
+        "Check Christmas decorations",
+    ],
 }
 
 export function getTaskTemplate(type, values = {}) {

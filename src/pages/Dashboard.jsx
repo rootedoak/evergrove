@@ -519,18 +519,6 @@ export default function Dashboard() {
             return createLocalDate(a.due_date) - createLocalDate(b.due_date)
         })
 
-    const insights = getEvergroveInsights({
-        todayString,
-        dinnerTonight,
-        todayEvents,
-        allEvents,
-        openTasks,
-    })
-
-    const visibleInsights = insights.filter(
-        insight => !completedInsightIds.includes(insight.id)
-    )
-
     const dashboardLoading =
         tasksLoading ||
         preferencesLoading ||
@@ -768,6 +756,12 @@ export default function Dashboard() {
             alert(error.message || "Could not complete insight action.")
         }
     }
+
+    const insights = getEvergroveInsights(intelligenceContext)
+
+    const visibleInsights = insights.filter(
+        insight => !completedInsightIds.includes(insight.id)
+    )
 
     useEffect(() => {
         async function loadCurrentUser() {
