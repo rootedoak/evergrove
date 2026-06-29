@@ -47,6 +47,8 @@ import { updatePreferences } from "../services/preferenceService"
 
 import { filterTasksByScope } from "../utils/taskFilters"
 
+import ActionMenu from "../components/ui/ActionMenu"
+
 import {
     getLocalDateString,
     isDateInCurrentWeek
@@ -228,6 +230,8 @@ function TaskSection({
     onEdit,
     onDelete,
     highlightedTaskId,
+    taskMenuOpen,
+    setTaskMenuOpen,
     hideWhenEmpty = false
 }) {
     if (hideWhenEmpty && tasks.length === 0) return null
@@ -261,6 +265,8 @@ function TaskSection({
                             onEdit={onEdit}
                             onDelete={onDelete}
                             highlighted={task.id === highlightedTaskId}
+                            taskMenuOpen={taskMenuOpen}
+                            setTaskMenuOpen={setTaskMenuOpen}
                         />
                     ))}
                 </div>
@@ -275,7 +281,9 @@ function TaskListRow({
     onComplete,
     onEdit,
     onDelete,
-    highlighted
+    highlighted,
+    taskMenuOpen,
+    setTaskMenuOpen
 }) {
     const isComplete = task.status === "complete"
     const meta = getTaskMeta(task, familyMembers)
@@ -359,6 +367,7 @@ export default function Tasks() {
     const [taskScope, setTaskScope] = useState("mine_family")
 
     const [highlightedTaskId, setHighlightedTaskId] = useState(null)
+    const [taskMenuOpen, setTaskMenuOpen] = useState(null)
 
     const currentMember = familyMembers.find(member => member.user_id === currentUserId)
     const childMemberIds = familyMembers.filter(isChildMember).map(member => member.id)
@@ -584,242 +593,236 @@ export default function Tasks() {
                 }
             />
 
-            {!tripId && (
-                <section className="task-scope-filter task-scope-filter-compact">
-                    <label>
-                        <span>View</span>
-
-                        <select
-                            value={taskScope}
-                            onChange={(event) =>
-                                handleTaskScopeChange(event.target.value)
-                            }
-                        >
-                            {taskScopes.map(scope => (
-                                <option
-                                    key={scope.key}
-                                    value={scope.key}
-                                >
-                                    {scope.label}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                </section>
-            )}
-
-            {!tripId && (
-                <section className="task-destinations task-destinations-compact">
-                    <TaskDestinationCard
-                        to="/routines"
-                        icon="🔁"
-                        title="Routines"
-                        description="Manage recurring household tasks."
-                    />
-                </section>
-            )}
-
-            <BottomSheet open={showForm} onClose={resetForm}>
-                <SectionCard title={editingId ? "Edit To-Do" : "Add To-Do"}>
-                    <form onSubmit={handleSubmit}>
-                        <FormSection>
-                            <TextField
-                                label="Title"
-                                value={form.title}
-                                onChange={value => updateForm("title", value)}
-                                placeholder="Register for basketball"
-                                required
-                            />
-
-                            <TextField
-                                label="Due Date"
-                                type="date"
-                                value={form.due_date}
-                                onChange={value => updateForm("due_date", value)}
-                            />
-
-                            <SelectField
-                                label="Family Member"
-                                value={form.family_member_id}
-                                onChange={value => updateForm("family_member_id", value)}
-                                options={[
-                                    { value: "", label: "No family member selected" },
-                                    ...familyMembers.map(member => ({
-                                        value: member.id,
-                                        label: `${member.avatar_emoji ? `${member.avatar_emoji} ` : ""}${member.name}`
-                                    }))
-                                ]}
-                            />
-
-                            <SelectField
-                                label="Activity"
-                                value={form.activity_id}
-                                onChange={value => updateForm("activity_id", value)}
-                                options={[
-                                    { value: "", label: "No activity selected" },
-                                    ...activities.map(activity => ({
-                                        value: activity.id,
-                                        label: activity.name
-                                    }))
-                                ]}
-                            />
-
-                            <SelectField
-                                label="Status"
-                                value={form.status}
-                                onChange={value => updateForm("status", value)}
-                                options={[
-                                    { value: "open", label: "Open" },
-                                    { value: "complete", label: "Complete" }
-                                ]}
-                            />
-
-                            <SelectField
-                                label="Visibility"
-                                value={form.visibility}
-                                onChange={value => updateForm("visibility", value)}
-                                options={[
-                                    { value: "household", label: "Family task" },
-                                    { value: "private", label: "Private task" }
-                                ]}
-                            />
-
-                            <TextAreaField
-                                label="Description"
-                                value={form.description}
-                                onChange={value => updateForm("description", value)}
-                                rows={3}
-                            />
-
-                            <Button
-                                type="submit"
-                                size="lg"
-                                disabled={saving}
+            <div className="eg-stack">
+                {!tripId && (
+                    <div className="eg-filter-chips">
+                        {taskScopes.map(scope => (
+                            <button
+                                key={scope.key}
+                                type="button"
+                                className={taskScope === scope.key ? "active" : ""}
+                                onClick={() => handleTaskScopeChange(scope.key)}
                             >
-                                {saving
-                                    ? "Saving..."
-                                    : editingId
-                                        ? "Save Changes"
-                                        : "Save To-Do"}
-                            </Button>
-                        </FormSection>
-                    </form>
-                </SectionCard>
-            </BottomSheet>
-
-            <section className="card task-command-card">
-                {loading ? (
-                    <p>Loading tasks...</p>
-                ) : visibleTasks.length === 0 ? (
-                    <p className="dashboard-empty">
-                        {tripId
-                            ? "No checklist tasks for this trip yet."
-                            : "No tasks match this view."}
-                    </p>
-                ) : (
-                    <>
-                        <TaskSection
-                            title="Overdue"
-                            subtitle="Needs attention first."
-                            tasks={groupedTasks.overdue}
-                            familyMembers={familyMembers}
-                            emptyText="No overdue tasks."
-                            onComplete={handleComplete}
-                            onEdit={startEdit}
-                            onDelete={handleDelete}
-                            highlightedTaskId={highlightedTaskId}
-                            hideWhenEmpty
-                        />
-
-                        <TaskSection
-                            title="Today"
-                            subtitle="Due today."
-                            tasks={groupedTasks.today}
-                            familyMembers={familyMembers}
-                            emptyText="Nothing due today."
-                            onComplete={handleComplete}
-                            onEdit={startEdit}
-                            onDelete={handleDelete}
-                            highlightedTaskId={highlightedTaskId}
-                            className="task-section-today"
-                            hideWhenEmpty
-                        />
-
-                        <TaskSection
-                            title="This Week"
-                            subtitle="Due before the end of this calendar week."
-                            tasks={groupedTasks.thisWeek}
-                            familyMembers={familyMembers}
-                            emptyText="Nothing else due this week."
-                            onComplete={handleComplete}
-                            onEdit={startEdit}
-                            onDelete={handleDelete}
-                            highlightedTaskId={highlightedTaskId}
-                            hideWhenEmpty
-                        />
-
-                        <TaskSection
-                            title="Later"
-                            subtitle="Upcoming or unscheduled."
-                            tasks={groupedTasks.later}
-                            familyMembers={familyMembers}
-                            emptyText="No later tasks."
-                            onComplete={handleComplete}
-                            onEdit={startEdit}
-                            onDelete={handleDelete}
-                            highlightedTaskId={highlightedTaskId}
-                            hideWhenEmpty
-                        />
-
-                        {openCount === 0 && (
-                            <p className="dashboard-empty">
-                                No open To-Do's in this view.
-                            </p>
-                        )}
-
-                        {groupedTasks.completed.length > 0 && (
-                            <section className="task-command-section">
-                                <button
-                                    className="completed-toggle"
-                                    type="button"
-                                    onClick={() => setShowCompleted(current => !current)}
-                                >
-                                    <span>
-                                        {showCompleted ? "Hide" : "Show"} Completed
-                                    </span>
-
-                                    <strong>{groupedTasks.completed.length}</strong>
-                                </button>
-
-                                {showCompleted && (
-                                    <TaskSection
-                                        title="Completed"
-                                        subtitle="Recently completed."
-                                        tasks={groupedTasks.completed}
-                                        familyMembers={familyMembers}
-                                        emptyText="No completed tasks."
-                                        onComplete={handleComplete}
-                                        onEdit={startEdit}
-                                        onDelete={handleDelete}
-                                        highlightedTaskId={highlightedTaskId}
-                                    />
-                                )}
-                            </section>
-                        )}
-                    </>
+                                {scope.label}
+                            </button>
+                        ))}
+                    </div>
                 )}
-            </section>
 
-            {!showForm && (
-                <button
-                    type="button"
-                    className="mobile-fab tasks-mobile-fab"
-                    onClick={openNewTaskForm}
-                    aria-label="Add To-Do"
-                >
-                    +
-                </button>
-            )}
+                {!tripId && (
+                    <SectionCard>
+                        <Link className="eg-routines-link-row" to="/routines">
+                            <span className="eg-routines-link-icon">🔁</span>
+
+                            <div>
+                                <strong>Routines</strong>
+                                <p>Manage recurring household tasks.</p>
+                            </div>
+                        </Link>
+                    </SectionCard>
+                )}
+
+                <BottomSheet open={showForm} onClose={resetForm}>
+                    <SectionCard title={editingId ? "Edit To-Do" : "Add To-Do"}>
+                        <form onSubmit={handleSubmit}>
+                            <FormSection>
+                                <TextField
+                                    label="Title"
+                                    value={form.title}
+                                    onChange={value => updateForm("title", value)}
+                                    placeholder="Register for basketball"
+                                    required
+                                />
+
+                                <TextField
+                                    label="Due Date"
+                                    type="date"
+                                    value={form.due_date}
+                                    onChange={value => updateForm("due_date", value)}
+                                />
+
+                                <SelectField
+                                    label="Family Member"
+                                    value={form.family_member_id}
+                                    onChange={value => updateForm("family_member_id", value)}
+                                    options={[
+                                        { value: "", label: "No family member selected" },
+                                        ...familyMembers.map(member => ({
+                                            value: member.id,
+                                            label: `${member.avatar_emoji ? `${member.avatar_emoji} ` : ""}${member.name}`
+                                        }))
+                                    ]}
+                                />
+
+                                <SelectField
+                                    label="Activity"
+                                    value={form.activity_id}
+                                    onChange={value => updateForm("activity_id", value)}
+                                    options={[
+                                        { value: "", label: "No activity selected" },
+                                        ...activities.map(activity => ({
+                                            value: activity.id,
+                                            label: activity.name
+                                        }))
+                                    ]}
+                                />
+
+                                <SelectField
+                                    label="Status"
+                                    value={form.status}
+                                    onChange={value => updateForm("status", value)}
+                                    options={[
+                                        { value: "open", label: "Open" },
+                                        { value: "complete", label: "Complete" }
+                                    ]}
+                                />
+
+                                <SelectField
+                                    label="Visibility"
+                                    value={form.visibility}
+                                    onChange={value => updateForm("visibility", value)}
+                                    options={[
+                                        { value: "household", label: "Family task" },
+                                        { value: "private", label: "Private task" }
+                                    ]}
+                                />
+
+                                <TextAreaField
+                                    label="Description"
+                                    value={form.description}
+                                    onChange={value => updateForm("description", value)}
+                                    rows={3}
+                                />
+
+                                <Button
+                                    type="submit"
+                                    size="lg"
+                                    disabled={saving}
+                                >
+                                    {saving
+                                        ? "Saving..."
+                                        : editingId
+                                            ? "Save Changes"
+                                            : "Save To-Do"}
+                                </Button>
+                            </FormSection>
+                        </form>
+                    </SectionCard>
+                </BottomSheet>
+
+                <section className="card task-command-card">
+                    {loading ? (
+                        <p>Loading tasks...</p>
+                    ) : visibleTasks.length === 0 ? (
+                        <p className="dashboard-empty">
+                            {tripId
+                                ? "No checklist tasks for this trip yet."
+                                : "No tasks match this view."}
+                        </p>
+                    ) : (
+                        <>
+                            <TaskSection
+                                title="Overdue"
+                                subtitle="Needs attention first."
+                                tasks={groupedTasks.overdue}
+                                familyMembers={familyMembers}
+                                emptyText="No overdue tasks."
+                                onComplete={handleComplete}
+                                onEdit={startEdit}
+                                onDelete={handleDelete}
+                                highlightedTaskId={highlightedTaskId}
+                                taskMenuOpen={taskMenuOpen}
+                                setTaskMenuOpen={setTaskMenuOpen}
+                                hideWhenEmpty
+                            />
+
+                            <TaskSection
+                                title="Today"
+                                subtitle="Due today."
+                                tasks={groupedTasks.today}
+                                familyMembers={familyMembers}
+                                emptyText="Nothing due today."
+                                onComplete={handleComplete}
+                                onEdit={startEdit}
+                                onDelete={handleDelete}
+                                highlightedTaskId={highlightedTaskId}
+                                taskMenuOpen={taskMenuOpen}
+                                setTaskMenuOpen={setTaskMenuOpen}
+                                className="task-section-today"
+                                hideWhenEmpty
+                            />
+
+                            <TaskSection
+                                title="This Week"
+                                subtitle="Due before the end of this calendar week."
+                                tasks={groupedTasks.thisWeek}
+                                familyMembers={familyMembers}
+                                emptyText="Nothing else due this week."
+                                onComplete={handleComplete}
+                                onEdit={startEdit}
+                                onDelete={handleDelete}
+                                highlightedTaskId={highlightedTaskId}
+                                taskMenuOpen={taskMenuOpen}
+                                setTaskMenuOpen={setTaskMenuOpen}
+                                hideWhenEmpty
+                            />
+
+                            <TaskSection
+                                title="Later"
+                                subtitle="Upcoming or unscheduled."
+                                tasks={groupedTasks.later}
+                                familyMembers={familyMembers}
+                                emptyText="No later tasks."
+                                onComplete={handleComplete}
+                                onEdit={startEdit}
+                                onDelete={handleDelete}
+                                highlightedTaskId={highlightedTaskId}
+                                taskMenuOpen={taskMenuOpen}
+                                setTaskMenuOpen={setTaskMenuOpen}
+                                hideWhenEmpty
+                            />
+
+                            {openCount === 0 && (
+                                <p className="dashboard-empty">
+                                    No open To-Do's in this view.
+                                </p>
+                            )}
+
+                            {groupedTasks.completed.length > 0 && (
+                                <section className="task-command-section">
+                                    <button
+                                        className="completed-toggle"
+                                        type="button"
+                                        onClick={() => setShowCompleted(current => !current)}
+                                    >
+                                        <span>
+                                            {showCompleted ? "Hide" : "Show"} Completed
+                                        </span>
+
+                                        <strong>{groupedTasks.completed.length}</strong>
+                                    </button>
+
+                                    {showCompleted && (
+                                        <TaskSection
+                                            title="Completed"
+                                            subtitle="Recently completed."
+                                            tasks={groupedTasks.completed}
+                                            familyMembers={familyMembers}
+                                            emptyText="No completed tasks."
+                                            onComplete={handleComplete}
+                                            onEdit={startEdit}
+                                            onDelete={handleDelete}
+                                            highlightedTaskId={highlightedTaskId}
+                                            taskMenuOpen={taskMenuOpen}
+                                            setTaskMenuOpen={setTaskMenuOpen}
+                                        />
+                                    )}
+                                </section>
+                            )}
+                        </>
+                    )}
+                </section>
+            </div>
         </AppPage>
     )
 }

@@ -175,9 +175,9 @@ function buildCalendarEvents({
             title: item.title,
             subtitle: item.family_members?.name || item.category || "School",
             sortTime: 99999,
-            start_time: event.start_time,
-            end_time: event.end_time,
-            notes: event.notes || ""
+            start_time: "",
+            end_time: "",
+            notes: item.notes || ""
         })
     })
 
@@ -953,6 +953,40 @@ export default function Calendar() {
                     setCalendarView={setCalendarView}
                     onAdd={() => setShowAddMenu(true)}
                 />
+
+                {showAddMenu && (
+                    <div
+                        className="task-action-backdrop"
+                        onClick={() => setShowAddMenu(false)}
+                    >
+                        <div
+                            className="task-action-sheet"
+                            onClick={event => event.stopPropagation()}
+                        >
+                            <h3>Add to Calendar</h3>
+
+                            <button type="button" onClick={() => openAddMenuForm("event")}>
+                                Calendar Event
+                            </button>
+
+                            <button type="button" onClick={() => openAddMenuForm("task")}>
+                                To-Do
+                            </button>
+
+                            <button type="button" onClick={() => openAddMenuForm("activity")}>
+                                Activity
+                            </button>
+
+                            <button type="button" onClick={() => openAddMenuForm("school")}>
+                                School Item
+                            </button>
+
+                            <button type="button" onClick={() => setShowAddMenu(false)}>
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {calendarView === "agenda" && (
                     <CalendarAgenda

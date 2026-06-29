@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
+import { Plus } from "lucide-react"
+
 import {
     completeSchoolItem,
     createSchoolItem,
@@ -8,6 +10,13 @@ import {
     updateSchoolItem
 } from "../services/schoolService"
 import { getFamilyMembers } from "../services/familyService"
+
+import AppPage from "../components/ui/AppPage"
+import PageHeader from "../components/ui/PageHeader"
+import SectionCard from "../components/ui/SectionCard"
+import Button from "../components/ui/Button"
+import InsightCard from "../components/dashboard/InsightCard"
+import ActionMenu from "../components/ui/ActionMenu"
 
 const initialForm = {
     title: "",
@@ -137,24 +146,19 @@ function SchoolSection({
     renderSchoolRow
 }) {
     return (
-        <section className="school-command-section">
-            <div className="school-section-header">
-                <div>
-                    <h3>{title}</h3>
-                    {subtitle && <p>{subtitle}</p>}
-                </div>
-
-                <span>{items.length}</span>
-            </div>
-
+        <SectionCard
+            title={title}
+            subtitle={subtitle}
+            count={items.length}
+        >
             {items.length === 0 ? (
                 <p className="dashboard-empty">{emptyText}</p>
             ) : (
-                <div className="school-command-list">
+                <div className="eg-stack">
                     {items.map(item => renderSchoolRow(item))}
                 </div>
             )}
-        </section>
+        </SectionCard>
     )
 }
 
@@ -171,6 +175,8 @@ export default function School() {
     const [saving, setSaving] = useState(false)
     const [showCompleted, setShowCompleted] = useState(false)
     const [selectedFamilyMemberId, setSelectedFamilyMemberId] = useState("all")
+
+    const [schoolMenuOpen, setSchoolMenuOpen] = useState(null)
 
     const visibleItems = useMemo(() => {
         return items.filter(item => {
@@ -324,224 +330,265 @@ export default function School() {
 
                 <div className="school-command-actions">
                     {!isComplete && (
-                        <button
-                            className="secondary-button"
+                        <Button
+                            variant="secondary"
+                            size="sm"
                             type="button"
                             onClick={() => handleComplete(item)}
                         >
                             Complete
-                        </button>
+                        </Button>
                     )}
 
-                    <button
-                        className="secondary-button"
-                        type="button"
-                        onClick={() => startEdit(item)}
-                    >
-                        Edit
-                    </button>
+                    <ActionMenu
+                        title={item.title}
+                        open={schoolMenuOpen === item.id}
+                        onOpenChange={isOpen =>
+                            setSchoolMenuOpen(isOpen ? item.id : null)
+                        }
+                        ariaLabel="Open school item actions"
+                        actions={[
+                            {
+                                label: "Edit",
+                                onClick: () => startEdit(item)
+                            },
+                            {
+                                label: "Delete",
+                                danger: true,
+                                onClick: () => handleDelete(item)
+                            }
+                        ]}
+                    />
 
-                    <button
-                        className="danger-button"
-                        type="button"
-                        onClick={() => handleDelete(item)}
-                    >
-                        Delete
-                    </button>
                 </div>
             </div>
+
         )
     }
 
     return (
-        <div className="school-command-page">
-            <header className="calendar-header school-command-header">
-                <div>
-                    <p className="dashboard-household-name">School</p>
-                    <h2>School Hub</h2>
+        <AppPage>
+            <PageHeader
+                eyebrow="School"
+                title="School Hub"
+                subtitle={`${activeCount} active • ${groupedItems.thisWeek.length} this week • ${studentCount} students`}
+                action={
+                    <Button
+                        size="sm"
+                        onClick={() => {
+                            if (showForm) resetForm()
+                            else setShowForm(true)
+                        }}
+                    >
+                        <Plus size={16} />
+                        {showForm ? "Cancel" : "Add"}
+                    </Button>
+                }
+            />
 
-                    <p className="school-header-summary">
-                        {activeCount} active • {groupedItems.thisWeek.length} this week •{" "}
-                        {studentCount} students
-                    </p>
-                </div>
-
-                <button
-                    className="primary-button"
-                    type="button"
-                    onClick={() => {
-                        if (showForm) resetForm()
-                        else setShowForm(true)
+            <div className="eg-stack">
+                <InsightCard
+                    insight={{
+                        title:
+                            groupedItems.dueNow.length > 0
+                                ? `${groupedItems.dueNow.length} school item${groupedItems.dueNow.length === 1 ? "" : "s"} need attention`
+                                : groupedItems.thisWeek.length > 0
+                                    ? `${groupedItems.thisWeek.length} school item${groupedItems.thisWeek.length === 1 ? "" : "s"} due this week`
+                                    : "School is caught up",
+                        description:
+                            groupedItems.dueNow.length > 0
+                                ? "Review the most urgent school items first."
+                                : groupedItems.thisWeek.length > 0
+                                    ? "You have a few school items coming up soon."
+                                    : "No urgent school items need attention right now.",
+                        actionLabel:
+                            groupedItems.dueNow.length > 0 || groupedItems.thisWeek.length > 0
+                                ? "Review Items"
+                                : "Add Item"
                     }}
-                >
-                    {showForm ? "Cancel" : "+ Add School Item"}
-                </button>
-            </header>
+                    onAction={() => {
+                        if (groupedItems.dueNow.length === 0 && groupedItems.thisWeek.length === 0) {
+                            setShowForm(true)
+                        }
+                    }}
+                />
 
-            {showForm && (
-                <section className="card form-card">
-                    <h3>{editingId ? "Edit School Item" : "Add School Item"}</h3>
+                {showForm && (
+                    <SectionCard
+                        title={editingId ? "Edit School Item" : "Add School Item"}
+                        subtitle="Track forms, events, supplies, payments, and school reminders."
+                    >
+                        <form className="form-grid" onSubmit={handleSubmit}>
+                            <label>
+                                Title
+                                <input
+                                    value={form.title}
+                                    onChange={event => updateForm("title", event.target.value)}
+                                    placeholder="Field trip form due"
+                                    required
+                                />
+                            </label>
 
-                    <form className="form-grid" onSubmit={handleSubmit}>
-                        <label>
-                            Title
-                            <input
-                                value={form.title}
-                                onChange={event => updateForm("title", event.target.value)}
-                                placeholder="Field trip form due"
-                                required
-                            />
-                        </label>
+                            <label>
+                                Category
+                                <select
+                                    value={form.category}
+                                    onChange={event => updateForm("category", event.target.value)}
+                                >
+                                    <option value="general">General</option>
+                                    <option value="form">Form</option>
+                                    <option value="field_trip">Field Trip</option>
+                                    <option value="conference">Conference</option>
+                                    <option value="supply">Supply</option>
+                                    <option value="spirit_day">Spirit Day</option>
+                                    <option value="event">Event</option>
+                                    <option value="payment">Payment</option>
+                                </select>
+                            </label>
 
-                        <label>
-                            Category
-                            <select
-                                value={form.category}
-                                onChange={event => updateForm("category", event.target.value)}
+                            <label>
+                                Due Date
+                                <input
+                                    type="date"
+                                    value={form.due_date}
+                                    onChange={event => updateForm("due_date", event.target.value)}
+                                />
+                            </label>
+
+                            <label>
+                                Family Member
+                                <select
+                                    value={form.family_member_id}
+                                    onChange={event =>
+                                        updateForm("family_member_id", event.target.value)
+                                    }
+                                >
+                                    <option value="">No family member selected</option>
+                                    {familyMembers
+                                        .filter(member => member.role === "child")
+                                        .map(member => (
+                                            <option key={member.id} value={member.id}>
+                                                {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
+                                                {member.name}
+                                            </option>
+                                        ))}
+                                </select>
+                            </label>
+
+                            <label className="full-width">
+                                Notes
+                                <textarea
+                                    value={form.notes}
+                                    onChange={event => updateForm("notes", event.target.value)}
+                                    rows="3"
+                                />
+                            </label>
+
+                            <Button
+                                className="full-width"
+                                type="submit"
+                                disabled={saving}
                             >
-                                <option value="general">General</option>
-                                <option value="form">Form</option>
-                                <option value="field_trip">Field Trip</option>
-                                <option value="conference">Conference</option>
-                                <option value="supply">Supply</option>
-                                <option value="spirit_day">Spirit Day</option>
-                                <option value="event">Event</option>
-                                <option value="payment">Payment</option>
-                            </select>
-                        </label>
+                                {saving
+                                    ? "Saving..."
+                                    : editingId
+                                        ? "Save Changes"
+                                        : "Save School Item"}
+                            </Button>
+                        </form>
+                    </SectionCard>
+                )}
 
-                        <label>
-                            Due Date
-                            <input
-                                type="date"
-                                value={form.due_date}
-                                onChange={event => updateForm("due_date", event.target.value)}
-                            />
-                        </label>
-
-                        <label>
-                            Family Member
-                            <select
-                                value={form.family_member_id}
-                                onChange={event =>
-                                    updateForm("family_member_id", event.target.value)
-                                }
+                <SectionCard
+                    title="School Items"
+                    subtitle="Filter by student and review what needs attention."
+                    action={
+                        <div className="eg-filter-chips">
+                            <button
+                                type="button"
+                                className={selectedFamilyMemberId === "all" ? "active" : ""}
+                                onClick={() => setSelectedFamilyMemberId("all")}
                             >
-                                <option value="">No family member selected</option>
-                                {familyMembers.map(member => (
-                                    <option key={member.id} value={member.id}>
+                                All
+                            </button>
+
+                            {familyMembers
+                                .filter(member => member.role === "child")
+                                .map(member => (
+                                    <button
+                                        key={member.id}
+                                        type="button"
+                                        className={selectedFamilyMemberId === member.id ? "active" : ""}
+                                        onClick={() => setSelectedFamilyMemberId(member.id)}
+                                    >
                                         {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
                                         {member.name}
-                                    </option>
+                                    </button>
                                 ))}
-                            </select>
-                        </label>
-
-                        <label className="full-width">
-                            Notes
-                            <textarea
-                                value={form.notes}
-                                onChange={event => updateForm("notes", event.target.value)}
-                                rows="3"
+                        </div>
+                    }
+                >
+                    {loading ? (
+                        <p>Loading school items...</p>
+                    ) : visibleItems.length === 0 ? (
+                        <p className="dashboard-empty">No school items found for this filter.</p>
+                    ) : (
+                        <div className="eg-stack">
+                            <SchoolSection
+                                title="Due Now"
+                                subtitle="Needs attention first."
+                                items={groupedItems.dueNow}
+                                emptyText="Nothing due now."
+                                renderSchoolRow={renderSchoolRow}
                             />
-                        </label>
 
-                        <button
-                            className="primary-button full-width"
-                            type="submit"
-                            disabled={saving}
-                        >
-                            {saving
-                                ? "Saving..."
-                                : editingId
-                                    ? "Save Changes"
-                                    : "Save School Item"}
-                        </button>
-                    </form>
-                </section>
-            )}
+                            <SchoolSection
+                                title="This Week"
+                                subtitle="Due in the next 7 days."
+                                items={groupedItems.thisWeek}
+                                emptyText="Nothing due this week."
+                                renderSchoolRow={renderSchoolRow}
+                            />
 
-            <section className="card school-command-card">
-                <div className="school-command-toolbar">
-                    <div>
-                        <p className="card-kicker">Filter</p>
-                        <h3>School Items</h3>
-                    </div>
+                            <SchoolSection
+                                title="Later"
+                                subtitle="Upcoming school items."
+                                items={groupedItems.later}
+                                emptyText="No later school items."
+                                renderSchoolRow={renderSchoolRow}
+                            />
 
-                    <select
-                        className="activity-filter-select"
-                        value={selectedFamilyMemberId}
-                        onChange={event => setSelectedFamilyMemberId(event.target.value)}
-                    >
-                        <option value="all">Entire Family</option>
-
-                        {familyMembers.map(member => (
-                            <option key={member.id} value={member.id}>
-                                {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
-                                {member.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                {loading ? (
-                    <p>Loading school items...</p>
-                ) : visibleItems.length === 0 ? (
-                    <p className="dashboard-empty">No school items found for this filter.</p>
-                ) : (
-                    <>
-                        <SchoolSection
-                            title="Due Now"
-                            subtitle="Needs attention first."
-                            items={groupedItems.dueNow}
-                            emptyText="Nothing due now."
-                            renderSchoolRow={renderSchoolRow}
-                        />
-
-                        <SchoolSection
-                            title="This Week"
-                            subtitle="Due in the next 7 days."
-                            items={groupedItems.thisWeek}
-                            emptyText="Nothing due this week."
-                            renderSchoolRow={renderSchoolRow}
-                        />
-
-                        <SchoolSection
-                            title="Later"
-                            subtitle="Upcoming school items."
-                            items={groupedItems.later}
-                            emptyText="No later school items."
-                            renderSchoolRow={renderSchoolRow}
-                        />
-
-                        {groupedItems.completed.length > 0 && (
-                            <section className="school-command-section">
-                                <button
-                                    className="completed-toggle"
-                                    type="button"
-                                    onClick={() => setShowCompleted(current => !current)}
+                            {groupedItems.completed.length > 0 && (
+                                <SectionCard
+                                    title="Completed"
+                                    subtitle="Finished school items."
+                                    count={groupedItems.completed.length}
+                                    action={
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            type="button"
+                                            onClick={() => setShowCompleted(current => !current)}
+                                        >
+                                            {showCompleted ? "Hide" : "Show"}
+                                        </Button>
+                                    }
                                 >
-                                    <span>
-                                        {showCompleted ? "Hide" : "Show"} Completed
-                                    </span>
-
-                                    <strong>{groupedItems.completed.length}</strong>
-                                </button>
-
-                                {showCompleted && (
-                                    <SchoolSection
-                                        title="Completed"
-                                        subtitle="Finished school items."
-                                        items={groupedItems.completed}
-                                        emptyText="No completed school items."
-                                        renderSchoolRow={renderSchoolRow}
-                                    />
-                                )}
-                            </section>
-                        )}
-                    </>
-                )}
-            </section>
-        </div>
+                                    {showCompleted && (
+                                        <SchoolSection
+                                            title="Completed Items"
+                                            subtitle="Finished school items."
+                                            items={groupedItems.completed}
+                                            emptyText="No completed school items."
+                                            renderSchoolRow={renderSchoolRow}
+                                        />
+                                    )}
+                                </SectionCard>
+                            )}
+                        </div>
+                    )}
+                </SectionCard>
+            </div>
+        </AppPage>
     )
 }
