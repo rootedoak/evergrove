@@ -9,6 +9,12 @@ import {
     updatePreferences
 } from "../services/preferenceService"
 
+import AppPage from "../components/ui/AppPage"
+import PageHeader from "../components/ui/PageHeader"
+import SectionCard from "../components/ui/SectionCard"
+import Button from "../components/ui/Button"
+import InsightCard from "../components/dashboard/InsightCard"
+
 const defaultShoppingCategoryOrder = [
     "Produce",
     "Meat",
@@ -58,21 +64,19 @@ function PreferenceToggle({ label, checked, onChange }) {
     )
 }
 
-function SettingsSection({ title, scope, subtitle, children }) {
+function SettingsSection({
+    title,
+    scope,
+    subtitle,
+    children
+}) {
     return (
-        <section className="settings-command-section">
-            <div className="settings-section-header">
-                <div>
-                    <p className="card-kicker">{scope}</p>
-                    <h3>{title}</h3>
-                    {subtitle && <p>{subtitle}</p>}
-                </div>
-            </div>
-
-            <div className="settings-section-content">
-                {children}
-            </div>
-        </section>
+        <SectionCard
+            title={title}
+            subtitle={`${scope} • ${subtitle}`}
+        >
+            {children}
+        </SectionCard>
     )
 }
 
@@ -227,324 +231,336 @@ export default function Profile() {
     }
 
     return (
-        <div className="settings-command-page">
-            <header className="calendar-header settings-command-header">
-                <div>
-                    <p className="dashboard-household-name">Settings</p>
-                    <h2>Settings Hub</h2>
-
-                    <p className="settings-header-summary">
-                        Manage shared household settings and your personal Evergrove preferences.
-                    </p>
-                </div>
-
-                <button
-                    className="danger-button"
-                    type="button"
-                    onClick={handleLogout}
-                >
-                    Sign Out
-                </button>
-            </header>
-
-            <section className="card settings-account-card">
-                <div>
-                    <p className="card-kicker">Personal user setting</p>
-                    <h3>{user?.email || "Loading account..."}</h3>
-                    <p>
-                        Account access and sign-in are specific to you.
-                    </p>
-                </div>
-
-                <p>
-                    User ID: <span>{user?.id || "Loading..."}</span>
-                </p>
-            </section>
-
-            {loading ? (
-                <section className="card">
-                    <p>Loading preferences...</p>
-                </section>
-            ) : (
-                <form className="card settings-command-card" onSubmit={handleSavePreferences}>
-                    <SettingsSection
-                        title="Household Settings"
-                        scope="Shared household setting"
-                        subtitle="These settings are shared by everyone connected to this household."
+        <AppPage>
+            <PageHeader
+                eyebrow="Settings"
+                title="Settings"
+                subtitle="Manage your household and personalize Evergrove."
+                action={
+                    <Button
+                        variant="danger"
+                        onClick={handleLogout}
                     >
-                        <div className="form-grid">
-                            <label>
-                                Household Name
-                                <input
-                                    value={preferences.household_name}
-                                    onChange={event =>
-                                        updatePreference("household_name", event.target.value)
-                                    }
-                                    placeholder="McGee Family"
+                        Sign Out
+                    </Button>
+                }
+            />
+
+            <div className="eg-stack">
+
+                <InsightCard
+                    insight={{
+                        title: "Your household is configured.",
+                        description:
+                            "Manage shared settings and personalize your Evergrove experience.",
+                        actionLabel: "Save"
+                    }}
+                    onAction={() =>
+                        document.querySelector("form")?.requestSubmit()
+                    }
+                />
+
+                <SectionCard
+                    title="Account"
+                    subtitle="Your Evergrove account."
+                >
+                    <div>
+                        <h3>{user?.email || "Loading account..."}</h3>
+                        <p>
+                            Account access and sign-in are specific to you.
+                        </p>
+                    </div>
+
+                    <p>
+                        User ID: <span>{user?.id || "Loading..."}</span>
+                    </p>
+                </SectionCard>
+
+                {loading ? (
+                    <section className="card">
+                        <p>Loading preferences...</p>
+                    </section>
+                ) : (
+                    <form className="card settings-command-card" onSubmit={handleSavePreferences}>
+                        <SettingsSection
+                            title="Household Settings"
+                            scope="Shared household setting"
+                            subtitle="These settings are shared by everyone connected to this household."
+                        >
+                            <div className="form-grid">
+                                <label>
+                                    Household Name
+                                    <input
+                                        value={preferences.household_name}
+                                        onChange={event =>
+                                            updatePreference("household_name", event.target.value)
+                                        }
+                                        placeholder="McGee Family"
+                                    />
+                                </label>
+
+                                <label>
+                                    Time Zone
+                                    <select
+                                        value={preferences.timezone}
+                                        onChange={event =>
+                                            updatePreference("timezone", event.target.value)
+                                        }
+                                    >
+                                        <option value="America/Chicago">Central Time</option>
+                                        <option value="America/New_York">Eastern Time</option>
+                                        <option value="America/Denver">Mountain Time</option>
+                                        <option value="America/Los_Angeles">Pacific Time</option>
+                                    </select>
+                                </label>
+
+                                <label>
+                                    Week Starts On
+                                    <select
+                                        value={preferences.week_starts_on}
+                                        onChange={event =>
+                                            updatePreference("week_starts_on", event.target.value)
+                                        }
+                                    >
+                                        <option value="Sunday">Sunday</option>
+                                        <option value="Monday">Monday</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div className="settings-save-row">
+                                <button
+                                    type="button"
+                                    className="secondary-button"
+                                    onClick={() => navigate("/settings/family")}
+                                >
+                                    Manage Family Members
+                                </button>
+                            </div>
+                        </SettingsSection>
+
+                        <SettingsSection
+                            title="Shopping Categories"
+                            scope="Shared household setting"
+                            subtitle="This category order is shared across household shopping lists."
+                        >
+                            <div className="settings-category-list">
+                                {preferences.shopping_category_order.map((category, index) => (
+                                    <div key={category} className="settings-category-row">
+                                        <span>{category}</span>
+
+                                        <div className="button-row">
+                                            <button
+                                                className="secondary-button"
+                                                type="button"
+                                                onClick={() => moveShoppingCategory(index, -1)}
+                                                disabled={index === 0}
+                                            >
+                                                Up
+                                            </button>
+
+                                            <button
+                                                className="secondary-button"
+                                                type="button"
+                                                onClick={() => moveShoppingCategory(index, 1)}
+                                                disabled={
+                                                    index === preferences.shopping_category_order.length - 1
+                                                }
+                                            >
+                                                Down
+                                            </button>
+
+                                            <button
+                                                className="danger-button"
+                                                type="button"
+                                                onClick={() => removeShoppingCategory(category)}
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <button
+                                className="secondary-button"
+                                type="button"
+                                onClick={addShoppingCategory}
+                            >
+                                Add Category
+                            </button>
+                        </SettingsSection>
+
+                        <SettingsSection
+                            title="Personal Dashboard"
+                            scope="Personal user setting"
+                            subtitle="These settings only affect your own dashboard view."
+                        >
+                            <div className="form-grid">
+                                <label>
+                                    Coming Up Window
+                                    <select
+                                        value={preferences.dashboard_window_days}
+                                        onChange={event =>
+                                            updatePreference("dashboard_window_days", event.target.value)
+                                        }
+                                    >
+                                        <option value="3">Next 3 days</option>
+                                        <option value="7">Next 7 days</option>
+                                        <option value="14">Next 14 days</option>
+                                    </select>
+                                </label>
+
+                                <label>
+                                    Timeline Window
+                                    <select
+                                        value={preferences.timeline_window_days}
+                                        onChange={event =>
+                                            updatePreference("timeline_window_days", event.target.value)
+                                        }
+                                    >
+                                        <option value="30">Next 30 days</option>
+                                        <option value="60">Next 60 days</option>
+                                        <option value="90">Next 90 days</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div className="settings-toggle-grid">
+                                <PreferenceToggle
+                                    label="Show birthdays"
+                                    checked={preferences.show_birthdays}
+                                    onChange={value => updatePreference("show_birthdays", value)}
                                 />
-                            </label>
 
-                            <label>
-                                Time Zone
-                                <select
-                                    value={preferences.timezone}
-                                    onChange={event =>
-                                        updatePreference("timezone", event.target.value)
-                                    }
-                                >
-                                    <option value="America/Chicago">Central Time</option>
-                                    <option value="America/New_York">Eastern Time</option>
-                                    <option value="America/Denver">Mountain Time</option>
-                                    <option value="America/Los_Angeles">Pacific Time</option>
-                                </select>
-                            </label>
+                                <PreferenceToggle
+                                    label="Show trips"
+                                    checked={preferences.show_trips}
+                                    onChange={value => updatePreference("show_trips", value)}
+                                />
 
-                            <label>
-                                Week Starts On
-                                <select
-                                    value={preferences.week_starts_on}
-                                    onChange={event =>
-                                        updatePreference("week_starts_on", event.target.value)
-                                    }
-                                >
-                                    <option value="Sunday">Sunday</option>
-                                    <option value="Monday">Monday</option>
-                                </select>
-                            </label>
-                        </div>
+                                <PreferenceToggle
+                                    label="Show school items"
+                                    checked={preferences.show_school_items}
+                                    onChange={value => updatePreference("show_school_items", value)}
+                                />
+
+                                <PreferenceToggle
+                                    label="Show activity sessions"
+                                    checked={preferences.show_activity_sessions}
+                                    onChange={value => updatePreference("show_activity_sessions", value)}
+                                />
+
+                                <PreferenceToggle
+                                    label="Show suggested tasks"
+                                    checked={preferences.show_suggested_tasks}
+                                    onChange={value => updatePreference("show_suggested_tasks", value)}
+                                />
+                            </div>
+                        </SettingsSection>
+
+                        <SettingsSection
+                            title="Personal Reminders"
+                            scope="Personal user setting"
+                            subtitle="These reminder preferences only affect your account."
+                        >
+                            <div className="settings-toggle-grid">
+                                <PreferenceToggle
+                                    label="Birthday reminders"
+                                    checked={preferences.birthday_reminders}
+                                    onChange={value => updatePreference("birthday_reminders", value)}
+                                />
+
+                                <PreferenceToggle
+                                    label="Trip reminders"
+                                    checked={preferences.trip_reminders}
+                                    onChange={value => updatePreference("trip_reminders", value)}
+                                />
+
+                                <PreferenceToggle
+                                    label="Activity reminders"
+                                    checked={preferences.activity_reminders}
+                                    onChange={value => updatePreference("activity_reminders", value)}
+                                />
+
+                                <PreferenceToggle
+                                    label="School reminders"
+                                    checked={preferences.school_reminders}
+                                    onChange={value => updatePreference("school_reminders", value)}
+                                />
+
+                                <PreferenceToggle
+                                    label="Task reminders"
+                                    checked={preferences.task_reminders}
+                                    onChange={value => updatePreference("task_reminders", value)}
+                                />
+                            </div>
+                        </SettingsSection>
+
+                        <SettingsSection
+                            title="Inbox Notifications"
+                            scope="Personal user setting"
+                            subtitle="Choose which events appear in your Personal Inbox."
+                        >
+                            <div className="settings-toggle-grid">
+                                <PreferenceToggle
+                                    label="To-Do notifications"
+                                    checked={preferences.inbox_tasks}
+                                    onChange={value => updatePreference("inbox_tasks", value)}
+                                />
+
+                                <PreferenceToggle
+                                    label="Activity notifications"
+                                    checked={preferences.inbox_activities}
+                                    onChange={value => updatePreference("inbox_activities", value)}
+                                />
+
+                                <PreferenceToggle
+                                    label="School notifications"
+                                    checked={preferences.inbox_school}
+                                    onChange={value => updatePreference("inbox_school", value)}
+                                />
+
+                                <PreferenceToggle
+                                    label="Calendar notifications"
+                                    checked={preferences.inbox_calendar}
+                                    onChange={value => updatePreference("inbox_calendar", value)}
+                                />
+
+                                <PreferenceToggle
+                                    label="Trip notifications"
+                                    checked={preferences.inbox_trips}
+                                    onChange={value => updatePreference("inbox_trips", value)}
+                                />
+
+                                <PreferenceToggle
+                                    label="Reminder notifications"
+                                    checked={preferences.inbox_reminders}
+                                    onChange={value => updatePreference("inbox_reminders", value)}
+                                />
+                            </div>
+                        </SettingsSection>
+
+                        <SettingsSection
+                            title="Push Notifications"
+                            scope="Personal user setting"
+                            subtitle="Receive device alerts for important Evergrove updates."
+                        >
+                            <PushNotificationSettings />
+                        </SettingsSection>
 
                         <div className="settings-save-row">
                             <button
-                                type="button"
-                                className="secondary-button"
-                                onClick={() => navigate("/settings/family")}
+                                className="primary-button"
+                                type="submit"
+                                disabled={saving}
                             >
-                                Manage Family Members
+                                {saving ? "Saving..." : "Save Preferences"}
                             </button>
                         </div>
-                    </SettingsSection>
-
-                    <SettingsSection
-                        title="Shopping Categories"
-                        scope="Shared household setting"
-                        subtitle="This category order is shared across household shopping lists."
-                    >
-                        <div className="settings-category-list">
-                            {preferences.shopping_category_order.map((category, index) => (
-                                <div key={category} className="settings-category-row">
-                                    <span>{category}</span>
-
-                                    <div className="button-row">
-                                        <button
-                                            className="secondary-button"
-                                            type="button"
-                                            onClick={() => moveShoppingCategory(index, -1)}
-                                            disabled={index === 0}
-                                        >
-                                            Up
-                                        </button>
-
-                                        <button
-                                            className="secondary-button"
-                                            type="button"
-                                            onClick={() => moveShoppingCategory(index, 1)}
-                                            disabled={
-                                                index === preferences.shopping_category_order.length - 1
-                                            }
-                                        >
-                                            Down
-                                        </button>
-
-                                        <button
-                                            className="danger-button"
-                                            type="button"
-                                            onClick={() => removeShoppingCategory(category)}
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <button
-                            className="secondary-button"
-                            type="button"
-                            onClick={addShoppingCategory}
-                        >
-                            Add Category
-                        </button>
-                    </SettingsSection>
-
-                    <SettingsSection
-                        title="Personal Dashboard"
-                        scope="Personal user setting"
-                        subtitle="These settings only affect your own dashboard view."
-                    >
-                        <div className="form-grid">
-                            <label>
-                                Coming Up Window
-                                <select
-                                    value={preferences.dashboard_window_days}
-                                    onChange={event =>
-                                        updatePreference("dashboard_window_days", event.target.value)
-                                    }
-                                >
-                                    <option value="3">Next 3 days</option>
-                                    <option value="7">Next 7 days</option>
-                                    <option value="14">Next 14 days</option>
-                                </select>
-                            </label>
-
-                            <label>
-                                Timeline Window
-                                <select
-                                    value={preferences.timeline_window_days}
-                                    onChange={event =>
-                                        updatePreference("timeline_window_days", event.target.value)
-                                    }
-                                >
-                                    <option value="30">Next 30 days</option>
-                                    <option value="60">Next 60 days</option>
-                                    <option value="90">Next 90 days</option>
-                                </select>
-                            </label>
-                        </div>
-
-                        <div className="settings-toggle-grid">
-                            <PreferenceToggle
-                                label="Show birthdays"
-                                checked={preferences.show_birthdays}
-                                onChange={value => updatePreference("show_birthdays", value)}
-                            />
-
-                            <PreferenceToggle
-                                label="Show trips"
-                                checked={preferences.show_trips}
-                                onChange={value => updatePreference("show_trips", value)}
-                            />
-
-                            <PreferenceToggle
-                                label="Show school items"
-                                checked={preferences.show_school_items}
-                                onChange={value => updatePreference("show_school_items", value)}
-                            />
-
-                            <PreferenceToggle
-                                label="Show activity sessions"
-                                checked={preferences.show_activity_sessions}
-                                onChange={value => updatePreference("show_activity_sessions", value)}
-                            />
-
-                            <PreferenceToggle
-                                label="Show suggested tasks"
-                                checked={preferences.show_suggested_tasks}
-                                onChange={value => updatePreference("show_suggested_tasks", value)}
-                            />
-                        </div>
-                    </SettingsSection>
-
-                    <SettingsSection
-                        title="Personal Reminders"
-                        scope="Personal user setting"
-                        subtitle="These reminder preferences only affect your account."
-                    >
-                        <div className="settings-toggle-grid">
-                            <PreferenceToggle
-                                label="Birthday reminders"
-                                checked={preferences.birthday_reminders}
-                                onChange={value => updatePreference("birthday_reminders", value)}
-                            />
-
-                            <PreferenceToggle
-                                label="Trip reminders"
-                                checked={preferences.trip_reminders}
-                                onChange={value => updatePreference("trip_reminders", value)}
-                            />
-
-                            <PreferenceToggle
-                                label="Activity reminders"
-                                checked={preferences.activity_reminders}
-                                onChange={value => updatePreference("activity_reminders", value)}
-                            />
-
-                            <PreferenceToggle
-                                label="School reminders"
-                                checked={preferences.school_reminders}
-                                onChange={value => updatePreference("school_reminders", value)}
-                            />
-
-                            <PreferenceToggle
-                                label="Task reminders"
-                                checked={preferences.task_reminders}
-                                onChange={value => updatePreference("task_reminders", value)}
-                            />
-                        </div>
-                    </SettingsSection>
-
-                    <SettingsSection
-                        title="Inbox Notifications"
-                        scope="Personal user setting"
-                        subtitle="Choose which events appear in your Personal Inbox."
-                    >
-                        <div className="settings-toggle-grid">
-                            <PreferenceToggle
-                                label="To-Do notifications"
-                                checked={preferences.inbox_tasks}
-                                onChange={value => updatePreference("inbox_tasks", value)}
-                            />
-
-                            <PreferenceToggle
-                                label="Activity notifications"
-                                checked={preferences.inbox_activities}
-                                onChange={value => updatePreference("inbox_activities", value)}
-                            />
-
-                            <PreferenceToggle
-                                label="School notifications"
-                                checked={preferences.inbox_school}
-                                onChange={value => updatePreference("inbox_school", value)}
-                            />
-
-                            <PreferenceToggle
-                                label="Calendar notifications"
-                                checked={preferences.inbox_calendar}
-                                onChange={value => updatePreference("inbox_calendar", value)}
-                            />
-
-                            <PreferenceToggle
-                                label="Trip notifications"
-                                checked={preferences.inbox_trips}
-                                onChange={value => updatePreference("inbox_trips", value)}
-                            />
-
-                            <PreferenceToggle
-                                label="Reminder notifications"
-                                checked={preferences.inbox_reminders}
-                                onChange={value => updatePreference("inbox_reminders", value)}
-                            />
-                        </div>
-                    </SettingsSection>
-
-                    <SettingsSection
-                        title="Push Notifications"
-                        scope="Personal user setting"
-                        subtitle="Receive device alerts for important Evergrove updates."
-                    >
-                        <PushNotificationSettings />
-                    </SettingsSection>
-
-                    <div className="settings-save-row">
-                        <button
-                            className="primary-button"
-                            type="submit"
-                            disabled={saving}
-                        >
-                            {saving ? "Saving..." : "Save Preferences"}
-                        </button>
-                    </div>
-                </form>
-            )}
-        </div>
+                    </form>
+                )}
+            </div>
+        </AppPage >
     )
 }

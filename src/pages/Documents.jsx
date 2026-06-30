@@ -1,13 +1,23 @@
 import { useState } from "react"
+import { Plus } from "lucide-react"
+
 import useDocuments from "../hooks/useDocuments"
 import useFamilyMembers from "../hooks/useFamilyMembers"
 import useActivities from "../hooks/useActivities"
 import useSchoolItems from "../hooks/useSchoolItems"
+
 import {
     deleteDocument,
     getDocumentSignedUrl,
     uploadDocument
 } from "../services/documentService"
+
+import AppPage from "../components/ui/AppPage"
+import PageHeader from "../components/ui/PageHeader"
+import SectionCard from "../components/ui/SectionCard"
+import Button from "../components/ui/Button"
+import InsightCard from "../components/dashboard/InsightCard"
+import ActionMenu from "../components/ui/ActionMenu"
 
 const initialForm = {
     title: "",
@@ -37,6 +47,7 @@ export default function Documents() {
     const [showForm, setShowForm] = useState(false)
     const [form, setForm] = useState(initialForm)
     const [saving, setSaving] = useState(false)
+    const [documentMenuOpen, setDocumentMenuOpen] = useState(null)
 
     function updateForm(field, value) {
         setForm(current => ({
@@ -89,217 +100,247 @@ export default function Documents() {
         }
     }
 
-    return (
-        <>
-            <section className="hero-card">
-                <div className="section-header">
-                    <div>
-                        <p className="eyebrow">Documents</p>
-                        <h2>Document Vault</h2>
-                        <p>
-                            Store important family documents, school forms,
-                            activity paperwork, insurance cards, and records.
-                        </p>
-                    </div>
+    const primaryDocument = documents?.[0]
 
-                    <button
-                        className="primary-button"
+    return (
+        <AppPage>
+            <PageHeader
+                eyebrow="Documents"
+                title="Document Vault"
+                subtitle="Store important family documents, school forms, activity paperwork, insurance cards, and records."
+                action={
+                    <Button
+                        size="sm"
                         onClick={() => {
                             if (showForm) resetForm()
                             else setShowForm(true)
                         }}
                     >
-                        {showForm ? "Cancel" : "+ Upload Document"}
-                    </button>
-                </div>
-            </section>
+                        <Plus size={16} />
+                        {showForm ? "Cancel" : "Add"}
+                    </Button>
+                }
+            />
 
-            {showForm && (
-                <section className="card form-card">
-                    <h3>Upload Document</h3>
+            <div className="eg-stack">
+                <InsightCard
+                    insight={{
+                        title: documents.length > 0
+                            ? `${documents.length} document${documents.length === 1 ? "" : "s"} stored`
+                            : "No documents uploaded yet",
+                        description: primaryDocument
+                            ? `Most recent: ${primaryDocument.title}`
+                            : "Upload school forms, insurance cards, records, and other important files.",
+                        actionLabel: documents.length > 0 ? "Upload More" : "Upload Document"
+                    }}
+                    onAction={() => setShowForm(true)}
+                />
 
-                    <form className="form-grid" onSubmit={handleSubmit}>
-                        <label>
-                            Title
-                            <input
-                                value={form.title}
-                                onChange={event =>
-                                    updateForm("title", event.target.value)
-                                }
-                                placeholder="Immunization Record"
-                                required
-                            />
-                        </label>
+                {showForm && (
+                    <SectionCard
+                        title="Upload Document"
+                        subtitle="Add a file and connect it to a person, school item, or activity."
+                    >
+                        <form className="form-grid" onSubmit={handleSubmit}>
+                            <label>
+                                Title
+                                <input
+                                    value={form.title}
+                                    onChange={event =>
+                                        updateForm("title", event.target.value)
+                                    }
+                                    placeholder="Immunization Record"
+                                    required
+                                />
+                            </label>
 
-                        <label>
-                            Category
-                            <select
-                                value={form.category}
-                                onChange={event =>
-                                    updateForm("category", event.target.value)
-                                }
-                            >
-                                <option value="general">General</option>
-                                <option value="school">School</option>
-                                <option value="medical">Medical</option>
-                                <option value="activity">Activity</option>
-                                <option value="insurance">Insurance</option>
-                                <option value="identification">Identification</option>
-                                <option value="form">Form</option>
-                            </select>
-                        </label>
-
-                        <label>
-                            Family Member
-                            <select
-                                value={form.family_member_id}
-                                onChange={event =>
-                                    updateForm("family_member_id", event.target.value)
-                                }
-                            >
-                                <option value="">No family member selected</option>
-                                {familyMembers.map(member => (
-                                    <option key={member.id} value={member.id}>
-                                        {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
-                                        {member.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-
-                        <label>
-                            Related School Item
-                            <select
-                                value={form.school_item_id}
-                                onChange={event =>
-                                    updateForm("school_item_id", event.target.value)
-                                }
-                            >
-                                <option value="">No school item selected</option>
-                                {schoolItems.map(item => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.title}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-
-                        <label>
-                            Related Activity
-                            <select
-                                value={form.activity_id}
-                                onChange={event =>
-                                    updateForm("activity_id", event.target.value)
-                                }
-                            >
-                                <option value="">No activity selected</option>
-                                {activities.map(activity => (
-                                    <option key={activity.id} value={activity.id}>
-                                        {activity.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-
-                        <label>
-                            File
-                            <input
-                                type="file"
-                                onChange={event =>
-                                    updateForm("file", event.target.files?.[0] || null)
-                                }
-                                required
-                            />
-                        </label>
-
-                        <label className="full-width">
-                            Notes
-                            <textarea
-                                value={form.notes}
-                                onChange={event =>
-                                    updateForm("notes", event.target.value)
-                                }
-                                rows="3"
-                            />
-                        </label>
-
-                        <button
-                            className="primary-button full-width"
-                            type="submit"
-                            disabled={saving}
-                        >
-                            {saving ? "Uploading..." : "Upload Document"}
-                        </button>
-                    </form>
-                </section>
-            )}
-
-            <div className="grid">
-                {loading ? (
-                    <section className="card">
-                        <p>Loading documents...</p>
-                    </section>
-                ) : documents.length === 0 ? (
-                    <section className="card">
-                        <p>No documents uploaded yet.</p>
-                    </section>
-                ) : (
-                    documents.map(document => (
-                        <section className="card" key={document.id}>
-                            <div className="member-header">
-                                <span className="avatar">
-                                    {document.family_members?.avatar_emoji || "📄"}
-                                </span>
-
-                                <div>
-                                    <h3>{document.title}</h3>
-                                    <span className="status-pill status-neutral">
-                                        {document.category || "general"}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {document.family_members?.name && (
-                                <p>For: {document.family_members.name}</p>
-                            )}
-
-                            {document.school_items?.title && (
-                                <p>School item: {document.school_items.title}</p>
-                            )}
-
-                            {document.activities?.name && (
-                                <p>Activity: {document.activities.name}</p>
-                            )}
-
-                            {document.file_name && (
-                                <p>{document.file_name}</p>
-                            )}
-
-                            {document.file_size && (
-                                <p>{formatFileSize(document.file_size)}</p>
-                            )}
-
-                            {document.notes && <p>{document.notes}</p>}
-
-                            <div className="card-actions">
-                                <button
-                                    className="secondary-button"
-                                    onClick={() => handleOpen(document)}
+                            <label>
+                                Category
+                                <select
+                                    value={form.category}
+                                    onChange={event =>
+                                        updateForm("category", event.target.value)
+                                    }
                                 >
-                                    Open
-                                </button>
+                                    <option value="general">General</option>
+                                    <option value="school">School</option>
+                                    <option value="medical">Medical</option>
+                                    <option value="activity">Activity</option>
+                                    <option value="insurance">Insurance</option>
+                                    <option value="identification">Identification</option>
+                                    <option value="form">Form</option>
+                                </select>
+                            </label>
 
-                                <button
-                                    className="danger-button"
-                                    onClick={() => handleDelete(document)}
+                            <label>
+                                Family Member
+                                <select
+                                    value={form.family_member_id}
+                                    onChange={event =>
+                                        updateForm("family_member_id", event.target.value)
+                                    }
                                 >
-                                    Delete
-                                </button>
-                            </div>
-                        </section>
-                    ))
+                                    <option value="">No family member selected</option>
+
+                                    {familyMembers.map(member => (
+                                        <option key={member.id} value={member.id}>
+                                            {member.avatar_emoji ? `${member.avatar_emoji} ` : ""}
+                                            {member.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+
+                            <label>
+                                Related School Item
+                                <select
+                                    value={form.school_item_id}
+                                    onChange={event =>
+                                        updateForm("school_item_id", event.target.value)
+                                    }
+                                >
+                                    <option value="">No school item selected</option>
+
+                                    {schoolItems.map(item => (
+                                        <option key={item.id} value={item.id}>
+                                            {item.title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+
+                            <label>
+                                Related Activity
+                                <select
+                                    value={form.activity_id}
+                                    onChange={event =>
+                                        updateForm("activity_id", event.target.value)
+                                    }
+                                >
+                                    <option value="">No activity selected</option>
+
+                                    {activities.map(activity => (
+                                        <option key={activity.id} value={activity.id}>
+                                            {activity.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+
+                            <label>
+                                File
+                                <input
+                                    type="file"
+                                    onChange={event =>
+                                        updateForm("file", event.target.files?.[0] || null)
+                                    }
+                                    required
+                                />
+                            </label>
+
+                            <label className="full-width">
+                                Notes
+                                <textarea
+                                    value={form.notes}
+                                    onChange={event =>
+                                        updateForm("notes", event.target.value)
+                                    }
+                                    rows="3"
+                                />
+                            </label>
+
+                            <Button
+                                className="full-width"
+                                type="submit"
+                                disabled={saving}
+                            >
+                                {saving ? "Uploading..." : "Upload Document"}
+                            </Button>
+                        </form>
+                    </SectionCard>
                 )}
+
+                <SectionCard
+                    title="Documents"
+                    subtitle="Important files saved for your household."
+                    count={documents.length}
+                >
+                    {loading ? (
+                        <p>Loading documents...</p>
+                    ) : documents.length === 0 ? (
+                        <p className="dashboard-empty">
+                            No documents uploaded yet.
+                        </p>
+                    ) : (
+                        <div className="eg-stack">
+                            {documents.map(document => (
+                                <div className="eg-document-row" key={document.id}>
+                                    <span className="eg-document-icon">
+                                        {document.family_members?.avatar_emoji || "📄"}
+                                    </span>
+
+                                    <div className="eg-document-main">
+                                        <strong>{document.title}</strong>
+
+                                        <p>
+                                            {document.category || "general"}
+                                            {document.family_members?.name
+                                                ? ` • ${document.family_members.name}`
+                                                : ""}
+                                            {document.file_size
+                                                ? ` • ${formatFileSize(document.file_size)}`
+                                                : ""}
+                                        </p>
+
+                                        {document.school_items?.title && (
+                                            <small>School item: {document.school_items.title}</small>
+                                        )}
+
+                                        {document.activities?.name && (
+                                            <small>Activity: {document.activities.name}</small>
+                                        )}
+
+                                        {document.file_name && (
+                                            <small>{document.file_name}</small>
+                                        )}
+
+                                        {document.notes && (
+                                            <small>{document.notes}</small>
+                                        )}
+                                    </div>
+
+                                    <div className="eg-document-actions">
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            type="button"
+                                            onClick={() => handleOpen(document)}
+                                        >
+                                            Open
+                                        </Button>
+
+                                        <ActionMenu
+                                            title={document.title}
+                                            open={documentMenuOpen === document.id}
+                                            onOpenChange={isOpen =>
+                                                setDocumentMenuOpen(isOpen ? document.id : null)
+                                            }
+                                            ariaLabel="Open document actions"
+                                            actions={[
+                                                {
+                                                    label: "Delete",
+                                                    danger: true,
+                                                    onClick: () => handleDelete(document)
+                                                }
+                                            ]}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </SectionCard>
             </div>
-        </>
+        </AppPage>
     )
 }

@@ -7,6 +7,13 @@ import {
     updateFamilyMember
 } from "../services/familyService"
 
+import AppPage from "../components/ui/AppPage"
+import PageHeader from "../components/ui/PageHeader"
+import SectionCard from "../components/ui/SectionCard"
+import Button from "../components/ui/Button"
+import InsightCard from "../components/dashboard/InsightCard"
+import ActionMenu from "../components/ui/ActionMenu"
+
 const initialForm = {
     name: "",
     role: "",
@@ -80,7 +87,13 @@ function sortByName(members) {
     return [...members].sort((a, b) => a.name.localeCompare(b.name))
 }
 
-function FamilyMemberRow({ member, onEdit, onDelete }) {
+function FamilyMemberRow({
+    member,
+    onEdit,
+    onDelete,
+    familyMenuOpen,
+    setFamilyMenuOpen
+}) {
     const details = []
     const isPendingInvite = member.invite_status === "pending"
 
@@ -165,54 +178,64 @@ function FamilyMemberRow({ member, onEdit, onDelete }) {
 
             {!isPendingInvite && (
                 <div className="family-row-actions">
-                    <button
-                        className="secondary-button"
-                        type="button"
-                        onClick={() => onEdit(member)}
-                    >
-                        Edit
-                    </button>
-
-                    <button
-                        className="danger-button"
-                        type="button"
-                        onClick={() => onDelete(member)}
-                    >
-                        Delete
-                    </button>
+                    <ActionMenu
+                        title={member.name}
+                        open={familyMenuOpen === member.id}
+                        onOpenChange={isOpen =>
+                            setFamilyMenuOpen(isOpen ? member.id : null)
+                        }
+                        ariaLabel="Open family member actions"
+                        actions={[
+                            {
+                                label: "Edit",
+                                onClick: () => onEdit(member)
+                            },
+                            {
+                                label: "Delete",
+                                danger: true,
+                                onClick: () => onDelete(member)
+                            }
+                        ]}
+                    />
                 </div>
             )}
         </div>
     )
 }
 
-function FamilyGroup({ title, subtitle, members, emptyText, onEdit, onDelete }) {
+function FamilyGroup({
+    title,
+    subtitle,
+    members,
+    emptyText,
+    onEdit,
+    onDelete,
+    familyMenuOpen,
+    setFamilyMenuOpen
+}) {
     return (
-        <section className="family-command-section">
-            <div className="family-section-header">
-                <div>
-                    <h3>{title}</h3>
-                    {subtitle && <p>{subtitle}</p>}
-                </div>
-
-                <span>{members.length}</span>
-            </div>
-
+        <SectionCard
+            title={title}
+            subtitle={subtitle}
+            count={members.length}
+        >
             {members.length === 0 ? (
                 <p className="dashboard-empty">{emptyText}</p>
             ) : (
-                <div className="family-command-list">
+                <div className="eg-stack">
                     {sortByName(members).map(member => (
                         <FamilyMemberRow
                             key={member.id}
                             member={member}
                             onEdit={onEdit}
                             onDelete={onDelete}
+                            familyMenuOpen={familyMenuOpen}
+                            setFamilyMenuOpen={setFamilyMenuOpen}
                         />
                     ))}
                 </div>
             )}
-        </section>
+        </SectionCard>
     )
 }
 
@@ -225,6 +248,8 @@ export default function Family() {
     const [editingId, setEditingId] = useState(null)
     const [inviteEmail, setInviteEmail] = useState("")
     const [inviting, setInviting] = useState(false)
+
+    const [familyMenuOpen, setFamilyMenuOpen] = useState(null)
 
     const isChild = form.role === "child"
     const isPet = form.role === "pet"
@@ -366,249 +391,279 @@ export default function Family() {
     }
 
     return (
-        <div className="family-command-page">
-            <header className="calendar-header family-command-header">
-                <div>
-                    <p className="dashboard-household-name">Family</p>
-                    <h2>Family Members</h2>
-
-                    <p className="family-header-summary">
-                        {familyMembers.length} total •{" "}
-                        {groupedMembers.parents.length} parents •{" "}
-                        {groupedMembers.children.length} children •{" "}
-                        {groupedMembers.pets.length} pets
-                    </p>
-                </div>
-
-                <button
-                    className="primary-button"
-                    type="button"
-                    onClick={() => {
-                        if (showForm) {
-                            resetForm()
-                        } else {
-                            setShowForm(true)
-                        }
-                    }}
-                >
-                    {showForm ? "Cancel" : "+ Add Family Member"}
-                </button>
-            </header>
-
-            <section className="card form-card">
-                <h3>Invite Adult</h3>
-
-                <p>
-                    Invite a spouse, partner, or other adult to join your household.
-                </p>
-
-                <div className="form-grid">
-                    <label className="full-width">
-                        Email Address
-                        <input
-                            type="email"
-                            value={inviteEmail}
-                            onChange={event => setInviteEmail(event.target.value)}
-                            placeholder="name@example.com"
-                        />
-                    </label>
-
-                    <button
-                        type="button"
-                        className="primary-button full-width"
-                        disabled={inviting || !inviteEmail.trim()}
-                        onClick={handleInviteAdult}
+        <AppPage>
+            <PageHeader
+                eyebrow="Family"
+                title="Family Members"
+                subtitle={`${familyMembers.length} total • ${groupedMembers.parents.length} parents • ${groupedMembers.children.length} children • ${groupedMembers.pets.length} pets`}
+                action={
+                    <Button
+                        onClick={() => {
+                            if (showForm) {
+                                resetForm()
+                            } else {
+                                setShowForm(true)
+                            }
+                        }}
                     >
-                        {inviting ? "Creating Invite..." : "Create Invite"}
-                    </button>
-                </div>
-            </section>
+                        {showForm ? "Cancel" : "+ Add"}
+                    </Button>
+                }
+            />
 
-            {showForm && (
-                <section className="card form-card">
-                    <h3>{editingId ? "Edit Family Member" : "Add Family Member"}</h3>
+            <div className="eg-stack">
 
-                    <form className="form-grid" onSubmit={handleSubmit}>
-                        <label>
-                            Name
+                <InsightCard
+                    insight={{
+                        title:
+                            familyMembers.length === 0
+                                ? "Start building your household."
+                                : groupedMembers.children.length > 0
+                                    ? `${groupedMembers.children[0].name} is part of your household.`
+                                    : "Your household is set up.",
+
+                        description:
+                            familyMembers.length === 0
+                                ? "Add family members to personalize Evergrove."
+                                : "Manage parents, children, pets, and household members.",
+
+                        actionLabel:
+                            familyMembers.length === 0
+                                ? "Add Member"
+                                : "Add Member"
+                    }}
+                    onAction={() => setShowForm(true)}
+                />
+
+                <SectionCard
+                    title="Invite Adult"
+                    subtitle="Invite a spouse, partner, or another adult to join your household."
+                >
+
+                    <div className="form-grid">
+                        <label className="full-width">
+                            Email Address
                             <input
-                                value={form.name}
-                                onChange={event =>
-                                    updateForm("name", event.target.value)
-                                }
-                                required
+                                type="email"
+                                value={inviteEmail}
+                                onChange={event => setInviteEmail(event.target.value)}
+                                placeholder="name@example.com"
                             />
                         </label>
 
-                        <label>
-                            Role
-                            <select
-                                value={form.role}
-                                onChange={event =>
-                                    updateForm("role", event.target.value)
-                                }
-                                required
-                            >
-                                <option value="">Select Role</option>
-                                <option value="parent">Parent</option>
-                                <option value="child">Child</option>
-                                <option value="pet">Pet</option>
-                            </select>
-                        </label>
+                        <Button
+                            type="button"
+                            className="full-width"
+                            disabled={inviting || !inviteEmail.trim()}
+                            onClick={handleInviteAdult}
+                        >
+                            {inviting ? "Creating Invite..." : "Create Invite"}
+                        </Button>
+                    </div>
+                </SectionCard>
 
-                        {form.role && (
-                            <>
-                                <label>
-                                    Avatar Emoji
-                                    <input
-                                        value={form.avatar_emoji}
-                                        onChange={event =>
-                                            updateForm("avatar_emoji", event.target.value)
-                                        }
-                                        placeholder={isPet ? "🐶" : "🧒"}
-                                    />
-                                </label>
+                {showForm && (
+                    <SectionCard
+                        title={
+                            editingId
+                                ? "Edit Family Member"
+                                : "Add Family Member"
+                        }
+                        subtitle="Parents, children, and pets."
+                    >
 
-                                <label>
-                                    {isPet ? "Birthday / Adoption Date" : "Birthdate"}
-                                    <input
-                                        type="date"
-                                        value={form.birthdate}
-                                        onChange={event =>
-                                            updateForm("birthdate", event.target.value)
-                                        }
-                                    />
-                                </label>
-                            </>
-                        )}
-
-                        {isChild && (
-                            <>
-                                <label>
-                                    School
-                                    <input
-                                        value={form.school}
-                                        onChange={event =>
-                                            updateForm("school", event.target.value)
-                                        }
-                                    />
-                                </label>
-
-                                <label>
-                                    Grade
-                                    <input
-                                        value={form.grade}
-                                        onChange={event =>
-                                            updateForm("grade", event.target.value)
-                                        }
-                                    />
-                                </label>
-                            </>
-                        )}
-
-                        {isPet && (
-                            <>
-                                <label>
-                                    Species
-                                    <input
-                                        value={form.species}
-                                        onChange={event =>
-                                            updateForm("species", event.target.value)
-                                        }
-                                        placeholder="Dog, cat, rabbit..."
-                                    />
-                                </label>
-
-                                <label>
-                                    Breed
-                                    <input
-                                        value={form.breed}
-                                        onChange={event =>
-                                            updateForm("breed", event.target.value)
-                                        }
-                                        placeholder="Golden Retriever, Tabby..."
-                                    />
-                                </label>
-                            </>
-                        )}
-
-                        {form.role && (
-                            <label className="full-width">
-                                Notes
-                                <textarea
-                                    value={form.notes}
+                        <form className="form-grid" onSubmit={handleSubmit}>
+                            <label>
+                                Name
+                                <input
+                                    value={form.name}
                                     onChange={event =>
-                                        updateForm("notes", event.target.value)
+                                        updateForm("name", event.target.value)
                                     }
-                                    rows="3"
+                                    required
                                 />
                             </label>
-                        )}
 
-                        <button
-                            className="primary-button full-width"
-                            type="submit"
-                            disabled={saving}
-                        >
-                            {saving
-                                ? "Saving..."
-                                : editingId
-                                    ? "Save Changes"
-                                    : "Save Family Member"}
-                        </button>
-                    </form>
-                </section>
-            )}
+                            <label>
+                                Role
+                                <select
+                                    value={form.role}
+                                    onChange={event =>
+                                        updateForm("role", event.target.value)
+                                    }
+                                    required
+                                >
+                                    <option value="">Select Role</option>
+                                    <option value="parent">Parent</option>
+                                    <option value="child">Child</option>
+                                    <option value="pet">Pet</option>
+                                </select>
+                            </label>
 
-            <section className="card family-command-card">
-                {loading ? (
-                    <p>Loading family members...</p>
-                ) : familyMembers.length === 0 ? (
-                    <p className="dashboard-empty">
-                        No family members added yet.
-                    </p>
-                ) : (
-                    <>
-                        <FamilyGroup
-                            title="Parents"
-                            subtitle="Household adults."
-                            members={groupedMembers.parents}
-                            emptyText="No parents added yet."
-                            onEdit={startEdit}
-                            onDelete={handleDelete}
-                        />
+                            {form.role && (
+                                <>
+                                    <label>
+                                        Avatar Emoji
+                                        <input
+                                            value={form.avatar_emoji}
+                                            onChange={event =>
+                                                updateForm("avatar_emoji", event.target.value)
+                                            }
+                                            placeholder={isPet ? "🐶" : "🧒"}
+                                        />
+                                    </label>
 
-                        <FamilyGroup
-                            title="Children"
-                            subtitle="Kids, school details, and birthdays."
-                            members={groupedMembers.children}
-                            emptyText="No children added yet."
-                            onEdit={startEdit}
-                            onDelete={handleDelete}
-                        />
+                                    <label>
+                                        {isPet ? "Birthday / Adoption Date" : "Birthdate"}
+                                        <input
+                                            type="date"
+                                            value={form.birthdate}
+                                            onChange={event =>
+                                                updateForm("birthdate", event.target.value)
+                                            }
+                                        />
+                                    </label>
+                                </>
+                            )}
 
-                        <FamilyGroup
-                            title="Pets"
-                            subtitle="Pets, breeds, and adoption dates."
-                            members={groupedMembers.pets}
-                            emptyText="No pets added yet."
-                            onEdit={startEdit}
-                            onDelete={handleDelete}
-                        />
+                            {isChild && (
+                                <>
+                                    <label>
+                                        School
+                                        <input
+                                            value={form.school}
+                                            onChange={event =>
+                                                updateForm("school", event.target.value)
+                                            }
+                                        />
+                                    </label>
 
-                        {groupedMembers.other.length > 0 && (
+                                    <label>
+                                        Grade
+                                        <input
+                                            value={form.grade}
+                                            onChange={event =>
+                                                updateForm("grade", event.target.value)
+                                            }
+                                        />
+                                    </label>
+                                </>
+                            )}
+
+                            {isPet && (
+                                <>
+                                    <label>
+                                        Species
+                                        <input
+                                            value={form.species}
+                                            onChange={event =>
+                                                updateForm("species", event.target.value)
+                                            }
+                                            placeholder="Dog, cat, rabbit..."
+                                        />
+                                    </label>
+
+                                    <label>
+                                        Breed
+                                        <input
+                                            value={form.breed}
+                                            onChange={event =>
+                                                updateForm("breed", event.target.value)
+                                            }
+                                            placeholder="Golden Retriever, Tabby..."
+                                        />
+                                    </label>
+                                </>
+                            )}
+
+                            {form.role && (
+                                <label className="full-width">
+                                    Notes
+                                    <textarea
+                                        value={form.notes}
+                                        onChange={event =>
+                                            updateForm("notes", event.target.value)
+                                        }
+                                        rows="3"
+                                    />
+                                </label>
+                            )}
+
+                            <Button
+                                className="full-width"
+                                type="submit"
+                                disabled={saving}
+                            >
+                                {saving
+                                    ? "Saving..."
+                                    : editingId
+                                        ? "Save Changes"
+                                        : "Save Family Member"}
+                            </Button>
+                        </form>
+                    </SectionCard>)}
+
+                <SectionCard
+                    title="Household"
+                    subtitle="Parents, children, pets, and invited adults."
+                >
+                    {loading ? (
+                        <p>Loading family members...</p>
+                    ) : familyMembers.length === 0 ? (
+                        <p className="dashboard-empty">
+                            No family members added yet.
+                        </p>
+                    ) : (
+                        <div className="eg-stack">
                             <FamilyGroup
-                                title="Other"
-                                subtitle="Additional family members."
-                                members={groupedMembers.other}
-                                emptyText="No additional members."
+                                title="Parents"
+                                subtitle="Household adults."
+                                members={groupedMembers.parents}
+                                emptyText="No parents added yet."
                                 onEdit={startEdit}
                                 onDelete={handleDelete}
+                                familyMenuOpen={familyMenuOpen}
+                                setFamilyMenuOpen={setFamilyMenuOpen}
                             />
-                        )}
-                    </>
-                )}
-            </section>
-        </div>
+
+                            <FamilyGroup
+                                title="Children"
+                                subtitle="Kids, school details, and birthdays."
+                                members={groupedMembers.children}
+                                emptyText="No children added yet."
+                                onEdit={startEdit}
+                                onDelete={handleDelete}
+                                familyMenuOpen={familyMenuOpen}
+                                setFamilyMenuOpen={setFamilyMenuOpen}
+                            />
+
+                            <FamilyGroup
+                                title="Pets"
+                                subtitle="Pets, breeds, and adoption dates."
+                                members={groupedMembers.pets}
+                                emptyText="No pets added yet."
+                                onEdit={startEdit}
+                                onDelete={handleDelete}
+                                familyMenuOpen={familyMenuOpen}
+                                setFamilyMenuOpen={setFamilyMenuOpen}
+                            />
+
+                            {groupedMembers.other.length > 0 && (
+                                <FamilyGroup
+                                    title="Other"
+                                    subtitle="Additional family members."
+                                    members={groupedMembers.other}
+                                    emptyText="No additional members."
+                                    onEdit={startEdit}
+                                    onDelete={handleDelete}
+                                    familyMenuOpen={familyMenuOpen}
+                                    setFamilyMenuOpen={setFamilyMenuOpen}
+                                />
+                            )}
+                        </div>
+                    )}
+                </SectionCard>
+            </div>
+        </AppPage>
     )
 }

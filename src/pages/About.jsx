@@ -7,15 +7,18 @@ import {
     APP_NAME
 } from "../config/appConfig"
 
-import { useNavigate } from "react-router-dom"
 import { restartOnboarding } from "../services/preferenceService"
 
-export default function About() {
+import AppPage from "../components/ui/AppPage"
+import PageHeader from "../components/ui/PageHeader"
+import SectionCard from "../components/ui/SectionCard"
+import Button from "../components/ui/Button"
+import InsightCard from "../components/dashboard/InsightCard"
 
+export default function About() {
     const [savingFeedback, setSavingFeedback] = useState(false)
     const [feedbackSuccess, setFeedbackSuccess] = useState("")
     const [feedbackError, setFeedbackError] = useState("")
-
     const [feedbackType, setFeedbackType] = useState("feature")
     const [feedbackMessage, setFeedbackMessage] = useState("")
 
@@ -61,8 +64,6 @@ export default function About() {
         }
     }
 
-    const navigate = useNavigate()
-
     async function handleRestartTour() {
         const confirmed = window.confirm(
             "Restart the Evergrove guided tour? Your household data will not be changed."
@@ -71,260 +72,178 @@ export default function About() {
         if (!confirmed) return
 
         await restartOnboarding()
-
         window.location.href = "/dashboard"
     }
 
     return (
-        <div className="page-content about-page">
-            <div className="page-header">
-                <p className="page-eyebrow">
-                    Evergrove
-                </p>
+        <AppPage>
+            <PageHeader
+                eyebrow="About"
+                title={`About ${APP_NAME}`}
+                subtitle="Evergrove is a family operating system designed to reduce household chaos."
+            />
 
-                <h1>About {APP_NAME}</h1>
+            <div className="eg-stack">
+                <InsightCard
+                    insight={{
+                        title: `You're running ${APP_NAME} ${APP_VERSION}`,
+                        description: "Thanks for helping shape Evergrove during beta.",
+                        actionLabel: "Take Product Tour"
+                    }}
+                    onAction={handleRestartTour}
+                />
 
-                <p className="page-description">
-                    Evergrove is a shared household operating system designed
-                    to help families stay organized, coordinated, and informed.
-                    It brings together calendars, tasks, meal planning,
-                    shopping lists, family information, activities, travel,
-                    and household management into a single place.
-                </p>
-            </div>
-
-            <section className="about-card">
-                <div>
-                    <h2>🎓 Take the Product Tour</h2>
-                    <p>
-                        Walk through Evergrove's guided setup and feature overview again.
-                    </p>
-                </div>
-
-                <button
-                    type="button"
-                    className="primary-button"
-                    onClick={handleRestartTour}
+                <SectionCard
+                    title="Take the Product Tour"
+                    subtitle="Walk through Evergrove's guided setup and feature overview again."
+                    action={
+                        <Button size="sm" onClick={handleRestartTour}>
+                            Start Tour
+                        </Button>
+                    }
                 >
-                    Take Product Tour
-                </button>
-            </section>
+                    <p className="eg-muted">
+                        The tour can be restarted anytime. Your household data will not be changed.
+                    </p>
+                </SectionCard>
 
-            <div className="card">
-                <h2>Current Release</h2>
-
-                <div className="info-grid">
-                    <div>
-                        <strong>Version</strong>
-                        <span className="status-badge beta">
-                            <p>{APP_VERSION}</p>
-                        </span>
-                        <strong>Status</strong>
-                        <p>{APP_STATUS}</p>
+                <SectionCard title="Current Release" subtitle="Version and release status.">
+                    <div className="eg-info-grid">
+                        <InfoItem label="Version" value={APP_VERSION} />
+                        <InfoItem label="Status" value={APP_STATUS} />
                     </div>
+                </SectionCard>
 
-                    <div className="card">
-                        <h2>What's New</h2>
+                <SectionCard title="What's New in this Beta">
+                    <ul className="eg-about-list">
+                        <li>Complete Evergrove 2.0 UI redesign</li>
+                        <li>Mobile-first experience across major modules</li>
+                        <li>Assistant insights throughout the app</li>
+                        <li>Faster meal planning and shopping workflows</li>
+                        <li>Improved calendar, trips, school, routines, and documents</li>
+                        <li>Reusable design system components</li>
+                        <li>Push notifications and household activity improvements</li>
+                    </ul>
+                </SectionCard>
 
-                        <ul>
-                            <li>Evergrove branding and beta release updates</li>
-                            <li>Dashboard Quick Actions</li>
-                            <li>Direct Event creation from Dashboard</li>
-                            <li>Direct To-Do creation from Dashboard</li>
-                            <li>Direct Meal Planning from Dashboard</li>
-                            <li>Direct Shopping workflows from Dashboard</li>
-                            <li>Private and Household visibility controls</li>
-                            <li>Trips integrated into Family Timeline</li>
-                            <li>Family Calendar management improvements</li>
-                        </ul>
+                <SectionCard title="Help Shape Evergrove">
+                    <p className="eg-muted">
+                        Evergrove is in active beta. Your feedback directly influences what gets
+                        improved next. If something feels confusing, broken, or missing, send it in.
+                    </p>
+                </SectionCard>
+
+                <SectionCard title="Getting Started">
+                    <ol className="eg-about-list">
+                        <li>Create your household.</li>
+                        <li>Add family members and pets.</li>
+                        <li>Invite another parent or guardian.</li>
+                        <li>Add birthdays and important family information.</li>
+                        <li>Create To-Dos, routines, school items, trips, meals, and shopping lists.</li>
+                    </ol>
+                </SectionCard>
+
+                <SectionCard title="Core Features">
+                    <div className="eg-feature-grid">
+                        <Feature title="Dashboard" text="A daily command center for your household." />
+                        <Feature title="Calendar" text="Shared events, birthdays, trips, and school dates." />
+                        <Feature title="To-Dos" text="Household and private tasks with ownership." />
+                        <Feature title="Meals & Shopping" text="Plan dinners and build grocery lists." />
+                        <Feature title="Trips" text="Plan travel, ideas, and checklists." />
+                        <Feature title="School" text="Track forms, events, supplies, and reminders." />
+                        <Feature title="Documents" text="Store important household files." />
+                        <Feature title="Settings" text="Manage household and personal preferences." />
                     </div>
-                </div>
-            </div>
+                </SectionCard>
 
-            <div className="card">
-                <h2>Beta Notice</h2>
+                <SectionCard title="Privacy & Visibility">
+                    <ul className="eg-about-list">
+                        <li>Household items are visible to household members.</li>
+                        <li>Private To-Dos remain visible only to the creator.</li>
+                        <li>Children and pets can be tracked without individual accounts.</li>
+                    </ul>
+                </SectionCard>
 
-                <p>
-                    Evergrove is currently in active development. Features,
-                    workflows, and user interfaces may change as the platform
-                    evolves. While core household planning functionality is
-                    stable, occasional bugs and missing features should be
-                    expected during the beta phase.
+                <SectionCard title="Roadmap">
+                    <ul className="eg-about-list">
+                        <li>Evergrove Intelligence Engine</li>
+                        <li>Smarter Assistant next-best-action recommendations</li>
+                        <li>Document enhancements</li>
+                        <li>Family avatars and profile images</li>
+                        <li>Expanded beta user feedback cycle</li>
+                    </ul>
+                </SectionCard>
+
+                <SectionCard title="Why Evergrove Exists">
+                    <p className="eg-muted">
+                        Evergrove exists to reduce household chaos. It gives families one shared
+                        place to manage the people, plans, and responsibilities that matter most.
+                    </p>
+
+                    <p className="eg-muted">
+                        The goal is simple: spend less time organizing life and more time living it.
+                    </p>
+                </SectionCard>
+
+                <SectionCard title="Send Feedback" subtitle="Found a bug or have an idea?">
+                    <form className="form-grid" onSubmit={handleSubmitFeedback}>
+                        <label>
+                            Type
+                            <select
+                                value={feedbackType}
+                                onChange={event => setFeedbackType(event.target.value)}
+                            >
+                                <option value="bug">Bug</option>
+                                <option value="feature">Feature Request</option>
+                                <option value="general">General Feedback</option>
+                            </select>
+                        </label>
+
+                        <label className="full-width">
+                            Feedback
+                            <textarea
+                                rows="4"
+                                value={feedbackMessage}
+                                onChange={event => setFeedbackMessage(event.target.value)}
+                            />
+                        </label>
+
+                        <Button type="submit" disabled={savingFeedback}>
+                            {savingFeedback ? "Submitting..." : "Submit Feedback"}
+                        </Button>
+
+                        {feedbackSuccess && (
+                            <p className="success-message full-width">{feedbackSuccess}</p>
+                        )}
+
+                        {feedbackError && (
+                            <p className="error-message full-width">{feedbackError}</p>
+                        )}
+                    </form>
+                </SectionCard>
+
+                <p className="eg-about-footer">
+                    Built with care for busy families.
                 </p>
             </div>
+        </AppPage>
+    )
+}
 
-            <div className="card">
-                <h2>Getting Started</h2>
+function InfoItem({ label, value }) {
+    return (
+        <div className="eg-info-item">
+            <span>{label}</span>
+            <strong>{value}</strong>
+        </div>
+    )
+}
 
-                <ol>
-                    <li>Create your household.</li>
-                    <li>Add family members.</li>
-                    <li>Invite another parent or guardian.</li>
-                    <li>Set birthdays and important family information.</li>
-                    <li>Add activities, trips, and calendar events.</li>
-                    <li>Create household and personal To-Do's.</li>
-                    <li>Build meal plans and shopping lists.</li>
-                </ol>
-            </div>
-
-            <div className="card">
-                <h2>Core Features</h2>
-
-                <ul>
-                    <li>
-                        <strong>Dashboard</strong> — Family overview,
-                        upcoming events, birthdays, tasks, and reminders.
-                    </li>
-
-                    <li>
-                        <strong>Calendar</strong> — Shared household calendar
-                        with support for events, activities, travel, and
-                        personal schedules.
-                    </li>
-
-                    <li>
-                        <strong>To-Do's</strong> — Household To-Do's and private
-                        personal To-Do's with visibility controls.
-                    </li>
-
-                    <li>
-                        <strong>Family</strong> — Family members, pets,
-                        birthdays, and household information.
-                    </li>
-
-                    <li>
-                        <strong>Activities</strong> — Sports, lessons,
-                        practices, registrations, and recurring activities.
-                    </li>
-
-                    <li>
-                        <strong>Travel</strong> — Trips, vacations, and travel
-                        planning integrated into the family calendar.
-                    </li>
-
-                    <li>
-                        <strong>Meals & Shopping</strong> — Weekly meal
-                        planning and shared shopping lists.
-                    </li>
-
-                    <li>
-                        <strong>Household Settings</strong> — Shared
-                        household preferences and configuration.
-                    </li>
-                </ul>
-            </div>
-
-            <div className="card">
-                <h2>Privacy & Visibility</h2>
-
-                <p>
-                    Evergrove supports both shared household information and
-                    private personal information.
-                </p>
-
-                <ul>
-                    <li>
-                        Household items are visible to all household members.
-                    </li>
-
-                    <li>
-                        Private tasks and personal information remain visible
-                        only to the user who created them.
-                    </li>
-
-                    <li>
-                        Household members such as children and pets can be
-                        tracked without requiring individual accounts.
-                    </li>
-                </ul>
-            </div>
-
-            <div className="card">
-                <h2>Roadmap</h2>
-
-                <ul>
-                    <li>Household invitations and onboarding</li>
-                    <li>Activity templates</li>
-                    <li>Feedback tracking</li>
-                    <li>Family avatars and profile images</li>
-                    <li>Improved mobile experience</li>
-                    <li>Document enhancements</li>
-                    <li>Budget and finance planning</li>
-                    <li>Native mobile applications</li>
-                </ul>
-            </div>
-
-            <div className="card">
-                <h2>Vision</h2>
-
-                <p>
-                    Evergrove exists to reduce household chaos. The goal is to
-                    provide families with a single place to manage schedules,
-                    responsibilities, activities, meals, travel, and family
-                    information without juggling multiple apps and spreadsheets.
-                </p>
-
-                <p>
-                    Think of Evergrove as a family operating system: one shared
-                    source of truth for the people, plans, and commitments that
-                    matter most.
-                </p>
-            </div>
-
-            <div className="card">
-                <h2>Send Feedback</h2>
-
-                <p>
-                    Found a bug or have an idea for Evergrove?
-                </p>
-
-                <form className="form-grid" onSubmit={handleSubmitFeedback}>
-                    <label>
-                        Type
-                        <select
-                            value={feedbackType}
-                            onChange={event =>
-                                setFeedbackType(event.target.value)
-                            }
-                        >
-                            <option value="bug">Bug</option>
-                            <option value="feature">Feature Request</option>
-                            <option value="general">General Feedback</option>
-                        </select>
-                    </label>
-
-                    <label className="full-width">
-                        Feedback
-                        <textarea
-                            rows="4"
-                            value={feedbackMessage}
-                            onChange={event =>
-                                setFeedbackMessage(event.target.value)
-                            }
-                        />
-                    </label>
-
-                    <button
-                        className="primary-button"
-                        type="submit"
-                        disabled={savingFeedback}
-                    >
-                        {savingFeedback ? "Submitting..." : "Submit Feedback"}
-                    </button>
-
-                    {feedbackSuccess && (
-                        <p className="success-message full-width">
-                            {feedbackSuccess}
-                        </p>
-                    )}
-
-                    {feedbackError && (
-                        <p className="error-message full-width">
-                            {feedbackError}
-                        </p>
-                    )}
-                </form>
-            </div>
-        </div >
+function Feature({ title, text }) {
+    return (
+        <div className="eg-feature-card">
+            <strong>{title}</strong>
+            <p>{text}</p>
+        </div>
     )
 }
