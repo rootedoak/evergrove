@@ -44,15 +44,16 @@ export default function FeedCard({
 function FeedRow({ event }) {
     const actor = getActorName(event)
     const avatarUrl = getAvatarUrl(event)
-    const initials = getInitials(actor)
     const sentence = getFeedSentence(event, actor)
     const timestamp = getRelativeTime(event.created_at || event.inserted_at || event.updated_at)
 
     return (
         <div className="eg-feed-row">
             <Avatar
-                name={actor}
-                image={avatarUrl}
+                member={{
+                    name: actor,
+                    avatar_url: avatarUrl
+                }}
                 size="sm"
             />
 

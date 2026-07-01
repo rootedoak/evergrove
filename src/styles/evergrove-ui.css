@@ -813,40 +813,49 @@
     color: var(--eg-danger);
 }
 
+/* ==========================================
+   Avatar Defaults
+   ========================================== */
+
 .eg-avatar {
-    border-radius: 999px;
-    background: #eff6ff;
-    color: var(--eg-primary);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 850;
+    display: inline-grid;
+    place-items: center;
     overflow: hidden;
-    flex-shrink: 0;
-}
-
-.eg-avatar.sm {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
-}
-
-.eg-avatar.md {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
-}
-
-.eg-avatar.lg {
-    width: 48px;
-    height: 48px;
-    font-size: 18px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: var(--surface-soft, #f8fafc);
+    color: var(--text, #0f172a);
+    font-weight: 800;
 }
 
 .eg-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.eg-avatar-xs {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.7rem;
+}
+
+.eg-avatar-sm {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.8rem;
+}
+
+.eg-avatar-md {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 0.95rem;
+}
+
+.eg-avatar-lg {
+    width: 3.25rem;
+    height: 3.25rem;
+    font-size: 1.15rem;
 }
 
 .eg-metric {

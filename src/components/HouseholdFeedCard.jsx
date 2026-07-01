@@ -2,6 +2,8 @@ import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { markFeedEventRead } from "../services/feedService"
 
+import Avatar from "./ui/Avatar"
+
 export default function HouseholdFeedCard({
     feedEvents = [],
     loading = false,
@@ -295,9 +297,11 @@ export default function HouseholdFeedCard({
                                     type={destination ? "button" : undefined}
                                     onClick={destination ? () => handleOpenEvent(event) : undefined}
                                 >
-                                    <div className="feed-icon">
-                                        {getIcon(event.event_type)}
-                                    </div>
+                                    <Avatar
+                                        member={event.actor}
+                                        size="sm"
+                                        className="feed-avatar"
+                                    />
 
                                     <div className="feed-content">
                                         <div className="feed-title-row">

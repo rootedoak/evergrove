@@ -14,6 +14,9 @@ import Button from "../components/ui/Button"
 import InsightCard from "../components/dashboard/InsightCard"
 import ActionMenu from "../components/ui/ActionMenu"
 
+import Avatar from "../components/ui/Avatar"
+import { uploadFamilyAvatar } from "../services/avatarService"
+
 const initialForm = {
     name: "",
     role: "",
@@ -91,6 +94,7 @@ function FamilyMemberRow({
     member,
     onEdit,
     onDelete,
+    onUploadAvatar,
     familyMenuOpen,
     setFamilyMenuOpen
 }) {
@@ -129,9 +133,14 @@ function FamilyMemberRow({
 
     return (
         <div className="family-command-row">
-            <span className="family-avatar">
-                {member.avatar_emoji || getDefaultAvatar(member.role)}
-            </span>
+            <Avatar
+                member={{
+                    ...member,
+                    avatar_emoji:
+                        member.avatar_emoji || getDefaultAvatar(member.role)
+                }}
+                size="md"
+            />
 
             <div className="family-member-main">
                 <strong>
@@ -187,6 +196,10 @@ function FamilyMemberRow({
                         ariaLabel="Open family member actions"
                         actions={[
                             {
+                                label: "Change Photo",
+                                onClick: () => onUploadAvatar(member)
+                            },
+                            {
                                 label: "Edit",
                                 onClick: () => onEdit(member)
                             },
@@ -210,6 +223,7 @@ function FamilyGroup({
     emptyText,
     onEdit,
     onDelete,
+    onUploadAvatar,
     familyMenuOpen,
     setFamilyMenuOpen
 }) {
@@ -229,6 +243,7 @@ function FamilyGroup({
                             member={member}
                             onEdit={onEdit}
                             onDelete={onDelete}
+                            onUploadAvatar={onUploadAvatar}
                             familyMenuOpen={familyMenuOpen}
                             setFamilyMenuOpen={setFamilyMenuOpen}
                         />
@@ -270,6 +285,29 @@ export default function Family() {
     useEffect(() => {
         loadFamilyMembers()
     }, [])
+
+    async function handleUploadAvatar(member) {
+        const input = document.createElement("input")
+
+        input.type = "file"
+        input.accept = "image/*"
+
+        input.onchange = async event => {
+            const file = event.target.files?.[0]
+
+            if (!file) return
+
+            try {
+                await uploadFamilyAvatar(member.id, file)
+                await loadFamilyMembers()
+            } catch (error) {
+                console.error(error)
+                alert(error.message || "Could not upload avatar.")
+            }
+        }
+
+        input.click()
+    }
 
     function updateForm(field, value) {
         setForm(current => {
@@ -622,6 +660,7 @@ export default function Family() {
                                 emptyText="No parents added yet."
                                 onEdit={startEdit}
                                 onDelete={handleDelete}
+                                onUploadAvatar={handleUploadAvatar}
                                 familyMenuOpen={familyMenuOpen}
                                 setFamilyMenuOpen={setFamilyMenuOpen}
                             />
@@ -633,6 +672,7 @@ export default function Family() {
                                 emptyText="No children added yet."
                                 onEdit={startEdit}
                                 onDelete={handleDelete}
+                                onUploadAvatar={handleUploadAvatar}
                                 familyMenuOpen={familyMenuOpen}
                                 setFamilyMenuOpen={setFamilyMenuOpen}
                             />
@@ -644,6 +684,7 @@ export default function Family() {
                                 emptyText="No pets added yet."
                                 onEdit={startEdit}
                                 onDelete={handleDelete}
+                                onUploadAvatar={handleUploadAvatar}
                                 familyMenuOpen={familyMenuOpen}
                                 setFamilyMenuOpen={setFamilyMenuOpen}
                             />
@@ -656,6 +697,7 @@ export default function Family() {
                                     emptyText="No additional members."
                                     onEdit={startEdit}
                                     onDelete={handleDelete}
+                                    onUploadAvatar={handleUploadAvatar}
                                     familyMenuOpen={familyMenuOpen}
                                     setFamilyMenuOpen={setFamilyMenuOpen}
                                 />
