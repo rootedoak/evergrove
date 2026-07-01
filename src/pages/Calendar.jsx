@@ -477,6 +477,8 @@ export default function Calendar() {
         [visibleDate]
     )
 
+    const showHolidays = preferences?.show_holidays !== false
+
     const events = useMemo(
         () =>
             buildCalendarEvents({
