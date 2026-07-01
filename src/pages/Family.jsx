@@ -15,7 +15,7 @@ import InsightCard from "../components/dashboard/InsightCard"
 import ActionMenu from "../components/ui/ActionMenu"
 
 import Avatar from "../components/ui/Avatar"
-import { uploadFamilyAvatar } from "../services/avatarService"
+import { uploadFamilyAvatar, deleteFamilyAvatar } from "../services/avatarService"
 
 const initialForm = {
     name: "",
@@ -95,6 +95,7 @@ function FamilyMemberRow({
     onEdit,
     onDelete,
     onUploadAvatar,
+    onDeleteAvatar,
     familyMenuOpen,
     setFamilyMenuOpen
 }) {
@@ -200,6 +201,11 @@ function FamilyMemberRow({
                                 onClick: () => onUploadAvatar(member)
                             },
                             {
+                                label: "Remove Photo",
+                                danger: true,
+                                onClick: () => onDeleteAvatar(member)
+                            },
+                            {
                                 label: "Edit",
                                 onClick: () => onEdit(member)
                             },
@@ -224,6 +230,7 @@ function FamilyGroup({
     onEdit,
     onDelete,
     onUploadAvatar,
+    onDeleteAvatar,
     familyMenuOpen,
     setFamilyMenuOpen
 }) {
@@ -244,6 +251,7 @@ function FamilyGroup({
                             onEdit={onEdit}
                             onDelete={onDelete}
                             onUploadAvatar={onUploadAvatar}
+                            onDeleteAvatar={onDeleteAvatar}
                             familyMenuOpen={familyMenuOpen}
                             setFamilyMenuOpen={setFamilyMenuOpen}
                         />
@@ -307,6 +315,19 @@ export default function Family() {
         }
 
         input.click()
+    }
+
+    async function handleDeleteAvatar(member) {
+        const confirmed = window.confirm(`Remove photo for ${member.name}?`)
+        if (!confirmed) return
+
+        try {
+            await deleteFamilyAvatar(member.id)
+            await loadFamilyMembers()
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not remove avatar.")
+        }
     }
 
     function updateForm(field, value) {
@@ -661,6 +682,7 @@ export default function Family() {
                                 onEdit={startEdit}
                                 onDelete={handleDelete}
                                 onUploadAvatar={handleUploadAvatar}
+                                onDeleteAvatar={handleDeleteAvatar}
                                 familyMenuOpen={familyMenuOpen}
                                 setFamilyMenuOpen={setFamilyMenuOpen}
                             />
@@ -673,6 +695,7 @@ export default function Family() {
                                 onEdit={startEdit}
                                 onDelete={handleDelete}
                                 onUploadAvatar={handleUploadAvatar}
+                                onDeleteAvatar={handleDeleteAvatar}
                                 familyMenuOpen={familyMenuOpen}
                                 setFamilyMenuOpen={setFamilyMenuOpen}
                             />
@@ -685,6 +708,7 @@ export default function Family() {
                                 onEdit={startEdit}
                                 onDelete={handleDelete}
                                 onUploadAvatar={handleUploadAvatar}
+                                onDeleteAvatar={handleDeleteAvatar}
                                 familyMenuOpen={familyMenuOpen}
                                 setFamilyMenuOpen={setFamilyMenuOpen}
                             />
@@ -698,6 +722,7 @@ export default function Family() {
                                     onEdit={startEdit}
                                     onDelete={handleDelete}
                                     onUploadAvatar={handleUploadAvatar}
+                                    onDeleteAvatar={handleDeleteAvatar}
                                     familyMenuOpen={familyMenuOpen}
                                     setFamilyMenuOpen={setFamilyMenuOpen}
                                 />

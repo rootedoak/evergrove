@@ -858,6 +858,11 @@
     font-size: 1.15rem;
 }
 
+.eg-avatar strong,
+.eg-avatar-emoji {
+    line-height: 1;
+}
+
 .eg-metric {
     border: 1px solid var(--eg-border);
     border-radius: var(--eg-radius-lg);

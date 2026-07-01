@@ -1,22 +1,35 @@
+import { useEffect, useState } from "react"
+
 export default function Avatar({
     member,
+    name,
+    avatarUrl,
+    emoji,
     size = "md",
     className = ""
 }) {
-    const initials = getInitials(member?.name)
-    const emoji = member?.avatar_emoji
+    const displayName = member?.name || name || ""
+    const displayEmoji = member?.avatar_emoji || emoji || ""
+    const displayUrl = member?.avatar_url || avatarUrl || ""
+
+    const [imageFailed, setImageFailed] = useState(false)
+
+    useEffect(() => {
+        setImageFailed(false)
+    }, [displayUrl])
 
     return (
         <span className={`eg-avatar eg-avatar-${size} ${className}`}>
-            {member?.avatar_url ? (
+            {displayUrl && !imageFailed ? (
                 <img
-                    src={member.avatar_url}
-                    alt={member.name || "Family member"}
+                    src={displayUrl}
+                    alt={displayName || "Family member"}
+                    onError={() => setImageFailed(true)}
                 />
-            ) : emoji ? (
-                <span className="eg-avatar-emoji">{emoji}</span>
+            ) : displayEmoji ? (
+                <span className="eg-avatar-emoji">{displayEmoji}</span>
             ) : (
-                <strong>{initials}</strong>
+                <strong>{getInitials(displayName)}</strong>
             )}
         </span>
     )
