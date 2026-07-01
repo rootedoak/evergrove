@@ -5,14 +5,11 @@ import {
     Megaphone,
     Plus,
     ShoppingCart,
-    Sparkles,
     Utensils,
     X,
 } from "lucide-react"
 
 export default function FloatingQuickActions({
-    assistantSuggestions = [],
-    onAddAssistantTask,
     onAddTask,
     onAddEvent,
     onAddMeal,
@@ -20,17 +17,9 @@ export default function FloatingQuickActions({
     onAddAnnouncement,
 }) {
     const [open, setOpen] = useState(false)
-    const [showAssistant, setShowAssistant] = useState(false)
-
-    const hasSuggestions = assistantSuggestions.length > 0
-    const suggestionCount = assistantSuggestions.reduce(
-        (count, suggestion) => count + suggestion.tasks.length,
-        0
-    )
 
     function close() {
         setOpen(false)
-        setShowAssistant(false)
     }
 
     function handleAction(callback) {
@@ -38,13 +27,9 @@ export default function FloatingQuickActions({
         callback?.()
     }
 
-    async function handleAddAssistantTask(taskTitle) {
-        await onAddAssistantTask?.(taskTitle)
-    }
-
     return (
         <div className="dashboard-fab-wrapper">
-            {open && !showAssistant && (
+            {open && (
                 <div className="eg-bottom-sheet-backdrop" onClick={close}>
                     <div className="eg-bottom-sheet" onClick={event => event.stopPropagation()}>
                         <div className="eg-sheet-handle" />
@@ -67,79 +52,6 @@ export default function FloatingQuickActions({
                             <QuickAction icon={<ShoppingCart />} label="Shopping Item" onClick={() => handleAction(onAddShopping)} />
                             <QuickAction icon={<Megaphone />} label="Announcement" onClick={() => handleAction(onAddAnnouncement)} />
 
-                            {hasSuggestions && (
-                                <button
-                                    type="button"
-                                    className="eg-quick-action-row assistant"
-                                    onClick={() => setShowAssistant(true)}
-                                >
-                                    <span>
-                                        <Sparkles size={22} />
-                                    </span>
-
-                                    <div>
-                                        <strong>Evergrove Assistant</strong>
-                                        <small>Ideas to help your family</small>
-                                    </div>
-
-                                    <em>{suggestionCount}</em>
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {open && showAssistant && (
-                <div className="eg-bottom-sheet-backdrop" onClick={close}>
-                    <div className="eg-bottom-sheet" onClick={event => event.stopPropagation()}>
-                        <div className="eg-sheet-handle" />
-
-                        <div className="eg-sheet-header">
-                            <div>
-                                <h3>Evergrove Assistant</h3>
-                                <p>Ideas to help your family stay ahead</p>
-                            </div>
-
-                            <button type="button" className="eg-icon-button" onClick={close}>
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <div className="assistant-suggestion-list">
-                            {assistantSuggestions.map(suggestion => (
-                                <div key={suggestion.id} className="assistant-suggestion-card">
-                                    <div className="assistant-suggestion-header">
-                                        <span>{suggestion.icon}</span>
-
-                                        <div>
-                                            <strong>
-                                                {suggestion.name} is in {suggestion.daysAway} days
-                                            </strong>
-
-                                            <p>
-                                                Families usually start planning around now.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="assistant-task-list">
-                                        {suggestion.tasks.map(taskTitle => (
-                                            <div key={`${suggestion.id}-${taskTitle}`} className="assistant-task-row">
-                                                <span>{taskTitle}</span>
-
-                                                <button
-                                                    type="button"
-                                                    className="eg-button-secondary"
-                                                    onClick={() => handleAddAssistantTask(taskTitle)}
-                                                >
-                                                    Add To-Do
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
                         </div>
                     </div>
                 </div>
@@ -153,9 +65,6 @@ export default function FloatingQuickActions({
             >
                 {open ? <X size={30} /> : <Plus size={32} />}
 
-                {!open && hasSuggestions && (
-                    <span className="fab-assistant-indicator">💡</span>
-                )}
             </button>
         </div>
     )

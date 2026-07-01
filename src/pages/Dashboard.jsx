@@ -394,6 +394,8 @@ export default function Dashboard() {
         repeats_yearly: false
     })
 
+    const [showAnnouncementForm, setShowAnnouncementForm] = useState(false)
+
     const [editingBriefTaskId, setEditingBriefTaskId] = useState(null)
 
     const [briefTaskForm, setBriefTaskForm] = useState({
@@ -928,6 +930,11 @@ export default function Dashboard() {
                     />
                 )}
 
+                <FamilyAnnouncementsCard
+                    showForm={showAnnouncementForm}
+                    onShowFormChange={setShowAnnouncementForm}
+                />
+
                 <FeedCard
                     feedEvents={feedEvents}
                     loading={feedLoading}
@@ -1161,11 +1168,11 @@ export default function Dashboard() {
                                 <>
                                     <h3>Tasks Due</h3>
 
-                                    {openTasks.filter(task => task.due_date === todayString).length === 0 ? (
+                                    {openTasks.filter(task => task.due_date <= todayString).length === 0 ? (
                                         <p className="muted-text">No tasks due today.</p>
                                     ) : (
                                         openTasks
-                                            .filter(task => task.due_date === todayString)
+                                            .filter(task => task.due_date <= todayString)
                                             .map(task => (
                                                 <div key={task.id} className="mini-row dashboard-task-row">
                                                     {editingBriefTaskId === task.id ? (
@@ -1359,8 +1366,6 @@ export default function Dashboard() {
                 )}
 
                 <FloatingQuickActions
-                    assistantSuggestions={assistantSuggestions}
-                    onAddAssistantTask={handleCreateAssistantTask}
 
                     onAddTask={() =>
                         navigate("/calendar", {
@@ -1393,10 +1398,7 @@ export default function Dashboard() {
                             }
                         })
                     }
-                    onAddAnnouncement={() => {
-                        const button = document.querySelector(".family-announcements-card .secondary-button")
-                        button?.click()
-                    }}
+                    onAddAnnouncement={() => setShowAnnouncementForm(true)}
                 />
             </div>
         </AppPage>

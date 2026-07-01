@@ -3,14 +3,21 @@ import { useState } from "react"
 import useReactions from "../hooks/useReactions"
 import ReactionBar from "./ReactionBar"
 
+import Button from "./ui/Button"
+import FormActions from "./ui/FormActions"
+import ActionMenu from "./ui/ActionMenu"
+
+import SectionCard from "./ui/SectionCard"
+
 export default function FamilyAnnouncementsCard({
     announcements = [],
     loading = false,
+    showForm: controlledShowForm,
+    onShowFormChange,
     onAdd,
     onEdit,
     onDelete,
 }) {
-
     const announcementIds = announcements.map(a => a.id)
 
     const {
@@ -21,8 +28,19 @@ export default function FamilyAnnouncementsCard({
         announcementIds
     )
 
-    const [showForm, setShowForm] = useState(false)
+    const [internalShowForm, setInternalShowForm] = useState(false)
     const [editingId, setEditingId] = useState(null)
+    const [announcementMenuOpen, setAnnouncementMenuOpen] = useState(null)
+
+    const showForm = controlledShowForm ?? internalShowForm
+
+    function setShowForm(value) {
+        if (onShowFormChange) {
+            onShowFormChange(value)
+        } else {
+            setInternalShowForm(value)
+        }
+    }
 
     const [form, setForm] = useState({
         title: "",
@@ -68,49 +86,57 @@ export default function FamilyAnnouncementsCard({
     }
 
     return (
-        <section className="dashboard-card family-announcements-card">
-            <div className="card-header">
-                <div>
-                    <h2>Family Announcements</h2>
-                    <p>Important household updates in one place.</p>
-                </div>
-
-                <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => setShowForm((current) => !current)}
-                >
-                    {showForm ? "Cancel" : "+ Announcement"}
-                </button>
-            </div>
+        <SectionCard
+            title="Family Announcements"
+            subtitle="Important household updates in one place."
+            className="family-announcements-card"
+            action={
+                !showForm && (
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setShowForm(true)}
+                    >
+                        + Announcement
+                    </Button>
+                )
+            }
+        >
 
             {showForm && (
-                <form className="announcement-form" onSubmit={handleSubmit}>
-                    <input
-                        type="text"
-                        placeholder="Announcement title"
-                        value={form.title}
-                        onChange={(event) =>
-                            setForm((current) => ({
-                                ...current,
-                                title: event.target.value,
-                            }))
-                        }
-                    />
+                <form className="announcement-form eg-form" onSubmit={handleSubmit}>
+                    <label>
+                        Title
+                        <input
+                            type="text"
+                            placeholder="Announcement title"
+                            value={form.title}
+                            onChange={(event) =>
+                                setForm((current) => ({
+                                    ...current,
+                                    title: event.target.value,
+                                }))
+                            }
+                        />
+                    </label>
 
-                    <textarea
-                        placeholder="Details"
-                        value={form.message}
-                        onChange={(event) =>
-                            setForm((current) => ({
-                                ...current,
-                                message: event.target.value,
-                            }))
-                        }
-                    />
+                    <label>
+                        Details
+                        <textarea
+                            placeholder="What does the household need to know?"
+                            value={form.message}
+                            onChange={(event) =>
+                                setForm((current) => ({
+                                    ...current,
+                                    message: event.target.value,
+                                }))
+                            }
+                        />
+                    </label>
 
                     <div className="announcement-form-row">
-                        <label>
+                        <label className="announcement-pin-field">
                             <input
                                 type="checkbox"
                                 checked={form.is_pinned}
@@ -139,19 +165,29 @@ export default function FamilyAnnouncementsCard({
                         </label>
                     </div>
 
-                    <button type="submit" className="primary-button">
-                        {editingId ? "Save Announcement" : "Post Announcement"}
-                    </button>
+                    <FormActions>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={resetForm}
+                        >
+                            Cancel
+                        </Button>
+
+                        <Button type="submit">
+                            {editingId ? "Save Announcement" : "Post Announcement"}
+                        </Button>
+                    </FormActions>
                 </form>
             )}
 
             {loading ? (
                 <p className="muted-text">Loading announcements...</p>
-            ) : announcements.length === 0 ? (
+            ) : announcements.length === 0 && !showForm ? (
                 <p className="muted-text">
                     No announcements yet. Post one when the family needs to know something.
                 </p>
-            ) : (
+            ) : announcements.length > 0 ? (
                 <div className="announcement-list">
                     {announcements.map((announcement) => (
                         <article
@@ -194,25 +230,29 @@ export default function FamilyAnnouncementsCard({
                                 />
                             </div>
 
-                            <div className="announcement-actions">
-                                <button
-                                    type="button"
-                                    onClick={() => startEdit(announcement)}
-                                >
-                                    Edit
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => onDelete(announcement.id)}
-                                >
-                                    Delete
-                                </button>
-                            </div>
+                            <ActionMenu
+                                title={announcement.title}
+                                open={announcementMenuOpen === announcement.id}
+                                onOpenChange={isOpen =>
+                                    setAnnouncementMenuOpen(isOpen ? announcement.id : null)
+                                }
+                                ariaLabel="Open announcement actions"
+                                actions={[
+                                    {
+                                        label: "Edit",
+                                        onClick: () => startEdit(announcement)
+                                    },
+                                    {
+                                        label: "Delete",
+                                        danger: true,
+                                        onClick: () => onDelete(announcement.id)
+                                    }
+                                ]}
+                            />
                         </article>
                     ))}
                 </div>
-            )}
-        </section>
+            ) : null}
+        </SectionCard>
     )
 }

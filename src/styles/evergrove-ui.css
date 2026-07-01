@@ -2862,3 +2862,54 @@ button.eg-attention-metric {
     font-weight: 700;
     cursor: pointer;
 }
+
+.eg-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.65rem;
+    margin-top: 0.5rem;
+}
+
+.eg-form-actions.between {
+    justify-content: space-between;
+}
+
+.eg-form-actions.stacked {
+    flex-direction: column-reverse;
+    align-items: stretch;
+}
+
+@media (max-width: 520px) {
+    .eg-form-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+}
+
+.eg-form input,
+.eg-form textarea,
+.eg-form select,
+.eg-form input[type="date"] {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    background: white;
+    color: var(--text);
+    font: inherit;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+.eg-form textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.eg-form input:focus,
+.eg-form textarea:focus,
+.eg-form select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}

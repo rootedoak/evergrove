@@ -225,10 +225,8 @@ export async function completeGuidedWalkthrough() {
     return data
 }
 
-export async function restartOnboarding() {
+export async function restartGuidedWalkthrough() {
     return updatePreferences({
-        has_completed_onboarding: false,
         has_completed_guided_walkthrough: false,
-        guided_walkthrough_version: 0,
     })
 }

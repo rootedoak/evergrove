@@ -22,12 +22,13 @@ export default function GrocerySummaryCard({
         <SectionCard
             title="Groceries"
             subtitle="Generated from planned home meals."
-            actions={
+            action={
                 <Button
                     variant="secondary"
                     size="sm"
                     type="button"
                     onClick={handleGenerateShoppingList}
+                    disabled={openGroceryItems.length === 0}
                 >
                     <ShoppingCart size={16} />
                     Build List

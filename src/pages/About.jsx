@@ -7,7 +7,7 @@ import {
     APP_NAME
 } from "../config/appConfig"
 
-import { restartOnboarding } from "../services/preferenceService"
+import { restartGuidedWalkthrough } from "../services/preferenceService"
 
 import AppPage from "../components/ui/AppPage"
 import PageHeader from "../components/ui/PageHeader"
@@ -66,13 +66,18 @@ export default function About() {
 
     async function handleRestartTour() {
         const confirmed = window.confirm(
-            "Restart the Evergrove guided tour? Your household data will not be changed."
+            "Replay the Evergrove guided walkthrough? Your household and settings will not be changed."
         )
 
         if (!confirmed) return
 
-        await restartOnboarding()
-        window.location.href = "/dashboard"
+        try {
+            await restartGuidedWalkthrough()
+            window.location.href = "/dashboard"
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not restart the walkthrough.")
+        }
     }
 
     return (
@@ -95,7 +100,7 @@ export default function About() {
 
                 <SectionCard
                     title="Take the Product Tour"
-                    subtitle="Walk through Evergrove's guided setup and feature overview again."
+                    subtitle="Walk through Evergrove's guided feature overview again."
                     action={
                         <Button size="sm" onClick={handleRestartTour}>
                             Start Tour
