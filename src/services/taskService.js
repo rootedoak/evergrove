@@ -46,7 +46,8 @@ export async function getTasks() {
             family_members (
                 id,
                 name,
-                avatar_emoji
+                avatar_emoji,
+                avatar_url
             ),
             activities (
                 id,

@@ -14,11 +14,12 @@ import FormSection from "../components/ui/FormSection"
 import BottomSheet from "../components/ui/BottomSheet"
 import SectionCard from "../components/ui/SectionCard"
 
+import Avatar from "../components/ui/Avatar"
+
 import {
     CalendarDays,
     CheckCircle2,
-    Lock,
-    User
+    Lock
 } from "lucide-react"
 
 import { useEffect, useMemo, useState } from "react"
@@ -311,17 +312,22 @@ function TaskListRow({
             }
             action={
                 <div className="eg-task-actions">
-                    <StatusBadge tone={task.visibility === "private" ? "warning" : "neutral"}>
-                        {task.visibility === "private" ? (
-                            <>
-                                <Lock size={12} /> Private
-                            </>
-                        ) : (
-                            <>
-                                <User size={12} /> {ownership.label}
-                            </>
-                        )}
-                    </StatusBadge>
+                    {task.visibility === "private" ? (
+                        <StatusBadge tone="warning">
+                            <Lock size={12} /> Private
+                        </StatusBadge>
+                    ) : (
+                        <div className="eg-task-owner">
+                            <Avatar
+                                member={task.family_members}
+                                name={ownership.label}
+                                emoji={ownership.icon}
+                                size="xs"
+                            />
+
+                            <span>{ownership.label}</span>
+                        </div>
+                    )}
 
                     <button
                         type="button"

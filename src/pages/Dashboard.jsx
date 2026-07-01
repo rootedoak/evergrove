@@ -943,8 +943,13 @@ export default function Dashboard() {
                 )}
 
                 <FamilyAnnouncementsCard
+                    announcements={announcements}
+                    loading={announcementsLoading}
                     showForm={showAnnouncementForm}
                     onShowFormChange={setShowAnnouncementForm}
+                    onAdd={addAnnouncement}
+                    onEdit={editAnnouncement}
+                    onDelete={removeAnnouncement}
                 />
 
                 <FeedCard

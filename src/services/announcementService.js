@@ -41,7 +41,7 @@ export async function getAnnouncements() {
 
     const { data: members, error: membersError } = await supabase
         .from("family_members")
-        .select("id, user_id, name, avatar_emoji")
+        .select("id, user_id, name, avatar_emoji, avatar_url")
         .eq("household_id", household.id)
         .in("user_id", createdByIds)
 
@@ -98,7 +98,19 @@ export async function createAnnouncement(announcement) {
         },
     })
 
-    return data
+    const { data: member, error: memberError } = await supabase
+        .from("family_members")
+        .select("id, user_id, name, avatar_emoji, avatar_url")
+        .eq("household_id", household.id)
+        .eq("user_id", user.id)
+        .single()
+
+    if (memberError) throw memberError
+
+    return {
+        ...data,
+        posted_by: member,
+    }
 }
 
 export async function updateAnnouncement(id, updates) {

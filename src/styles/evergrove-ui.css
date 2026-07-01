@@ -771,6 +771,10 @@
     color: var(--eg-danger);
 }
 
+/* ==========================================
+   To-Do / Task Defaults
+   ========================================== */
+
 .eg-task-section-subtitle {
     margin: -6px 0 0;
     color: var(--eg-muted);
@@ -811,6 +815,20 @@
 
 .eg-text-button.danger {
     color: var(--eg-danger);
+}
+
+.eg-task-owner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.45rem 0.2rem 0.25rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 999px;
+    background: var(--surface-soft, #f8fafc);
+    color: var(--muted, #64748b);
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
 }
 
 /* ==========================================
@@ -3065,4 +3083,17 @@ button.eg-attention-metric {
 
 .eg-collapsible-row strong {
     color: var(--primary, #2563eb);
+}
+
+/* ==========================================
+   Announcement Defaults
+   ========================================== */
+
+.announcement-author {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    color: var(--muted);
+    font-size: 0.85rem;
 }

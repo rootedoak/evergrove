@@ -9,6 +9,8 @@ import ActionMenu from "./ui/ActionMenu"
 
 import SectionCard from "./ui/SectionCard"
 
+import Avatar from "./ui/Avatar"
+
 export default function FamilyAnnouncementsCard({
     announcements = [],
     loading = false,
@@ -208,9 +210,14 @@ export default function FamilyAnnouncementsCard({
                                 </div>
 
                                 {announcement.posted_by?.name && (
-                                    <small className="announcement-author">
-                                        Posted by {announcement.posted_by.name}
-                                    </small>
+                                    <div className="announcement-author">
+                                        <Avatar
+                                            member={announcement.posted_by}
+                                            size="xs"
+                                        />
+
+                                        <span>Posted by {announcement.posted_by.name}</span>
+                                    </div>
                                 )}
 
                                 {announcement.message && (
