@@ -176,7 +176,7 @@ export async function getFeedEvents(limit = 25) {
 
     const { data: members, error: membersError } = await supabase
         .from("family_members")
-        .select("id, user_id, name, avatar_emoji")
+        .select("id, user_id, name, avatar_emoji, avatar_url")
         .eq("household_id", household.id)
         .in("user_id", createdByIds)
 
