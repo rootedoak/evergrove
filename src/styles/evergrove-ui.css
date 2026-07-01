@@ -2941,3 +2941,114 @@ button.eg-attention-metric {
         font-size: 16px;
     }
 }
+
+/* ==========================================
+   Calendar Form
+   ========================================== */
+
+.calendar-form-card {
+    margin-bottom: 1rem;
+}
+
+.calendar-form-card h4 {
+    margin: 0;
+    color: var(--text, #0f172a);
+    font-size: 1rem;
+}
+
+.calendar-form-card .muted-text {
+    margin-top: 0.25rem;
+}
+
+.eg-assistant-task-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+/* ==========================================
+   Evergrove Assistant Defaults
+   ========================================== */
+
+.eg-assistant-task-option {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.65rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 0.85rem;
+    background: rgba(255, 255, 255, 0.75);
+}
+
+.eg-assistant-task-option input[type="text"],
+.eg-assistant-task-option input:not([type]) {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--text, #0f172a);
+    font: inherit;
+    font-weight: 700;
+}
+
+.eg-assistant-task-option input[type="text"]:focus,
+.eg-assistant-task-option input:not([type]):focus {
+    outline: none;
+}
+
+.eg-insight-task-picker {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0.75rem 0;
+}
+
+.eg-insight-task-option {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.65rem;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 0.85rem;
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.eg-insight-task-option input[type="text"] {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+}
+
+.eg-insight-task-option input[type="text"]:focus {
+    outline: none;
+}
+
+/* ==========================================
+   Profile Defaults
+   ========================================== */
+
+.eg-collapsible-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 1rem;
+    background: var(--surface-soft, #f8fafc);
+    color: var(--text, #0f172a);
+    font: inherit;
+    cursor: pointer;
+}
+
+.eg-collapsible-row span {
+    color: var(--muted, #64748b);
+}
+
+.eg-collapsible-row strong {
+    color: var(--primary, #2563eb);
+}

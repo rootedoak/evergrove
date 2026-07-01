@@ -6,6 +6,7 @@ export default function InsightCard({
     onAction,
     completedInsight,
 }) {
+
     if (!insight && !completedInsight) return null
 
     const isComplete = Boolean(completedInsight)
@@ -53,7 +54,9 @@ export default function InsightCard({
                             size="sm"
                             onClick={() => onAction?.(activeInsight)}
                         >
-                            {activeInsight.actionLabel}
+                            {activeInsight.taskOptions?.length
+                                ? "Review Suggested To-Dos"
+                                : activeInsight.actionLabel}
                         </Button>
                     )
                 )}

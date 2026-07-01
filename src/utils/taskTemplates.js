@@ -60,7 +60,6 @@ const taskTemplates = {
     ],
 
     independence_day_final: [
-        "Charge phone for pictures",
         "Set out sunscreen",
         "Pack cooler",
         "Review July 4th plans",

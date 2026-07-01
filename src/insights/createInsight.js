@@ -6,6 +6,7 @@ export function createInsight({
     title,
     description,
     actionLabel,
+    taskOptions,
     execute,
     completed,
 }) {
@@ -17,6 +18,7 @@ export function createInsight({
         title,
         description,
         actionLabel,
+        taskOptions,
         execute,
         completed,
     }

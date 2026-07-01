@@ -84,8 +84,12 @@ export default function holidayInsight(context) {
                 description: activeMoment.description,
                 actionLabel: activeMoment.actionLabel,
 
-                execute: async (context) => {
-                    const tasks = getTaskTemplate(activeMoment.template)
+                taskOptions: getTaskTemplate(activeMoment.template),
+
+                execute: async (context, selectedTasks) => {
+                    const tasks = selectedTasks?.length
+                        ? selectedTasks
+                        : getTaskTemplate(activeMoment.template)
 
                     for (const taskTitle of tasks) {
                         await context.services.tasks.create(taskTitle)

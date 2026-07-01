@@ -47,7 +47,8 @@ const initialPreferences = {
     show_school_items: true,
     show_activity_sessions: true,
     show_suggested_tasks: true,
-    shopping_category_order: defaultShoppingCategoryOrder
+    shopping_category_order: defaultShoppingCategoryOrder,
+    show_holidays: true
 }
 
 function PreferenceToggle({ label, checked, onChange }) {
@@ -86,6 +87,8 @@ export default function Profile() {
     const [preferences, setPreferences] = useState(initialPreferences)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+
+    const [shoppingCategoriesOpen, setShoppingCategoriesOpen] = useState(false)
 
     useEffect(() => {
         async function loadProfile() {
@@ -194,7 +197,8 @@ export default function Profile() {
                 show_school_items: preferences.show_school_items,
                 show_activity_sessions: preferences.show_activity_sessions,
                 show_suggested_tasks: preferences.show_suggested_tasks,
-                shopping_category_order: preferences.shopping_category_order
+                shopping_category_order: preferences.shopping_category_order,
+                show_holidays: preferences.show_holidays
             })
 
             setPreferences(current => ({
@@ -344,51 +348,70 @@ export default function Profile() {
                             scope="Shared household setting"
                             subtitle="This category order is shared across household shopping lists."
                         >
-                            <div className="settings-category-list">
-                                {preferences.shopping_category_order.map((category, index) => (
-                                    <div key={category} className="settings-category-row">
-                                        <span>{category}</span>
-
-                                        <div className="button-row">
-                                            <button
-                                                className="secondary-button"
-                                                type="button"
-                                                onClick={() => moveShoppingCategory(index, -1)}
-                                                disabled={index === 0}
-                                            >
-                                                Up
-                                            </button>
-
-                                            <button
-                                                className="secondary-button"
-                                                type="button"
-                                                onClick={() => moveShoppingCategory(index, 1)}
-                                                disabled={
-                                                    index === preferences.shopping_category_order.length - 1
-                                                }
-                                            >
-                                                Down
-                                            </button>
-
-                                            <button
-                                                className="danger-button"
-                                                type="button"
-                                                onClick={() => removeShoppingCategory(category)}
-                                            >
-                                                Remove
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
                             <button
-                                className="secondary-button"
                                 type="button"
-                                onClick={addShoppingCategory}
+                                className="eg-collapsible-row"
+                                onClick={() => setShoppingCategoriesOpen(current => !current)}
                             >
-                                Add Category
+                                <span>
+                                    {preferences.shopping_category_order.length} categories configured
+                                </span>
+
+                                <strong>
+                                    {shoppingCategoriesOpen ? "Hide" : "Manage"}
+                                </strong>
                             </button>
+
+                            {shoppingCategoriesOpen && (
+                                <div className="eg-stack">
+                                    <div className="settings-category-list">
+                                        {preferences.shopping_category_order.map((category, index) => (
+                                            <div key={category} className="settings-category-row">
+                                                <span>{category}</span>
+
+                                                <div className="button-row">
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="sm"
+                                                        type="button"
+                                                        onClick={() => moveShoppingCategory(index, -1)}
+                                                        disabled={index === 0}
+                                                    >
+                                                        Up
+                                                    </Button>
+
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="sm"
+                                                        type="button"
+                                                        onClick={() => moveShoppingCategory(index, 1)}
+                                                        disabled={index === preferences.shopping_category_order.length - 1}
+                                                    >
+                                                        Down
+                                                    </Button>
+
+                                                    <Button
+                                                        variant="danger"
+                                                        size="sm"
+                                                        type="button"
+                                                        onClick={() => removeShoppingCategory(category)}
+                                                    >
+                                                        Remove
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <Button
+                                        variant="secondary"
+                                        type="button"
+                                        onClick={addShoppingCategory}
+                                    >
+                                        Add Category
+                                    </Button>
+                                </div>
+                            )}
                         </SettingsSection>
 
                         <SettingsSection
@@ -427,6 +450,12 @@ export default function Profile() {
                             </div>
 
                             <div className="settings-toggle-grid">
+                                <PreferenceToggle
+                                    label="Show holidays on calendar"
+                                    checked={preferences.show_holidays}
+                                    onChange={value => updatePreference("show_holidays", value)}
+                                />
+
                                 <PreferenceToggle
                                     label="Show birthdays"
                                     checked={preferences.show_birthdays}

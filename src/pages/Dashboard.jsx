@@ -9,6 +9,7 @@ import usePreferences from "../hooks/usePreferences"
 import FloatingQuickActions from "../components/FloatingQuickActions"
 
 import { getEvergroveAssistantSuggestions } from "../utils/evergroveAssistantSuggestions"
+import AssistantTaskSheet from "../components/dashboard/AssistantTaskSheet"
 
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../lib/supabase"
@@ -416,6 +417,7 @@ export default function Dashboard() {
     const [completedInsightIds, setCompletedInsightIds] = useState([])
 
     const assistantSuggestions = getEvergroveAssistantSuggestions(45)
+    const [taskSheetInsight, setTaskSheetInsight] = useState(null)
 
     const {
         feedEvents,
@@ -740,11 +742,19 @@ export default function Dashboard() {
 
         })
 
-    async function handleInsightAction(insight) {
+    async function handleInsightAction(insight, selectedTasks) {
         if (!insight?.execute) return
 
+        if (insight.taskOptions?.length && !selectedTasks) {
+            setTaskSheetInsight(insight)
+            return
+        }
+
         try {
-            const completed = await insight.execute(intelligenceContext)
+            const completed = await insight.execute(
+                intelligenceContext,
+                selectedTasks
+            )
 
             setCompletedInsight({
                 id: insight.id,
@@ -753,6 +763,8 @@ export default function Dashboard() {
                     ? () => navigate(completed.completedRoute)
                     : undefined,
             })
+
+            setTaskSheetInsight(null)
         } catch (error) {
             console.error("Could not run insight action:", error)
             alert(error.message || "Could not complete insight action.")
@@ -1364,6 +1376,15 @@ export default function Dashboard() {
                         </div>
                     </div>
                 )}
+
+                <AssistantTaskSheet
+                    open={Boolean(taskSheetInsight)}
+                    insight={taskSheetInsight}
+                    onClose={() => setTaskSheetInsight(null)}
+                    onAddSelected={(selectedTasks) =>
+                        handleInsightAction(taskSheetInsight, selectedTasks)
+                    }
+                />
 
                 <FloatingQuickActions
 
