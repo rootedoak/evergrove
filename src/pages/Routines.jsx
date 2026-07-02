@@ -24,7 +24,8 @@ const initialForm = {
     next_due: "",
     family_member_id: "",
     create_task: true,
-    active: true
+    active: true,
+    schedule_basis: "completion_date"
 }
 
 function normalizeRoutine(routine) {
@@ -36,7 +37,8 @@ function normalizeRoutine(routine) {
         next_due: routine.next_due || "",
         family_member_id: routine.family_member_id || "",
         create_task: routine.create_task ?? true,
-        active: routine.active ?? true
+        active: routine.active ?? true,
+        schedule_basis: routine.schedule_basis || "completion_date",
     }
 }
 
@@ -481,6 +483,17 @@ export default function Routines() {
                                     <option value="weekly">Weekly</option>
                                     <option value="every_2_weeks">Every 2 Weeks</option>
                                     <option value="monthly">Monthly</option>
+                                </select>
+                            </label>
+
+                            <label>
+                                Schedule Based On
+                                <select
+                                    value={form.schedule_basis}
+                                    onChange={event => updateForm("schedule_basis", event.target.value)}
+                                >
+                                    <option value="completion_date">Completion date</option>
+                                    <option value="due_date">Original due date</option>
                                 </select>
                             </label>
 

@@ -89,6 +89,15 @@ function formatTimeRange(startTime, endTime) {
     return ""
 }
 
+function isRecurringActivity(form) {
+    return form.event_type === "Activity" &&
+        form.session_frequency !== "none"
+}
+
+function shouldUseYearlyRepeat(form) {
+    return form.session_frequency === "yearly"
+}
+
 function getMinutesFromTime(timeString) {
     if (!timeString) return 99999
 
@@ -716,16 +725,26 @@ export default function Calendar() {
         setSavingCalendarEvent(true)
 
         try {
+            const recurringActivity =
+                calendarEventForm.event_type === "Activity" &&
+                calendarEventForm.session_frequency !== "none" &&
+                calendarEventForm.session_frequency !== "yearly"
+
+            const yearlyRepeat =
+                calendarEventForm.session_frequency === "yearly"
+
             const basePayload = {
                 title: calendarEventForm.title.trim(),
                 event_type: calendarEventForm.event_type,
                 start_date: calendarEventForm.start_date || selectedDate,
-                end_date: calendarEventForm.end_date || null,
+                end_date: recurringActivity
+                    ? calendarEventForm.session_until || null
+                    : calendarEventForm.end_date || null,
                 start_time: calendarEventForm.start_time || null,
                 end_time: calendarEventForm.end_time || null,
                 location: calendarEventForm.location.trim() || null,
                 notes: calendarEventForm.notes.trim() || null,
-                repeats_yearly: calendarEventForm.repeats_yearly
+                repeats_yearly: yearlyRepeat
             }
 
             const sessionPayload = {
@@ -861,20 +880,6 @@ export default function Calendar() {
         resetActivityForm(today)
         resetSchoolItemForm()
 
-        if (type === "activity") {
-            setCalendarEventForm(current => ({
-                ...current,
-                event_type: "Activity",
-                start_date: today,
-                end_date: today
-            }))
-
-            setShowCalendarEventForm(true)
-            setShowTaskForm(false)
-            setShowActivityForm(false)
-            setShowSchoolItemForm(false)
-            return
-        }
 
         setShowCalendarEventForm(type === "event")
         setShowTaskForm(type === "task")
@@ -990,10 +995,6 @@ export default function Calendar() {
                                 To-Do
                             </button>
 
-                            <button type="button" onClick={() => openAddMenuForm("activity")}>
-                                Activity
-                            </button>
-
                             <button type="button" onClick={() => openAddMenuForm("school")}>
                                 School Item
                             </button>
@@ -1092,10 +1093,7 @@ export default function Calendar() {
                                                     required
                                                     value={calendarEventForm.title}
                                                     onChange={event =>
-                                                        updateCalendarEventForm(
-                                                            "title",
-                                                            event.target.value
-                                                        )
+                                                        updateCalendarEventForm("title", event.target.value)
                                                     }
                                                 />
                                             </label>
@@ -1104,12 +1102,17 @@ export default function Calendar() {
                                                 Type
                                                 <select
                                                     value={calendarEventForm.event_type}
-                                                    onChange={event =>
-                                                        updateCalendarEventForm(
-                                                            "event_type",
-                                                            event.target.value
-                                                        )
-                                                    }
+                                                    onChange={event => {
+                                                        const nextType = event.target.value
+
+                                                        setCalendarEventForm(current => ({
+                                                            ...current,
+                                                            event_type: nextType,
+                                                            session_frequency: "none",
+                                                            session_until: "",
+                                                            end_date: ""
+                                                        }))
+                                                    }}
                                                 >
                                                     <option>Family Event</option>
                                                     <option>Activity</option>
@@ -1117,49 +1120,10 @@ export default function Calendar() {
                                                     <option>Trip</option>
                                                     <option>Reminder</option>
                                                     <option>Important Date</option>
-                                                    <option>Holiday</option>
                                                     <option>Visitor</option>
                                                     <option>Other</option>
                                                 </select>
                                             </label>
-
-                                            {calendarEventForm.event_type === "Activity" && (
-                                                <>
-                                                    <label>
-                                                        Sessions
-                                                        <select
-                                                            value={calendarEventForm.session_frequency}
-                                                            onChange={event =>
-                                                                updateCalendarEventForm(
-                                                                    "session_frequency",
-                                                                    event.target.value
-                                                                )
-                                                            }
-                                                        >
-                                                            <option value="none">One-time activity</option>
-                                                            <option value="daily">Daily</option>
-                                                            <option value="weekly">Weekly</option>
-                                                            <option value="monthly">Monthly</option>
-                                                        </select>
-                                                    </label>
-
-                                                    {calendarEventForm.session_frequency !== "none" && (
-                                                        <label>
-                                                            Repeat Until
-                                                            <input
-                                                                type="date"
-                                                                value={calendarEventForm.session_until}
-                                                                onChange={event =>
-                                                                    updateCalendarEventForm(
-                                                                        "session_until",
-                                                                        event.target.value
-                                                                    )
-                                                                }
-                                                            />
-                                                        </label>
-                                                    )}
-                                                </>
-                                            )}
 
                                             <label>
                                                 Start Date
@@ -1167,45 +1131,64 @@ export default function Calendar() {
                                                     type="date"
                                                     value={calendarEventForm.start_date}
                                                     onChange={event =>
-                                                        updateCalendarEventForm(
-                                                            "start_date",
-                                                            event.target.value
-                                                        )
+                                                        updateCalendarEventForm("start_date", event.target.value)
                                                     }
                                                 />
                                             </label>
 
-                                            <label>
-                                                End Date
-                                                <input
-                                                    type="date"
-                                                    value={calendarEventForm.end_date}
-                                                    onChange={event =>
-                                                        updateCalendarEventForm(
-                                                            "end_date",
-                                                            event.target.value
-                                                        )
-                                                    }
-                                                />
-                                            </label>
-
-                                            <label>
-                                                Repeat
-                                                <div className="checkbox-row">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={calendarEventForm.repeats_yearly}
+                                            {["Activity", "Important Date"].includes(calendarEventForm.event_type) && (
+                                                <label>
+                                                    Repeat
+                                                    <select
+                                                        value={calendarEventForm.session_frequency}
                                                         onChange={event =>
-                                                            updateCalendarEventForm(
-                                                                "repeats_yearly",
-                                                                event.target.checked
-                                                            )
+                                                            updateCalendarEventForm("session_frequency", event.target.value)
                                                         }
-                                                    />
+                                                    >
+                                                        <option value="none">Does not repeat</option>
 
-                                                    <span>Repeat every year</span>
-                                                </div>
-                                            </label>
+                                                        {["Activity", "Important Date"].includes(calendarEventForm.event_type) && (
+                                                            <>
+                                                                <option value="daily">Daily</option>
+                                                                <option value="weekly">Weekly</option>
+                                                                <option value="monthly">Monthly</option>
+                                                                <option value="yearly">Yearly</option>
+                                                            </>
+                                                        )}
+                                                    </select>
+                                                </label>
+                                            )}
+
+                                            {calendarEventForm.event_type === "Activity" &&
+                                                calendarEventForm.session_frequency !== "none" &&
+                                                calendarEventForm.session_frequency !== "yearly" && (
+                                                    <label>
+                                                        Repeat Until
+                                                        <input
+                                                            type="date"
+                                                            value={calendarEventForm.session_until}
+                                                            onChange={event =>
+                                                                updateCalendarEventForm("session_until", event.target.value)
+                                                            }
+                                                        />
+                                                    </label>
+                                                )}
+
+                                            {!(
+                                                calendarEventForm.event_type === "Activity" &&
+                                                calendarEventForm.session_frequency !== "none"
+                                            ) && (
+                                                    <label>
+                                                        End Date
+                                                        <input
+                                                            type="date"
+                                                            value={calendarEventForm.end_date}
+                                                            onChange={event =>
+                                                                updateCalendarEventForm("end_date", event.target.value)
+                                                            }
+                                                        />
+                                                    </label>
+                                                )}
 
                                             <label>
                                                 Start Time

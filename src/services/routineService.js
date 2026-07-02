@@ -113,8 +113,13 @@ export async function deleteRoutine(id) {
 export async function completeRoutine(routine) {
     const today = new Date().toISOString().slice(0, 10)
 
+    const baseDate =
+        routine.schedule_basis === "due_date"
+            ? routine.next_due || today
+            : today
+
     const nextDue = getNextDueDate(
-        routine.next_due || today,
+        baseDate,
         routine.frequency
     )
 
