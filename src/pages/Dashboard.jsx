@@ -405,7 +405,13 @@ export default function Dashboard() {
         due_date: ""
     })
 
-    const { tasks, loading: tasksLoading, refreshTasks } = useTasks()
+    const {
+        tasks,
+        setTasks,
+        loading: tasksLoading,
+        refreshTasks
+    } = useTasks()
+
     const { schoolItems } = useSchoolItems()
     const { familyMembers } = useFamilyMembers()
     const { trips } = useTrips()
@@ -529,11 +535,25 @@ export default function Dashboard() {
         calendarEventsLoading
 
     async function handleCompleteTask(task) {
+        const previousTasks = tasks
+
+        setTasks(current =>
+            current.map(item =>
+                item.id === task.id
+                    ? {
+                        ...item,
+                        status: "complete",
+                        completed_at: new Date().toISOString()
+                    }
+                    : item
+            )
+        )
+
         try {
             await completeTask(task)
-            await refreshTasks()
         } catch (error) {
             console.error(error)
+            setTasks(previousTasks)
             alert(error.message || "Could not complete to-do.")
         }
     }

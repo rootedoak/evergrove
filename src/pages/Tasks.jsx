@@ -555,11 +555,26 @@ export default function Tasks() {
     }
 
     async function handleComplete(task) {
+        const previousTasks = tasks
+
+        setTasks(current =>
+            current.map(item =>
+                item.id === task.id
+                    ? {
+                        ...item,
+                        status: "complete",
+                        completed_at: new Date().toISOString()
+                    }
+                    : item
+            )
+        )
+
         try {
             await completeTask(task)
-            await loadData()
         } catch (error) {
             console.error(error)
+            setTasks(previousTasks)
+            alert(error.message || "Could not complete to-do.")
         }
     }
 

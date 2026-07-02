@@ -26,6 +26,7 @@ export default function useTasks() {
     return {
         tasks,
         loading,
+        setTasks,
         error,
         refreshTasks: loadTasks
     }

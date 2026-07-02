@@ -264,21 +264,61 @@ export default function Routines() {
     }
 
     async function handleComplete(routine) {
+        const previousRoutines = routines
+
+        // Optimistically show that something happened immediately.
+        setRoutines(current =>
+            current.map(item =>
+                item.id === routine.id
+                    ? {
+                        ...item,
+                        last_completed: new Date().toISOString().slice(0, 10)
+                    }
+                    : item
+            )
+        )
+
         try {
-            await completeRoutine(routine)
-            await loadData()
+            // Supabase calculates the real next_due date.
+            const updatedRoutine = await completeRoutine(routine)
+
+            // Replace our optimistic version with the real one.
+            setRoutines(current =>
+                current.map(item =>
+                    item.id === updatedRoutine.id
+                        ? updatedRoutine
+                        : item
+                )
+            )
         } catch (error) {
             console.error(error)
+
+            // Roll back if something failed.
+            setRoutines(previousRoutines)
+
             alert(error.message || "Could not complete routine.")
         }
     }
 
     async function handleCreateTask(routine) {
+        const previousRoutines = routines
+
+        setRoutines(current =>
+            current.map(item =>
+                item.id === routine.id
+                    ? {
+                        ...item,
+                        task_created: true
+                    }
+                    : item
+            )
+        )
+
         try {
             await createTaskFromRoutine(routine)
-            await loadData()
         } catch (error) {
             console.error(error)
+            setRoutines(previousRoutines)
             alert(error.message || "Could not create task from routine.")
         }
     }
@@ -290,11 +330,17 @@ export default function Routines() {
 
         if (!confirmed) return
 
+        const previousRoutines = routines
+
+        setRoutines(current =>
+            current.filter(item => item.id !== routine.id)
+        )
+
         try {
             await deleteRoutine(routine.id)
-            await loadData()
         } catch (error) {
             console.error(error)
+            setRoutines(previousRoutines)
             alert(error.message || "Could not delete routine.")
         }
     }

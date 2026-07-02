@@ -215,20 +215,37 @@ export default function ShoppingLists() {
         event.preventDefault()
         if (!selectedList?.id || !itemForm.name.trim()) return
 
-        await createShoppingListItem({
-            shoppingListId: selectedList.id,
-            name: itemForm.name,
-            quantity: itemForm.quantity,
-            category: itemForm.category || "Uncategorized"
-        })
+        try {
+            const createdItem = await createShoppingListItem({
+                shoppingListId: selectedList.id,
+                name: itemForm.name,
+                quantity: itemForm.quantity,
+                category: itemForm.category || "Uncategorized"
+            })
 
-        setItemForm({
-            name: "",
-            quantity: "",
-            category: ""
-        })
+            setShoppingLists(current =>
+                current.map(list =>
+                    list.id === selectedList.id
+                        ? {
+                            ...list,
+                            shopping_list_items: [
+                                ...(list.shopping_list_items || []),
+                                createdItem
+                            ]
+                        }
+                        : list
+                )
+            )
 
-        await loadData()
+            setItemForm({
+                name: "",
+                quantity: "",
+                category: ""
+            })
+        } catch (error) {
+            console.error(error)
+            alert("Could not add shopping item.")
+        }
     }
 
     async function handleArchiveSelectedList() {
@@ -540,11 +557,33 @@ export default function ShoppingLists() {
                                                                     }
                                                                     type="button"
                                                                     onClick={async () => {
-                                                                        await toggleShoppingListItem(
-                                                                            item.id,
-                                                                            !item.checked
+                                                                        const previousLists = shoppingLists
+
+                                                                        setShoppingLists(current =>
+                                                                            current.map(list => ({
+                                                                                ...list,
+                                                                                shopping_list_items: (list.shopping_list_items || []).map(
+                                                                                    shoppingItem =>
+                                                                                        shoppingItem.id === item.id
+                                                                                            ? {
+                                                                                                ...shoppingItem,
+                                                                                                checked: !shoppingItem.checked
+                                                                                            }
+                                                                                            : shoppingItem
+                                                                                )
+                                                                            }))
                                                                         )
-                                                                        await loadData()
+
+                                                                        try {
+                                                                            await toggleShoppingListItem(
+                                                                                item.id,
+                                                                                !item.checked
+                                                                            )
+                                                                        } catch (error) {
+                                                                            console.error(error)
+                                                                            setShoppingLists(previousLists)
+                                                                            alert("Could not update shopping item.")
+                                                                        }
                                                                     }}
                                                                 >
                                                                     {item.checked && <Check size={14} />}
@@ -572,8 +611,25 @@ export default function ShoppingLists() {
                                                                         className="icon-danger-button"
                                                                         type="button"
                                                                         onClick={async () => {
-                                                                            await deleteShoppingListItem(item.id)
-                                                                            await loadData()
+                                                                            const previousLists = shoppingLists
+
+                                                                            setShoppingLists(current =>
+                                                                                current.map(list => ({
+                                                                                    ...list,
+                                                                                    shopping_list_items:
+                                                                                        (list.shopping_list_items || []).filter(
+                                                                                            shoppingItem => shoppingItem.id !== item.id
+                                                                                        )
+                                                                                }))
+                                                                            )
+
+                                                                            try {
+                                                                                await deleteShoppingListItem(item.id)
+                                                                            } catch (error) {
+                                                                                console.error(error)
+                                                                                setShoppingLists(previousLists)
+                                                                                alert("Could not delete item.")
+                                                                            }
                                                                         }}
                                                                     >
                                                                         <Trash2 size={16} />

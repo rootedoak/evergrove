@@ -6,7 +6,7 @@ export default function PageHeader({
 }) {
     return (
         <header className="eg-page-header">
-            <div>
+            <div className="eg-page-header-content">
                 {eyebrow && (
                     <p className="eg-page-eyebrow">{eyebrow}</p>
                 )}

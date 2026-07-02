@@ -41,17 +41,44 @@ export default function usePersonalInbox() {
     }, [])
 
     async function markRead(id) {
-        await markInboxItemRead(id)
-        await loadItems()
+        const previousItems = items
+
+        setItems(current =>
+            current.map(item =>
+                item.id === id
+                    ? { ...item, status: "read" }
+                    : item
+            )
+        )
+
+        try {
+            await markInboxItemRead(id)
+        } catch (error) {
+            console.error(error)
+            setItems(previousItems)
+            throw error
+        }
     }
 
     async function removeItem(id) {
-        await deletePersonalInboxItem(id)
-        await loadItems()
+        const previousItems = items
+
+        setItems(current =>
+            current.filter(item => item.id !== id)
+        )
+
+        try {
+            await deletePersonalInboxItem(id)
+        } catch (error) {
+            console.error(error)
+            setItems(previousItems)
+            throw error
+        }
     }
 
     return {
         items,
+        setItems,
         loading,
         refreshInbox: loadItems,
         markRead,
