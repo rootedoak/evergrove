@@ -146,18 +146,20 @@ export async function updateTask(id, updates) {
         updates.completed === true
 
     if (isCompleted) {
-        await createFeedEvent({
-            event_type: "task_completed",
-            title: data.title,
-            description: "Task completed",
-            reference_type: "task",
-            reference_id: data.id,
-            metadata: {
-                task_id: data.id,
-                task_title: data.title,
-                family_member_id: data.family_member_id || null,
-            },
-        })
+        if (data.visibility !== "private") {
+            await createFeedEvent({
+                event_type: "task_completed",
+                title: data.title,
+                description: "Task completed",
+                reference_type: "task",
+                reference_id: data.id,
+                metadata: {
+                    task_id: data.id,
+                    task_title: data.title,
+                    family_member_id: data.family_member_id || null,
+                },
+            })
+        }
 
         await trackEvent({
             eventName: "task_completed",

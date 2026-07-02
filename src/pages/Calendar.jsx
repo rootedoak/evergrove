@@ -851,7 +851,6 @@ export default function Calendar() {
             resetActivityForm()
             setShowActivityForm(false)
 
-            window.location.reload()
         } catch (error) {
             console.error(error)
             alert(error.message || "Could not create activity.")
@@ -903,7 +902,7 @@ export default function Calendar() {
 
             resetSchoolItemForm()
             setShowSchoolItemForm(false)
-            window.location.reload()
+            setSelectedDate(null)
         } catch (error) {
             console.error(error)
             alert(error.message || "Could not create school item.")
@@ -942,7 +941,7 @@ export default function Calendar() {
             }
 
             setSelectedDate(null)
-            window.location.reload()
+            //window.location.reload()
         } catch (error) {
             console.error(error)
             alert(error.message || "Could not delete this calendar item.")
