@@ -72,8 +72,8 @@ export async function updateCalendarEvent(id, updates) {
         .update({
             ...updates,
             updated_at: new Date().toISOString(),
-            session_frequency: event.session_frequency || "none",
-            session_until: event.session_until || null
+            session_frequency: updates.session_frequency || "none",
+            session_until: updates.session_until || null
         })
         .eq("id", id)
         .eq("household_id", household.id)

@@ -404,37 +404,6 @@ function addSessionInterval(dateString, frequency) {
     )
 }
 
-function buildActivitySessionEvents(baseEvent) {
-    const frequency = baseEvent.session_frequency
-    const startDate = baseEvent.start_date
-    const untilDate = baseEvent.session_until
-
-    if (
-        baseEvent.event_type !== "Activity" ||
-        !frequency ||
-        frequency === "none" ||
-        !startDate ||
-        !untilDate
-    ) {
-        return [baseEvent]
-    }
-
-    const events = []
-    let currentDate = startDate
-
-    while (currentDate <= untilDate) {
-        events.push({
-            ...baseEvent,
-            start_date: currentDate,
-            end_date: currentDate
-        })
-
-        currentDate = addSessionInterval(currentDate, frequency)
-    }
-
-    return events
-}
-
 
 
 export default function Calendar() {
@@ -615,8 +584,8 @@ export default function Calendar() {
                     location: existingEvent.location || "",
                     notes: existingEvent.notes || "",
                     repeats_yearly: Boolean(existingEvent.repeats_yearly),
-                    session_frequency: "none",
-                    session_until: ""
+                    session_frequency: existingEvent.session_frequency || "none",
+                    session_until: existingEvent.session_until || ""
                 })
 
                 setShowCalendarEventForm(true)
@@ -701,7 +670,9 @@ export default function Calendar() {
         }
     }
 
-    function startEditCalendarEventFromSummary(event) {
+    function startEditCalendarEventFromSummary(event = selectedEvent) {
+        if (!event?.sourceId) return
+
         const existingEvent = calendarEvents.find(
             calendarEvent => calendarEvent.id === event.sourceId
         )
@@ -1126,9 +1097,7 @@ export default function Calendar() {
                                                             event_type: nextType,
                                                             session_frequency: "none",
                                                             session_until: "",
-                                                            end_date: "",
-                                                            session_frequency: "none",
-                                                            session_until: ""
+                                                            end_date: ""
                                                         }))
                                                     }}
                                                 >
