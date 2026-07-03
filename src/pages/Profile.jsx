@@ -415,25 +415,11 @@ export default function Profile() {
                         </SettingsSection>
 
                         <SettingsSection
-                            title="Personal Dashboard"
+                            title="Calendar & Timeline"
                             scope="Personal user setting"
-                            subtitle="These settings only affect your own dashboard view."
+                            subtitle="These settings only affect your own calendar and timeline view."
                         >
                             <div className="form-grid">
-                                <label>
-                                    Coming Up Window
-                                    <select
-                                        value={preferences.dashboard_window_days}
-                                        onChange={event =>
-                                            updatePreference("dashboard_window_days", event.target.value)
-                                        }
-                                    >
-                                        <option value="3">Next 3 days</option>
-                                        <option value="7">Next 7 days</option>
-                                        <option value="14">Next 14 days</option>
-                                    </select>
-                                </label>
-
                                 <label>
                                     Timeline Window
                                     <select

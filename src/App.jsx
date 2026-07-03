@@ -88,7 +88,7 @@ const moreNavItems = [
   { to: "/documents", icon: FolderOpen, label: "Documents" },
   { to: "/trips", icon: CalendarDays, label: "Trips" },
   { to: "/school", icon: ClipboardList, label: "School" },
-  { to: "/routines", icon: Repeat, label: "Routines" },
+  { to: "/routines", icon: Repeat, label: "Automations" },
   { to: "/analytics", icon: BarChart3, label: "Analytics" },
   { to: "/about", icon: Info, label: "About" }
 ]

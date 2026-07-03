@@ -404,8 +404,6 @@ function addSessionInterval(dateString, frequency) {
     )
 }
 
-
-
 export default function Calendar() {
     const navigate = useNavigate()
     const location = useLocation()
@@ -523,12 +521,23 @@ export default function Calendar() {
     const selectedEvents = selectedDate ? eventsByDate[selectedDate] || [] : []
 
     const agendaEvents = useMemo(() => {
-        const today = getTodayString()
+        const today = createLocalDate(getTodayString())
 
-        return events
-            .filter(event => event.date >= today)
-            .slice(0, 30)
-    }, [events])
+        const windowDays =
+            Number(preferences?.timeline_window_days) || 90
+
+        const endDate = new Date(today)
+        endDate.setDate(endDate.getDate() + windowDays)
+
+        return events.filter(event => {
+            const eventDate = createLocalDate(event.date)
+
+            return (
+                eventDate >= today &&
+                eventDate <= endDate
+            )
+        })
+    }, [events, preferences?.timeline_window_days])
 
     const agendaEventsByDate = useMemo(() => {
         return agendaEvents.reduce((grouped, event) => {
