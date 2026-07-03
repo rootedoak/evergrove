@@ -176,6 +176,25 @@ function buildCalendarEvents({
 }) {
     const events = []
 
+    function pushCalendarEvent(event, dateString, idSuffix = dateString) {
+        events.push({
+            id: `calendar-event-${event.id}-${idSuffix}`,
+            type: "calendar_event",
+            sourceType: "calendar_event",
+            sourceId: event.id,
+            canDelete: true,
+            date: dateString,
+            icon: event.repeats_yearly ? "🔁" : "📌",
+            title: event.title,
+            subtitle: event.event_type || "Calendar Event",
+            location: event.location || "",
+            sortTime: getMinutesFromTime(event.start_time),
+            start_time: event.start_time,
+            end_time: event.end_time,
+            notes: event.notes || ""
+        })
+    }
+
     if (showHolidays) {
         events.push(
             ...getHolidayCalendarEvents(visibleDate.getFullYear() - 1),
@@ -213,9 +232,7 @@ function buildCalendarEvents({
             .join(", ")
 
         const startDate = createLocalDate(trip.start_date)
-        const endDate = createLocalDate(
-            trip.end_date || trip.start_date
-        )
+        const endDate = createLocalDate(trip.end_date || trip.start_date)
 
         const currentDate = new Date(startDate)
 
@@ -233,25 +250,52 @@ function buildCalendarEvents({
                 ),
                 icon: "🚗",
                 title: trip.name,
-                subtitle:
-                    attendees ||
-                    trip.destination ||
-                    "Trip",
+                subtitle: attendees || trip.destination || "Trip",
                 location: trip.destination || "",
                 sortTime: 99999
             })
 
-            currentDate.setDate(
-                currentDate.getDate() + 1
-            )
+            currentDate.setDate(currentDate.getDate() + 1)
         }
     })
 
     calendarEvents.forEach(event => {
         if (!event.start_date) return
 
+        const frequency = event.session_frequency || "none"
+        const isRecurringActivity =
+            event.event_type === "Activity" &&
+            frequency !== "none" &&
+            frequency !== "yearly"
+
+        if (isRecurringActivity) {
+            const untilDateString = event.session_until || event.end_date
+            if (!untilDateString) {
+                pushCalendarEvent(event, event.start_date, event.start_date)
+                return
+            }
+
+            let currentDateString = event.start_date
+            const untilDate = createLocalDate(untilDateString)
+
+            while (createLocalDate(currentDateString) <= untilDate) {
+                pushCalendarEvent(event, currentDateString, currentDateString)
+
+                currentDateString = addSessionInterval(
+                    currentDateString,
+                    frequency
+                )
+            }
+
+            return
+        }
+
         const yearsToRender = event.repeats_yearly
-            ? [visibleDate.getFullYear() - 1, visibleDate.getFullYear(), visibleDate.getFullYear() + 1]
+            ? [
+                visibleDate.getFullYear() - 1,
+                visibleDate.getFullYear(),
+                visibleDate.getFullYear() + 1
+            ]
             : [null]
 
         yearsToRender.forEach(year => {
@@ -259,9 +303,10 @@ function buildCalendarEvents({
                 ? getRecurringDateForYear(event.start_date, year)
                 : event.start_date
 
-            const endDateString = event.repeats_yearly && event.end_date
-                ? getRecurringDateForYear(event.end_date, year)
-                : event.end_date || startDateString
+            const endDateString =
+                event.repeats_yearly && event.end_date
+                    ? getRecurringDateForYear(event.end_date, year)
+                    : event.end_date || startDateString
 
             const startDate = createLocalDate(startDateString)
             const endDate = createLocalDate(endDateString)
@@ -269,26 +314,17 @@ function buildCalendarEvents({
             const currentDate = new Date(startDate)
 
             while (currentDate <= endDate) {
-                events.push({
-                    id: `calendar-event-${event.id}-${year || "single"}-${currentDate.toISOString()}`,
-                    type: "calendar_event",
-                    sourceType: "calendar_event",
-                    sourceId: event.id,
-                    canDelete: true,
-                    date: formatDateParts(
-                        currentDate.getFullYear(),
-                        currentDate.getMonth() + 1,
-                        currentDate.getDate()
-                    ),
-                    icon: event.repeats_yearly ? "🔁" : "📌",
-                    title: event.title,
-                    subtitle: event.event_type || "Calendar Event",
-                    location: event.location || "",
-                    sortTime: getMinutesFromTime(event.start_time),
-                    start_time: event.start_time,
-                    end_time: event.end_time,
-                    notes: event.notes || ""
-                })
+                const dateString = formatDateParts(
+                    currentDate.getFullYear(),
+                    currentDate.getMonth() + 1,
+                    currentDate.getDate()
+                )
+
+                pushCalendarEvent(
+                    event,
+                    dateString,
+                    `${year || "single"}-${dateString}`
+                )
 
                 currentDate.setDate(currentDate.getDate() + 1)
             }
@@ -651,7 +687,9 @@ export default function Calendar() {
                     end_time: existingEvent.end_time || "",
                     location: existingEvent.location || "",
                     notes: existingEvent.notes || "",
-                    repeats_yearly: Boolean(existingEvent.repeats_yearly)
+                    repeats_yearly: Boolean(existingEvent.repeats_yearly),
+                    session_frequency: existingEvent.session_frequency || "none",
+                    session_until: existingEvent.session_until || ""
                 })
             }
 
@@ -685,8 +723,8 @@ export default function Calendar() {
             location: existingEvent.location || "",
             notes: existingEvent.notes || "",
             repeats_yearly: Boolean(existingEvent.repeats_yearly),
-            session_frequency: "none",
-            session_until: ""
+            session_frequency: existingEvent.session_frequency || "none",
+            session_until: existingEvent.session_until || ""
         })
 
         setShowCalendarEventForm(true)
@@ -725,48 +763,27 @@ export default function Calendar() {
         setSavingCalendarEvent(true)
 
         try {
-            const recurringActivity =
-                calendarEventForm.event_type === "Activity" &&
-                calendarEventForm.session_frequency !== "none" &&
-                calendarEventForm.session_frequency !== "yearly"
-
             const yearlyRepeat =
                 calendarEventForm.session_frequency === "yearly"
 
-            const basePayload = {
+            const payload = {
                 title: calendarEventForm.title.trim(),
                 event_type: calendarEventForm.event_type,
                 start_date: calendarEventForm.start_date || selectedDate,
-                end_date: recurringActivity
-                    ? calendarEventForm.session_until || null
-                    : calendarEventForm.end_date || null,
+                end_date: calendarEventForm.end_date || null,
                 start_time: calendarEventForm.start_time || null,
                 end_time: calendarEventForm.end_time || null,
                 location: calendarEventForm.location.trim() || null,
                 notes: calendarEventForm.notes.trim() || null,
-                repeats_yearly: yearlyRepeat
-            }
-
-            const sessionPayload = {
-                ...basePayload,
-                session_frequency: calendarEventForm.session_frequency,
-                session_until: calendarEventForm.session_until
+                repeats_yearly: yearlyRepeat,
+                session_frequency: calendarEventForm.session_frequency || "none",
+                session_until: calendarEventForm.session_until || null
             }
 
             if (editingCalendarEventId) {
-                await updateCalendarEvent(editingCalendarEventId, basePayload)
+                await updateCalendarEvent(editingCalendarEventId, payload)
             } else {
-                const eventsToCreate = buildActivitySessionEvents(sessionPayload)
-
-                for (const eventToCreate of eventsToCreate) {
-                    const {
-                        session_frequency,
-                        session_until,
-                        ...cleanEvent
-                    } = eventToCreate
-
-                    await createCalendarEvent(cleanEvent)
-                }
+                await createCalendarEvent(payload)
             }
 
             await refreshCalendarEvents()
@@ -1109,7 +1126,9 @@ export default function Calendar() {
                                                             event_type: nextType,
                                                             session_frequency: "none",
                                                             session_until: "",
-                                                            end_date: ""
+                                                            end_date: "",
+                                                            session_frequency: "none",
+                                                            session_until: ""
                                                         }))
                                                     }}
                                                 >

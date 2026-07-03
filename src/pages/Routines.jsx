@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react"
 import {
     completeRoutine,
     createRoutine,
-    createTaskFromRoutine,
     deleteRoutine,
     getRoutines,
     updateRoutine
@@ -38,24 +37,24 @@ function normalizeRoutine(routine) {
         family_member_id: routine.family_member_id || "",
         create_task: routine.create_task ?? true,
         active: routine.active ?? true,
-        schedule_basis: routine.schedule_basis || "completion_date",
+        schedule_basis: routine.schedule_basis || "completion_date"
     }
 }
 
 function formatFrequency(value) {
     const labels = {
-        daily: "Daily",
-        every_2_days: "Every 2 days",
-        weekly: "Weekly",
-        every_2_weeks: "Every 2 weeks",
-        monthly: "Monthly"
+        daily: "daily",
+        every_2_days: "every 2 days",
+        weekly: "weekly",
+        every_2_weeks: "every 2 weeks",
+        monthly: "monthly"
     }
 
-    return labels[value] || value || "Routine"
+    return labels[value] || value || "routine"
 }
 
 function formatDate(dateString) {
-    if (!dateString) return "No due date"
+    if (!dateString) return "No date"
 
     const [year, month, day] = String(dateString)
         .slice(0, 10)
@@ -144,6 +143,15 @@ function groupRoutines(routines) {
     return groups
 }
 
+function AutomationStat({ label, value }) {
+    return (
+        <div className="automation-stat">
+            <span>{label}</span>
+            <strong>{value}</strong>
+        </div>
+    )
+}
+
 function RoutineSection({
     title,
     subtitle,
@@ -154,11 +162,7 @@ function RoutineSection({
     setRoutineMenuOpen
 }) {
     return (
-        <SectionCard
-            title={title}
-            subtitle={subtitle}
-            count={routines.length}
-        >
+        <SectionCard title={title} subtitle={subtitle} count={routines.length}>
             {routines.length === 0 ? (
                 <p className="dashboard-empty">{emptyText}</p>
             ) : (
@@ -184,17 +188,18 @@ export default function Routines() {
     const [form, setForm] = useState(initialForm)
     const [saving, setSaving] = useState(false)
     const [editingId, setEditingId] = useState(null)
-
     const [routineMenuOpen, setRoutineMenuOpen] = useState(null)
 
     const groupedRoutines = useMemo(() => {
         return groupRoutines(sortRoutines(routines))
     }, [routines])
 
-    const activeCount =
+    const runningCount =
         groupedRoutines.dueNow.length +
         groupedRoutines.thisWeek.length +
         groupedRoutines.later.length
+
+    const pausedCount = groupedRoutines.paused.length
 
     async function loadData() {
         try {
@@ -248,16 +253,23 @@ export default function Routines() {
 
         try {
             if (editingId) {
-                await updateRoutine(editingId, payload)
+                const updated = await updateRoutine(editingId, payload)
+
+                setRoutines(current =>
+                    current.map(routine =>
+                        routine.id === updated.id ? updated : routine
+                    )
+                )
             } else {
-                await createRoutine(payload)
+                const created = await createRoutine(payload)
+
+                setRoutines(current => [created, ...current])
             }
 
             resetForm()
-            await loadData()
         } catch (error) {
             console.error(error)
-            alert(error.message || "Could not save routine.")
+            alert(error.message || "Could not save automation.")
         } finally {
             setSaving(false)
         }
@@ -266,7 +278,6 @@ export default function Routines() {
     async function handleComplete(routine) {
         const previousRoutines = routines
 
-        // Optimistically show that something happened immediately.
         setRoutines(current =>
             current.map(item =>
                 item.id === routine.id
@@ -279,47 +290,57 @@ export default function Routines() {
         )
 
         try {
-            // Supabase calculates the real next_due date.
             const updatedRoutine = await completeRoutine(routine)
 
-            // Replace our optimistic version with the real one.
             setRoutines(current =>
                 current.map(item =>
-                    item.id === updatedRoutine.id
-                        ? updatedRoutine
-                        : item
+                    item.id === updatedRoutine.id ? updatedRoutine : item
                 )
             )
         } catch (error) {
             console.error(error)
-
-            // Roll back if something failed.
             setRoutines(previousRoutines)
-
-            alert(error.message || "Could not complete routine.")
+            alert(error.message || "Could not complete automation.")
         }
     }
 
-    async function handleCreateTask(routine) {
+    async function handlePauseRoutine(routine) {
         const previousRoutines = routines
 
         setRoutines(current =>
             current.map(item =>
                 item.id === routine.id
-                    ? {
-                        ...item,
-                        task_created: true
-                    }
+                    ? { ...item, active: false }
                     : item
             )
         )
 
         try {
-            await createTaskFromRoutine(routine)
+            await updateRoutine(routine.id, { active: false })
         } catch (error) {
             console.error(error)
             setRoutines(previousRoutines)
-            alert(error.message || "Could not create task from routine.")
+            alert(error.message || "Could not pause automation.")
+        }
+    }
+
+    async function handleResumeRoutine(routine) {
+        const previousRoutines = routines
+
+        setRoutines(current =>
+            current.map(item =>
+                item.id === routine.id
+                    ? { ...item, active: true }
+                    : item
+            )
+        )
+
+        try {
+            await updateRoutine(routine.id, { active: true })
+        } catch (error) {
+            console.error(error)
+            setRoutines(previousRoutines)
+            alert(error.message || "Could not resume automation.")
         }
     }
 
@@ -341,15 +362,11 @@ export default function Routines() {
         } catch (error) {
             console.error(error)
             setRoutines(previousRoutines)
-            alert(error.message || "Could not delete routine.")
+            alert(error.message || "Could not delete automation.")
         }
     }
 
-    function renderRoutineRow(
-        routine,
-        routineMenuOpen,
-        setRoutineMenuOpen
-    ) {
+    function renderRoutineRow(routine, routineMenuOpen, setRoutineMenuOpen) {
         const member = routine.family_members
         const isPaused = routine.active === false
 
@@ -366,17 +383,41 @@ export default function Routines() {
                     <strong>{routine.title}</strong>
 
                     <p>
-                        {formatFrequency(routine.frequency)}
-                        {routine.next_due ? ` • Next due ${formatDate(routine.next_due)}` : ""}
-                        {member?.name ? ` • ${member.name}` : ""}
+                        Automatically creates a To-Do {formatFrequency(routine.frequency)}
                     </p>
 
-                    <small>
-                        {routine.category || "general"}
-                        {routine.last_completed
-                            ? ` • Last completed ${formatDate(routine.last_completed)}`
-                            : ""}
-                    </small>
+                    <div className="automation-details-grid">
+                        <div>
+                            <span>Next To-Do</span>
+                            <strong>
+                                {isPaused
+                                    ? "Paused"
+                                    : routine.next_due
+                                        ? formatDate(routine.next_due)
+                                        : "Not scheduled"}
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>Assigned To</span>
+                            <strong>{member?.name || "Household"}</strong>
+                        </div>
+
+                        <div>
+                            <span>Schedule</span>
+                            <strong>
+                                {routine.schedule_basis === "due_date"
+                                    ? "Fixed schedule"
+                                    : "Completion-based"}
+                            </strong>
+                        </div>
+                    </div>
+
+                    {routine.last_completed && (
+                        <small>
+                            Last completed {formatDate(routine.last_completed)}
+                        </small>
+                    )}
 
                     {routine.description && <small>{routine.description}</small>}
                 </div>
@@ -385,43 +426,40 @@ export default function Routines() {
                     <span
                         className={`status-pill ${isPaused ? "status-muted" : "status-success"}`}
                     >
-                        {isPaused ? "Paused" : "Active"}
+                        {isPaused ? "⏸ Paused" : "🟢 Running"}
                     </span>
                 </div>
 
                 <div className="routine-command-actions">
-                    {!isPaused && (
-                        <>
-                            <button
-                                className="secondary-button"
-                                type="button"
-                                onClick={() => handleComplete(routine)}
-                            >
-                                Complete
-                            </button>
-
-                            <button
-                                className="secondary-button"
-                                type="button"
-                                onClick={() => handleCreateTask(routine)}
-                            >
-                                Create To-Do
-                            </button>
-                        </>
-                    )}
-
                     <ActionMenu
                         title={routine.title}
                         open={routineMenuOpen === routine.id}
                         onOpenChange={isOpen =>
                             setRoutineMenuOpen(isOpen ? routine.id : null)
                         }
-                        ariaLabel="Open routine actions"
+                        ariaLabel="Open automation actions"
                         actions={[
                             {
                                 label: "Edit",
                                 onClick: () => startEdit(routine)
                             },
+                            ...(!isPaused
+                                ? [
+                                    {
+                                        label: "Complete Early",
+                                        onClick: () => handleComplete(routine)
+                                    },
+                                    {
+                                        label: "Pause Automation",
+                                        onClick: () => handlePauseRoutine(routine)
+                                    }
+                                ]
+                                : [
+                                    {
+                                        label: "Resume Automation",
+                                        onClick: () => handleResumeRoutine(routine)
+                                    }
+                                ]),
                             {
                                 label: "Delete",
                                 danger: true,
@@ -437,9 +475,9 @@ export default function Routines() {
     return (
         <AppPage>
             <PageHeader
-                eyebrow="Routines"
-                title="Family Routines"
-                subtitle={`${activeCount} active • ${groupedRoutines.dueNow.length} due now • ${groupedRoutines.paused.length} paused`}
+                eyebrow="Automations"
+                title="Automations"
+                subtitle="Let Evergrove automatically create recurring To-Dos for your household."
                 action={
                     <Button
                         onClick={() => {
@@ -450,7 +488,7 @@ export default function Routines() {
                             }
                         }}
                     >
-                        {showForm ? "Cancel" : "+ Add"}
+                        {showForm ? "Cancel" : "+ New Automation"}
                     </Button>
                 }
             />
@@ -460,22 +498,22 @@ export default function Routines() {
                     insight={{
                         title:
                             groupedRoutines.dueNow.length > 0
-                                ? `${groupedRoutines.dueNow[0]?.title} should be completed today.`
+                                ? `${groupedRoutines.dueNow[0]?.title} is ready to create work.`
                                 : groupedRoutines.thisWeek.length > 0
-                                    ? `${groupedRoutines.thisWeek[0]?.title} is due this week.`
-                                    : "Routines are up to date",
+                                    ? `${groupedRoutines.thisWeek[0]?.title} has a To-Do coming up.`
+                                    : "Your automations are running smoothly.",
 
                         description:
                             groupedRoutines.dueNow.length > 0
-                                ? "Complete it or create a to-do."
+                                ? "Evergrove will help turn this routine into actionable work."
                                 : groupedRoutines.thisWeek.length > 0
-                                    ? "Stay ahead of your recurring work."
-                                    : "No routine needs attention right now.",
+                                    ? "Recurring work is scheduled and ready."
+                                    : "No automation needs attention right now.",
 
                         actionLabel:
                             groupedRoutines.dueNow.length > 0
-                                ? "Complete"
-                                : "Add Routine"
+                                ? "Complete Early"
+                                : "New Automation"
                     }}
                     onAction={() => {
                         if (groupedRoutines.dueNow.length > 0 && groupedRoutines.dueNow[0]) {
@@ -486,10 +524,21 @@ export default function Routines() {
                     }}
                 />
 
+                <SectionCard
+                    title="Automation Summary"
+                    subtitle="A quick view of what Evergrove is managing for your household."
+                >
+                    <div className="automation-stat-grid">
+                        <AutomationStat label="Total" value={routines.length} />
+                        <AutomationStat label="Running" value={runningCount} />
+                        <AutomationStat label="Paused" value={pausedCount} />
+                    </div>
+                </SectionCard>
+
                 {showForm && (
                     <SectionCard
-                        title={editingId ? "Edit Routine" : "Add Routine"}
-                        subtitle="Create recurring household rhythms and reminders."
+                        title={editingId ? "Edit Household Routine" : "New Household Routine"}
+                        subtitle="Create an automation that automatically generates recurring To-Dos."
                     >
                         <form className="form-grid" onSubmit={handleSubmit}>
                             <label>
@@ -538,13 +587,13 @@ export default function Routines() {
                                     value={form.schedule_basis}
                                     onChange={event => updateForm("schedule_basis", event.target.value)}
                                 >
-                                    <option value="completion_date">Completion date</option>
+                                    <option value="completion_date">When completed</option>
                                     <option value="due_date">Original due date</option>
                                 </select>
                             </label>
 
                             <label>
-                                Next Due
+                                Next To-Do
                                 <input
                                     type="date"
                                     value={form.next_due}
@@ -553,14 +602,14 @@ export default function Routines() {
                             </label>
 
                             <label>
-                                Family Member
+                                Assigned To
                                 <select
                                     value={form.family_member_id}
                                     onChange={event =>
                                         updateForm("family_member_id", event.target.value)
                                     }
                                 >
-                                    <option value="">No family member selected</option>
+                                    <option value="">Household</option>
 
                                     {familyMembers.map(member => (
                                         <option key={member.id} value={member.id}>
@@ -572,14 +621,14 @@ export default function Routines() {
                             </label>
 
                             <label>
-                                Active
+                                Status
                                 <select
                                     value={form.active ? "true" : "false"}
                                     onChange={event =>
                                         updateForm("active", event.target.value === "true")
                                     }
                                 >
-                                    <option value="true">Active</option>
+                                    <option value="true">Running</option>
                                     <option value="false">Paused</option>
                                 </select>
                             </label>
@@ -604,27 +653,29 @@ export default function Routines() {
                                     ? "Saving..."
                                     : editingId
                                         ? "Save Changes"
-                                        : "Save Routine"}
+                                        : "Save Automation"}
                             </Button>
                         </form>
                     </SectionCard>
                 )}
 
                 <SectionCard
-                    title="Routines"
-                    subtitle="Recurring household work grouped by when it needs attention."
+                    title="Household Routines"
+                    subtitle={`${runningCount} running • ${pausedCount} paused`}
                 >
                     {loading ? (
-                        <p>Loading routines...</p>
+                        <p>Loading automations...</p>
                     ) : routines.length === 0 ? (
-                        <p className="dashboard-empty">No routines added yet.</p>
+                        <p className="dashboard-empty">
+                            No automations yet. Create an automation and Evergrove will automatically generate recurring To-Dos for you.
+                        </p>
                     ) : (
                         <div className="eg-stack">
                             <RoutineSection
                                 title="Due Now"
-                                subtitle="Needs attention first."
+                                subtitle="Ready to generate or advance work."
                                 routines={groupedRoutines.dueNow}
-                                emptyText="No routines due now."
+                                emptyText="No automations due now."
                                 renderRoutineRow={renderRoutineRow}
                                 routineMenuOpen={routineMenuOpen}
                                 setRoutineMenuOpen={setRoutineMenuOpen}
@@ -634,7 +685,7 @@ export default function Routines() {
                                 title="This Week"
                                 subtitle="Coming due in the next 7 days."
                                 routines={groupedRoutines.thisWeek}
-                                emptyText="No routines due this week."
+                                emptyText="No automations due this week."
                                 renderRoutineRow={renderRoutineRow}
                                 routineMenuOpen={routineMenuOpen}
                                 setRoutineMenuOpen={setRoutineMenuOpen}
@@ -642,9 +693,9 @@ export default function Routines() {
 
                             <RoutineSection
                                 title="Later"
-                                subtitle="Upcoming routines."
+                                subtitle="Upcoming automations."
                                 routines={groupedRoutines.later}
-                                emptyText="No later routines."
+                                emptyText="No later automations."
                                 renderRoutineRow={renderRoutineRow}
                                 routineMenuOpen={routineMenuOpen}
                                 setRoutineMenuOpen={setRoutineMenuOpen}
@@ -653,9 +704,9 @@ export default function Routines() {
                             {groupedRoutines.paused.length > 0 && (
                                 <RoutineSection
                                     title="Paused"
-                                    subtitle="Inactive routines."
+                                    subtitle="Stopped until resumed."
                                     routines={groupedRoutines.paused}
-                                    emptyText="No paused routines."
+                                    emptyText="No paused automations."
                                     renderRoutineRow={renderRoutineRow}
                                     routineMenuOpen={routineMenuOpen}
                                     setRoutineMenuOpen={setRoutineMenuOpen}
@@ -663,6 +714,19 @@ export default function Routines() {
                             )}
                         </div>
                     )}
+                </SectionCard>
+
+                <SectionCard
+                    title="Coming Soon"
+                    subtitle="These automation types are already on the roadmap."
+                >
+                    <div className="automation-coming-soon-grid">
+                        <span>☀ Weather-based reminders</span>
+                        <span>🎂 Birthday reminders</span>
+                        <span>🧳 Trip preparation</span>
+                        <span>🛒 Shopping automations</span>
+                        <span>🤖 AI Assistant automations</span>
+                    </div>
                 </SectionCard>
             </div>
         </AppPage>

@@ -37,7 +37,9 @@ export async function createCalendarEvent(event) {
             {
                 ...event,
                 user_id: userId,
-                household_id: household.id
+                household_id: household.id,
+                session_frequency: event.session_frequency || "none",
+                session_until: event.session_until || null
             }
         ])
         .select()
@@ -69,7 +71,9 @@ export async function updateCalendarEvent(id, updates) {
         .from("calendar_events")
         .update({
             ...updates,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            session_frequency: event.session_frequency || "none",
+            session_until: event.session_until || null
         })
         .eq("id", id)
         .eq("household_id", household.id)

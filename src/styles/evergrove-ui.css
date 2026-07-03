@@ -3167,3 +3167,68 @@ button.eg-attention-metric {
     }
 
 }
+
+/* ==========================================
+   Automation Defaults
+   ========================================== */
+
+.automation-stat-grid,
+.automation-details-grid,
+.automation-coming-soon-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.automation-stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.automation-stat,
+.automation-details-grid>div,
+.automation-coming-soon-grid span {
+    padding: 0.85rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 1rem;
+    background: var(--surface-soft, #f8fafc);
+}
+
+.automation-stat span,
+.automation-details-grid span {
+    display: block;
+    color: var(--muted, #64748b);
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.automation-stat strong,
+.automation-details-grid strong {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--text, #0f172a);
+    font-size: 0.95rem;
+}
+
+.automation-details-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 0.75rem;
+}
+
+.automation-coming-soon-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.automation-coming-soon-grid span {
+    color: var(--text, #0f172a);
+    font-weight: 700;
+}
+
+@media (max-width: 700px) {
+
+    .automation-stat-grid,
+    .automation-details-grid,
+    .automation-coming-soon-grid {
+        grid-template-columns: 1fr;
+    }
+}
