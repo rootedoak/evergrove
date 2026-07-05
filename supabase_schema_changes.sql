@@ -1691,3 +1691,11 @@ on storage.objects
 for delete
 to authenticated
 using (bucket_id = 'family-avatars');
+
+-- CREATE CAPTURE A THOUGHT TABLE
+
+alter table personal_inbox_items
+add column if not exists title text,
+add column if not exists body text,
+add column if not exists status text default 'open',
+add column if not exists archived_at timestamptz;

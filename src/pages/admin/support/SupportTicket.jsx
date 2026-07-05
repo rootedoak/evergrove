@@ -8,6 +8,8 @@ import AdminStatusChip from "../../../components/admin/AdminStatusChip"
 import useProductFeedbackDetail from "../../../hooks/admin/useProductFeedbackDetail"
 import { formatTicketNumber } from "../../../services/admin/productFeedbackAdminService"
 import TicketActions from "../../../components/admin/TicketActions"
+import TicketTimeline from "../../../components/admin/TicketTimeline"
+import useProductFeedbackHistory from "../../../hooks/admin/useProductFeedbackHistory"
 
 export default function SupportTicket() {
     const { feedbackId } = useParams()
@@ -17,6 +19,12 @@ export default function SupportTicket() {
         error,
         refreshTicket
     } = useProductFeedbackDetail(feedbackId)
+
+    const {
+        history,
+        loading: historyLoading,
+        refreshHistory
+    } = useProductFeedbackHistory(feedbackId)
 
     if (loading) {
         return (
@@ -53,7 +61,10 @@ export default function SupportTicket() {
                 actions={
                     <TicketActions
                         ticket={ticket}
-                        onStatusChanged={refreshTicket}
+                        onStatusChanged={async () => {
+                            await refreshTicket()
+                            await refreshHistory()
+                        }}
                     />
                 }
             />
@@ -128,6 +139,13 @@ export default function SupportTicket() {
                 <p className="admin-ticket-message">
                     {ticket.message}
                 </p>
+            </AdminCard>
+
+            <AdminCard title="Timeline">
+                <TicketTimeline
+                    history={history}
+                    loading={historyLoading}
+                />
             </AdminCard>
         </div>
     )

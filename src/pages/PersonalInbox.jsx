@@ -29,6 +29,7 @@ function formatDate(dateString) {
 }
 
 function getInboxIcon(itemType) {
+    if (itemType === "thought") return "💭"
     if (itemType === "task") return "✅"
     if (itemType === "calendar_event") return "📅"
     if (itemType === "school") return "🎒"
@@ -154,6 +155,11 @@ export default function PersonalInbox() {
         setSelectedItem(null)
     }
 
+    async function handleArchiveThought(item) {
+        await removeItem(item.id)
+        setSelectedItem(null)
+    }
+
     async function handleCreateReminder(event) {
         event.preventDefault()
         setSavingReminder(true)
@@ -198,6 +204,7 @@ export default function PersonalInbox() {
 
             <section className="card">
                 <p className="card-kicker">Inbox</p>
+
                 <h3>
                     {unreadCount === 1
                         ? "1 unread"
@@ -214,87 +221,128 @@ export default function PersonalInbox() {
                     </p>
                 ) : (
                     <div className="inbox-list">
-                        {items.map(item => (
-                            <div
-                                key={item.id}
-                                className={
-                                    item.status === "unread"
-                                        ? "inbox-item unread"
-                                        : "inbox-item"
-                                }
-                            >
-                                <div className="inbox-item-icon">
-                                    {getInboxIcon(item.item_type)}
-                                </div>
+                        {items.map(item => {
+                            if (item.item_type === "thought") {
+                                return (
+                                    <div key={item.id} className="inbox-item thought">
+                                        <div className="inbox-item-icon">
+                                            {getInboxIcon(item.item_type)}
+                                        </div>
 
-                                <button
-                                    type="button"
-                                    className="inbox-item-main"
-                                    onClick={() => handleOpenInboxItem(item)}
-                                >
-                                    <div className="inbox-item-topline">
-                                        <strong>{item.title}</strong>
+                                        <div className="inbox-item-main">
+                                            <div className="inbox-item-topline">
+                                                <strong>{item.title}</strong>
+                                            </div>
 
-                                        {item.status === "unread" && (
-                                            <span>Unread</span>
-                                        )}
-                                    </div>
-
-                                    {item.message && (
-                                        <p>{item.message}</p>
-                                    )}
-
-                                    <small>
-                                        {getItemMeta(item)}
-                                    </small>
-                                </button>
-
-                                <div className="inbox-item-actions">
-                                    <button
-                                        type="button"
-                                        className="inbox-item-menu"
-                                        onClick={() =>
-                                            setSelectedItem(
-                                                selectedItem?.id === item.id
-                                                    ? null
-                                                    : item
-                                            )
-                                        }
-                                        aria-label="Inbox item actions"
-                                    >
-                                        ⋯
-                                    </button>
-
-                                    {selectedItem?.id === item.id && (
-                                        <div className="inbox-inline-menu">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleOpenInboxItem(item)}
-                                            >
-                                                Open
-                                            </button>
-
-                                            {item.status === "unread" && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleMarkRead(item)}
-                                                >
-                                                    Mark Read
-                                                </button>
+                                            {(item.body || item.message) && (
+                                                <p>{item.body || item.message}</p>
                                             )}
 
-                                            <button
-                                                type="button"
-                                                className="danger-text"
-                                                onClick={() => handleDeleteItem(item)}
-                                            >
-                                                Delete
-                                            </button>
+                                            <small>Thought</small>
+
+                                            <div className="inbox-thought-actions">
+                                                <button type="button">
+                                                    ✓ To-Do
+                                                </button>
+
+                                                <button type="button">
+                                                    📅 Event
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleArchiveThought(item)}
+                                                >
+                                                    Archive
+                                                </button>
+                                            </div>
                                         </div>
-                                    )}
+                                    </div>
+                                )
+                            }
+
+                            return (
+                                <div
+                                    key={item.id}
+                                    className={
+                                        item.status === "unread"
+                                            ? "inbox-item unread"
+                                            : "inbox-item"
+                                    }
+                                >
+                                    <div className="inbox-item-icon">
+                                        {getInboxIcon(item.item_type)}
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        className="inbox-item-main"
+                                        onClick={() => handleOpenInboxItem(item)}
+                                    >
+                                        <div className="inbox-item-topline">
+                                            <strong>{item.title}</strong>
+
+                                            {item.status === "unread" && (
+                                                <span>Unread</span>
+                                            )}
+                                        </div>
+
+                                        {item.message && (
+                                            <p>{item.message}</p>
+                                        )}
+
+                                        <small>
+                                            {getItemMeta(item)}
+                                        </small>
+                                    </button>
+
+                                    <div className="inbox-item-actions">
+                                        <button
+                                            type="button"
+                                            className="inbox-item-menu"
+                                            onClick={() =>
+                                                setSelectedItem(
+                                                    selectedItem?.id === item.id
+                                                        ? null
+                                                        : item
+                                                )
+                                            }
+                                            aria-label="Inbox item actions"
+                                        >
+                                            ⋯
+                                        </button>
+
+                                        {selectedItem?.id === item.id && (
+                                            <div className="inbox-inline-menu">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenInboxItem(item)}
+                                                >
+                                                    Open
+                                                </button>
+
+                                                {item.status === "unread" && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleMarkRead(item)}
+                                                    >
+                                                        Mark Read
+                                                    </button>
+                                                )}
+
+                                                <button
+                                                    type="button"
+                                                    className="danger-text"
+                                                    onClick={() => handleDeleteItem(item)}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 )}
             </section>

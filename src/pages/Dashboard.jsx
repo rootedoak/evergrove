@@ -8,6 +8,8 @@ import usePreferences from "../hooks/usePreferences"
 
 import FloatingQuickActions from "../components/FloatingQuickActions"
 
+import ThoughtCaptureSheet from "../components/ThoughtCaptureSheet"
+
 import { getEvergroveAssistantSuggestions } from "../utils/evergroveAssistantSuggestions"
 import AssistantTaskSheet from "../components/dashboard/AssistantTaskSheet"
 
@@ -411,6 +413,8 @@ export default function Dashboard() {
         loading: tasksLoading,
         refreshTasks
     } = useTasks()
+
+    const [showThoughtCapture, setShowThoughtCapture] = useState(false)
 
     const { schoolItems } = useSchoolItems()
     const { familyMembers } = useFamilyMembers()
@@ -1411,8 +1415,12 @@ export default function Dashboard() {
                     }
                 />
 
-                <FloatingQuickActions
+                <ThoughtCaptureSheet
+                    open={showThoughtCapture}
+                    onClose={() => setShowThoughtCapture(false)}
+                />
 
+                <FloatingQuickActions
                     onAddTask={() =>
                         navigate("/calendar", {
                             state: {
@@ -1445,6 +1453,7 @@ export default function Dashboard() {
                         })
                     }
                     onAddAnnouncement={() => setShowAnnouncementForm(true)}
+                    onCaptureThought={() => setShowThoughtCapture(true)}
                 />
             </div>
         </AppPage>

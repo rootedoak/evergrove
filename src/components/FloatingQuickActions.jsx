@@ -7,6 +7,7 @@ import {
     ShoppingCart,
     Utensils,
     X,
+    Lightbulb,
 } from "lucide-react"
 
 export default function FloatingQuickActions({
@@ -15,6 +16,7 @@ export default function FloatingQuickActions({
     onAddMeal,
     onAddShopping,
     onAddAnnouncement,
+    onCaptureThought,
 }) {
     const [open, setOpen] = useState(false)
 
@@ -48,10 +50,10 @@ export default function FloatingQuickActions({
                         <div className="eg-quick-action-list">
                             <QuickAction icon={<CheckSquare />} label="To-Do" onClick={() => handleAction(onAddTask)} />
                             <QuickAction icon={<CalendarDays />} label="Calendar Event" onClick={() => handleAction(onAddEvent)} />
+                            <QuickAction icon={<Lightbulb />} label="Capture a Thought" onClick={() => handleAction(onCaptureThought)} />
                             <QuickAction icon={<Utensils />} label="Meal" onClick={() => handleAction(onAddMeal)} />
                             <QuickAction icon={<ShoppingCart />} label="Shopping Item" onClick={() => handleAction(onAddShopping)} />
                             <QuickAction icon={<Megaphone />} label="Announcement" onClick={() => handleAction(onAddAnnouncement)} />
-
                         </div>
                     </div>
                 </div>
@@ -64,7 +66,6 @@ export default function FloatingQuickActions({
                 onClick={() => setOpen(current => !current)}
             >
                 {open ? <X size={30} /> : <Plus size={32} />}
-
             </button>
         </div>
     )

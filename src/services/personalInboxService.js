@@ -30,6 +30,7 @@ export async function getPersonalInboxItems() {
         .select("*")
         .eq("household_id", household.id)
         .eq("user_id", user.id)
+        .or("status.is.null,status.eq.open")
         .order("created_at", { ascending: false })
 
     if (error) throw error
@@ -135,6 +136,39 @@ export async function deletePersonalInboxItem(id) {
     const { error } = await supabase
         .from("personal_inbox_items")
         .delete()
+        .eq("id", id)
+
+    if (error) throw error
+}
+
+export async function createThoughtInboxItem({ title, body }) {
+    const { user, household } = await getUserAndHousehold()
+
+    const { data, error } = await supabase
+        .from("personal_inbox_items")
+        .insert({
+            household_id: household.id,
+            user_id: user.id,
+            item_type: "thought",
+            title: title?.trim() || "Untitled thought",
+            body: body?.trim() || null,
+            status: "open"
+        })
+        .select()
+        .single()
+
+    if (error) throw error
+
+    return data
+}
+
+export async function archivePersonalInboxItem(id) {
+    const { error } = await supabase
+        .from("personal_inbox_items")
+        .update({
+            status: "archived",
+            archived_at: new Date().toISOString()
+        })
         .eq("id", id)
 
     if (error) throw error
