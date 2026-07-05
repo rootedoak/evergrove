@@ -162,11 +162,22 @@ function RoutineSection({
     setRoutineMenuOpen
 }) {
     return (
-        <SectionCard title={title} subtitle={subtitle} count={routines.length}>
+        <div className="automation-group">
+            <div className="automation-group-header">
+                <div>
+                    <h3>{title}</h3>
+                    <p>{subtitle}</p>
+                </div>
+
+                <span className="automation-count-pill">
+                    {routines.length}
+                </span>
+            </div>
+
             {routines.length === 0 ? (
-                <p className="dashboard-empty">{emptyText}</p>
+                <p className="automation-empty">{emptyText}</p>
             ) : (
-                <div className="eg-stack">
+                <div className="automation-list">
                     {routines.map(routine =>
                         renderRoutineRow(
                             routine,
@@ -176,7 +187,7 @@ function RoutineSection({
                     )}
                 </div>
             )}
-        </SectionCard>
+        </div>
     )
 }
 
@@ -372,23 +383,29 @@ export default function Routines() {
 
         return (
             <div
-                className={`routine-command-row ${isPaused ? "routine-command-row-paused" : ""}`}
+                className={`routine-command-row automation-row ${isPaused ? "routine-command-row-paused" : ""}`}
                 key={routine.id}
             >
-                <span className="routine-command-icon">
+                <span className="routine-command-icon automation-row-icon">
                     {member?.avatar_emoji || "🔁"}
                 </span>
 
-                <div className="routine-command-main">
-                    <strong>{routine.title}</strong>
+                <div className="routine-command-main automation-row-main">
+                    <div className="automation-row-title-line">
+                        <strong>{routine.title}</strong>
+
+                        <span className={`automation-status-dot ${isPaused ? "paused" : "running"}`}>
+                            {isPaused ? "Paused" : "Running"}
+                        </span>
+                    </div>
 
                     <p>
                         Automatically creates a To-Do {formatFrequency(routine.frequency)}
                     </p>
 
-                    <div className="automation-details-grid">
-                        <div>
-                            <span>Next To-Do</span>
+                    <div className="automation-detail-line">
+                        <span>
+                            Next:{" "}
                             <strong>
                                 {isPaused
                                     ? "Paused"
@@ -396,41 +413,21 @@ export default function Routines() {
                                         ? formatDate(routine.next_due)
                                         : "Not scheduled"}
                             </strong>
-                        </div>
+                        </span>
 
-                        <div>
-                            <span>Assigned To</span>
-                            <strong>{member?.name || "Household"}</strong>
-                        </div>
+                        <span>
+                            Assigned: <strong>{member?.name || "Household"}</strong>
+                        </span>
 
-                        <div>
-                            <span>Schedule</span>
-                            <strong>
-                                {routine.schedule_basis === "due_date"
-                                    ? "Fixed schedule"
-                                    : "Completion-based"}
-                            </strong>
-                        </div>
+                        <span>
+                            {routine.schedule_basis === "due_date"
+                                ? "Fixed schedule"
+                                : "Completion-based"}
+                        </span>
                     </div>
-
-                    {routine.last_completed && (
-                        <small>
-                            Last completed {formatDate(routine.last_completed)}
-                        </small>
-                    )}
-
-                    {routine.description && <small>{routine.description}</small>}
                 </div>
 
-                <div className="routine-command-status">
-                    <span
-                        className={`status-pill ${isPaused ? "status-muted" : "status-success"}`}
-                    >
-                        {isPaused ? "⏸ Paused" : "🟢 Running"}
-                    </span>
-                </div>
-
-                <div className="routine-command-actions">
+                <div className="routine-command-actions automation-row-actions">
                     <ActionMenu
                         title={routine.title}
                         open={routineMenuOpen === routine.id}
@@ -494,35 +491,6 @@ export default function Routines() {
             />
 
             <div className="eg-stack">
-                <InsightCard
-                    insight={{
-                        title:
-                            groupedRoutines.dueNow.length > 0
-                                ? `${groupedRoutines.dueNow[0]?.title} is ready to create work.`
-                                : groupedRoutines.thisWeek.length > 0
-                                    ? `${groupedRoutines.thisWeek[0]?.title} has a To-Do coming up.`
-                                    : "Your automations are running smoothly.",
-
-                        description:
-                            groupedRoutines.dueNow.length > 0
-                                ? "Evergrove will help turn this routine into actionable work."
-                                : groupedRoutines.thisWeek.length > 0
-                                    ? "Recurring work is scheduled and ready."
-                                    : "No automation needs attention right now.",
-
-                        actionLabel:
-                            groupedRoutines.dueNow.length > 0
-                                ? "Complete Early"
-                                : "New Automation"
-                    }}
-                    onAction={() => {
-                        if (groupedRoutines.dueNow.length > 0 && groupedRoutines.dueNow[0]) {
-                            handleComplete(groupedRoutines.dueNow[0])
-                        } else {
-                            setShowForm(true)
-                        }
-                    }}
-                />
 
                 <SectionCard
                     title="Automation Summary"

@@ -15,15 +15,12 @@ import SectionCard from "../components/ui/SectionCard"
 import Button from "../components/ui/Button"
 import InsightCard from "../components/dashboard/InsightCard"
 
-const defaultShoppingCategoryOrder = [
-    "Produce",
-    "Meat",
-    "Dairy",
-    "Frozen",
-    "Pantry",
-    "Household",
-    "Uncategorized"
-]
+import { getFamilyMembers } from "../services/familyService"
+import Avatar from "../components/ui/Avatar"
+import {
+    promptForAvatarUpload,
+    deleteFamilyAvatar
+} from "../services/avatarService"
 
 const initialPreferences = {
     household_name: "My Family",
@@ -47,7 +44,6 @@ const initialPreferences = {
     show_school_items: true,
     show_activity_sessions: true,
     show_suggested_tasks: true,
-    shopping_category_order: defaultShoppingCategoryOrder,
     show_holidays: true
 }
 
@@ -84,11 +80,10 @@ function SettingsSection({
 export default function Profile() {
     const navigate = useNavigate()
     const [user, setUser] = useState(null)
+    const [myMember, setMyMember] = useState(null)
     const [preferences, setPreferences] = useState(initialPreferences)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
-
-    const [shoppingCategoriesOpen, setShoppingCategoriesOpen] = useState(false)
 
     useEffect(() => {
         async function loadProfile() {
@@ -99,7 +94,16 @@ export default function Profile() {
 
                 setUser(user)
 
-                const savedPreferences = await getPreferences()
+                const [savedPreferences, familyMembers] = await Promise.all([
+                    getPreferences(),
+                    getFamilyMembers()
+                ])
+
+                const matchedMember = familyMembers.find(
+                    member => member.user_id === user?.id
+                )
+
+                setMyMember(matchedMember || null)
 
                 setPreferences({
                     ...initialPreferences,
@@ -129,58 +133,13 @@ export default function Profile() {
         }))
     }
 
-    function moveShoppingCategory(index, direction) {
-        const nextOrder = [...preferences.shopping_category_order]
-        const targetIndex = index + direction
-
-        if (targetIndex < 0 || targetIndex >= nextOrder.length) return
-
-        const [category] = nextOrder.splice(index, 1)
-        nextOrder.splice(targetIndex, 0, category)
-
-        updatePreference("shopping_category_order", nextOrder)
-    }
-
-    function addShoppingCategory() {
-        const category = window.prompt("Category name")
-        if (!category?.trim()) return
-
-        const cleanCategory = category.trim()
-
-        if (preferences.shopping_category_order.includes(cleanCategory)) {
-            alert("That category already exists.")
-            return
-        }
-
-        updatePreference("shopping_category_order", [
-            ...preferences.shopping_category_order,
-            cleanCategory
-        ])
-    }
-
-    function removeShoppingCategory(category) {
-        if (category === "Uncategorized") {
-            alert("Uncategorized cannot be removed.")
-            return
-        }
-
-        updatePreference(
-            "shopping_category_order",
-            preferences.shopping_category_order.filter(item => item !== category)
-        )
-    }
-
     async function handleSavePreferences(event) {
         event.preventDefault()
         setSaving(true)
 
         try {
             const savedPreferences = await updatePreferences({
-                household_name: preferences.household_name,
-                timezone: preferences.timezone,
-                dashboard_window_days: Number(preferences.dashboard_window_days),
                 timeline_window_days: Number(preferences.timeline_window_days),
-                week_starts_on: preferences.week_starts_on,
                 birthday_reminders: preferences.birthday_reminders,
                 trip_reminders: preferences.trip_reminders,
                 activity_reminders: preferences.activity_reminders,
@@ -234,12 +193,57 @@ export default function Profile() {
         window.location.href = "/login"
     }
 
+    async function refreshMyMember(userId = user?.id) {
+        if (!userId) return
+
+        const familyMembers = await getFamilyMembers()
+
+        const matchedMember = familyMembers.find(
+            member => member.user_id === userId
+        )
+
+        setMyMember(matchedMember || null)
+    }
+
+    async function handleUploadMyAvatar() {
+        if (!myMember?.id) {
+            alert("We couldn't find your family profile yet.")
+            return
+        }
+
+        try {
+            const uploaded = await promptForAvatarUpload(myMember.id)
+
+            if (uploaded) {
+                await refreshMyMember()
+            }
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not upload profile photo.")
+        }
+    }
+
+    async function handleDeleteMyAvatar() {
+        if (!myMember?.id) return
+
+        const confirmed = window.confirm("Remove your profile photo?")
+        if (!confirmed) return
+
+        try {
+            await deleteFamilyAvatar(myMember.id)
+            await refreshMyMember()
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not remove profile photo.")
+        }
+    }
+
     return (
         <AppPage>
             <PageHeader
-                eyebrow="Settings"
-                title="Settings"
-                subtitle="Manage your household and personalize Evergrove."
+                eyebrow="Account"
+                title="Account"
+                subtitle="Manage your profile, preferences, and notifications."
                 action={
                     <Button
                         variant="danger"
@@ -252,32 +256,57 @@ export default function Profile() {
 
             <div className="eg-stack">
 
-                <InsightCard
-                    insight={{
-                        title: "Your household is configured.",
-                        description:
-                            "Manage shared settings and personalize your Evergrove experience.",
-                        actionLabel: "Save"
-                    }}
-                    onAction={() =>
-                        document.querySelector("form")?.requestSubmit()
-                    }
-                />
-
                 <SectionCard
                     title="Account"
                     subtitle="Your Evergrove account."
                 >
-                    <div>
-                        <h3>{user?.email || "Loading account..."}</h3>
-                        <p>
-                            Account access and sign-in are specific to you.
-                        </p>
-                    </div>
+                    <div className="profile-account-row">
+                        <button
+                            type="button"
+                            className="profile-avatar-button"
+                            onClick={handleUploadMyAvatar}
+                            disabled={!myMember}
+                            aria-label="Change profile photo"
+                        >
+                            <Avatar
+                                member={{
+                                    ...myMember,
+                                    name: myMember?.name || user?.email || "You",
+                                    avatar_emoji: myMember?.avatar_emoji || "👤"
+                                }}
+                                size="lg"
+                            />
+                        </button>
 
-                    <p>
-                        User ID: <span>{user?.id || "Loading..."}</span>
-                    </p>
+                        <div className="profile-account-main">
+                            <h3>{myMember?.name || "Your Profile"}</h3>
+                            <p>{user?.email || "Loading account..."}</p>
+                            <small>Tap your photo to change it.</small>
+
+                            <div className="profile-account-actions">
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={handleUploadMyAvatar}
+                                    disabled={!myMember}
+                                >
+                                    Change Photo
+                                </Button>
+
+                                {myMember?.avatar_url && (
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={handleDeleteMyAvatar}
+                                    >
+                                        Remove Photo
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </SectionCard>
 
                 {loading ? (
@@ -286,133 +315,6 @@ export default function Profile() {
                     </section>
                 ) : (
                     <form className="card settings-command-card" onSubmit={handleSavePreferences}>
-                        <SettingsSection
-                            title="Household Settings"
-                            scope="Shared household setting"
-                            subtitle="These settings are shared by everyone connected to this household."
-                        >
-                            <div className="form-grid">
-                                <label>
-                                    Household Name
-                                    <input
-                                        value={preferences.household_name}
-                                        onChange={event =>
-                                            updatePreference("household_name", event.target.value)
-                                        }
-                                        placeholder="McGee Family"
-                                    />
-                                </label>
-
-                                <label>
-                                    Time Zone
-                                    <select
-                                        value={preferences.timezone}
-                                        onChange={event =>
-                                            updatePreference("timezone", event.target.value)
-                                        }
-                                    >
-                                        <option value="America/Chicago">Central Time</option>
-                                        <option value="America/New_York">Eastern Time</option>
-                                        <option value="America/Denver">Mountain Time</option>
-                                        <option value="America/Los_Angeles">Pacific Time</option>
-                                    </select>
-                                </label>
-
-                                <label>
-                                    Week Starts On
-                                    <select
-                                        value={preferences.week_starts_on}
-                                        onChange={event =>
-                                            updatePreference("week_starts_on", event.target.value)
-                                        }
-                                    >
-                                        <option value="Sunday">Sunday</option>
-                                        <option value="Monday">Monday</option>
-                                    </select>
-                                </label>
-                            </div>
-
-                            <div className="settings-save-row">
-                                <button
-                                    type="button"
-                                    className="secondary-button"
-                                    onClick={() => navigate("/settings/family")}
-                                >
-                                    Manage Family Members
-                                </button>
-                            </div>
-                        </SettingsSection>
-
-                        <SettingsSection
-                            title="Shopping Categories"
-                            scope="Shared household setting"
-                            subtitle="This category order is shared across household shopping lists."
-                        >
-                            <button
-                                type="button"
-                                className="eg-collapsible-row"
-                                onClick={() => setShoppingCategoriesOpen(current => !current)}
-                            >
-                                <span>
-                                    {preferences.shopping_category_order.length} categories configured
-                                </span>
-
-                                <strong>
-                                    {shoppingCategoriesOpen ? "Hide" : "Manage"}
-                                </strong>
-                            </button>
-
-                            {shoppingCategoriesOpen && (
-                                <div className="eg-stack">
-                                    <div className="settings-category-list">
-                                        {preferences.shopping_category_order.map((category, index) => (
-                                            <div key={category} className="settings-category-row">
-                                                <span>{category}</span>
-
-                                                <div className="button-row">
-                                                    <Button
-                                                        variant="secondary"
-                                                        size="sm"
-                                                        type="button"
-                                                        onClick={() => moveShoppingCategory(index, -1)}
-                                                        disabled={index === 0}
-                                                    >
-                                                        Up
-                                                    </Button>
-
-                                                    <Button
-                                                        variant="secondary"
-                                                        size="sm"
-                                                        type="button"
-                                                        onClick={() => moveShoppingCategory(index, 1)}
-                                                        disabled={index === preferences.shopping_category_order.length - 1}
-                                                    >
-                                                        Down
-                                                    </Button>
-
-                                                    <Button
-                                                        variant="danger"
-                                                        size="sm"
-                                                        type="button"
-                                                        onClick={() => removeShoppingCategory(category)}
-                                                    >
-                                                        Remove
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <Button
-                                        variant="secondary"
-                                        type="button"
-                                        onClick={addShoppingCategory}
-                                    >
-                                        Add Category
-                                    </Button>
-                                </div>
-                            )}
-                        </SettingsSection>
 
                         <SettingsSection
                             title="Calendar & Timeline"

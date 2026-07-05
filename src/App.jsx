@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Route, Routes, Navigate, useLocation, useParams } from "react-router-dom"
 import {
-  BarChart3,
   CalendarDays,
   ClipboardList,
   FolderOpen,
@@ -54,10 +53,18 @@ import Meals from "./pages/Meals"
 import ShoppingLists from "./pages/ShoppingLists"
 import About from "./pages/About"
 import PersonalInbox from "./pages/PersonalInbox"
-import Analytics from "./pages/Analytics"
 import Onboarding from "./pages/Onboarding"
 import InvitePage from "./pages/InvitePage"
 import JoinHousehold from "./pages/JoinHousehold"
+
+import AdminRoute from "./components/admin/AdminRoute"
+import AdminLayout from "./components/admin/AdminLayout"
+import AdminDashboard from "./pages/admin/AdminDashboard"
+import AdminAnalytics from "./pages/admin/analytics/AdminAnalytics"
+import Households from "./pages/admin/households/Households"
+import Household360 from "./pages/admin/households/Household360"
+import SupportInbox from "./pages/admin/support/SupportInbox"
+import SupportTicket from "./pages/admin/support/SupportTicket"
 
 import UIKit from "./pages/UIKit"
 
@@ -82,14 +89,13 @@ const mobileNavItems = [
 ]
 
 const moreNavItems = [
-  { to: "/profile", icon: User, label: "Profile" },
-  { to: "/settings/family", icon: Users, label: "Family" },
+  { to: "/profile", icon: User, label: "Account" },
+  { to: "/settings/family", icon: Users, label: "Household" },
   { to: "/shopping", icon: ShoppingCart, label: "Shopping" },
   { to: "/documents", icon: FolderOpen, label: "Documents" },
   { to: "/trips", icon: CalendarDays, label: "Trips" },
   { to: "/school", icon: ClipboardList, label: "School" },
   { to: "/routines", icon: Repeat, label: "Automations" },
-  { to: "/analytics", icon: BarChart3, label: "Analytics" },
   { to: "/about", icon: Info, label: "About" }
 ]
 
@@ -233,12 +239,26 @@ function AppRoutes() {
       <Route path="/profile" element={<Profile />} />
       <Route path="/about" element={<About />} />
       <Route path="/personal-inbox" element={<PersonalInbox />} />
-      <Route path="/analytics" element={<Analytics />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/join-household" element={<JoinHousehold />} />
       <Route path="/invite/:token" element={<AuthenticatedInviteRedirect />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
       <Route path="/uikit" element={<UIKit />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminLayout />
+          </AdminRoute>
+        }
+      >
+        <Route index element={<AdminDashboard />} />
+        <Route path="analytics" element={<AdminAnalytics />} />
+        <Route path="households" element={<Households />} />
+        <Route path="households/:householdId" element={<Household360 />} />
+        <Route path="support" element={<SupportInbox />} />
+        <Route path="support/:feedbackId" element={<SupportTicket />} />
+      </Route>
     </Routes>
   )
 }
@@ -308,9 +328,14 @@ function OnboardingGuard({ children }) {
 }
 
 function AppLayout() {
+  const location = useLocation()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const { preferences } = usePreferences()
   const { items: inboxItems } = usePersonalInbox()
+
+  if (location.pathname.startsWith("/admin")) {
+    return <AppRoutes />
+  }
 
   const unreadInboxCount = inboxItems.filter(
     item => item.status === "unread"

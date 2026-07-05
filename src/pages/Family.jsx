@@ -15,7 +15,15 @@ import InsightCard from "../components/dashboard/InsightCard"
 import ActionMenu from "../components/ui/ActionMenu"
 
 import Avatar from "../components/ui/Avatar"
-import { uploadFamilyAvatar, deleteFamilyAvatar } from "../services/avatarService"
+import {
+    promptForAvatarUpload,
+    deleteFamilyAvatar
+} from "../services/avatarService"
+
+import {
+    getPreferences,
+    updatePreferences
+} from "../services/preferenceService"
 
 const initialForm = {
     name: "",
@@ -28,6 +36,16 @@ const initialForm = {
     breed: "",
     notes: ""
 }
+
+const defaultShoppingCategoryOrder = [
+    "Produce",
+    "Meat",
+    "Dairy",
+    "Frozen",
+    "Pantry",
+    "Household",
+    "Uncategorized"
+]
 
 function normalizeMember(member) {
     return {
@@ -278,11 +296,31 @@ export default function Family() {
     const isPet = form.role === "pet"
     const groupedMembers = groupMembers(familyMembers)
 
+    const [preferences, setPreferences] = useState({
+        household_name: "My Family",
+        timezone: "America/Chicago",
+        week_starts_on: "Sunday",
+        shopping_category_order: defaultShoppingCategoryOrder
+    })
+
+    const [shoppingCategoriesOpen, setShoppingCategoriesOpen] = useState(false)
+
+    const [savingPreferences, setSavingPreferences] = useState(false)
+
     async function loadFamilyMembers() {
         try {
             setLoading(true)
-            const members = await getFamilyMembers()
+            const [members, savedPreferences] = await Promise.all([
+                getFamilyMembers(),
+                getPreferences()
+            ])
+
             setFamilyMembers(members)
+
+            setPreferences(current => ({
+                ...current,
+                ...savedPreferences
+            }))
         } catch (error) {
             console.error(error)
         } finally {
@@ -295,26 +333,16 @@ export default function Family() {
     }, [])
 
     async function handleUploadAvatar(member) {
-        const input = document.createElement("input")
+        try {
+            const uploaded = await promptForAvatarUpload(member.id)
 
-        input.type = "file"
-        input.accept = "image/*"
-
-        input.onchange = async event => {
-            const file = event.target.files?.[0]
-
-            if (!file) return
-
-            try {
-                await uploadFamilyAvatar(member.id, file)
+            if (uploaded) {
                 await loadFamilyMembers()
-            } catch (error) {
-                console.error(error)
-                alert(error.message || "Could not upload avatar.")
             }
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not upload avatar.")
         }
-
-        input.click()
     }
 
     async function handleDeleteAvatar(member) {
@@ -328,6 +356,47 @@ export default function Family() {
             console.error(error)
             alert(error.message || "Could not remove avatar.")
         }
+    }
+
+    function moveShoppingCategory(index, direction) {
+        const nextOrder = [...preferences.shopping_category_order]
+        const targetIndex = index + direction
+
+        if (targetIndex < 0 || targetIndex >= nextOrder.length) return
+
+        const [category] = nextOrder.splice(index, 1)
+        nextOrder.splice(targetIndex, 0, category)
+
+        updatePreference("shopping_category_order", nextOrder)
+    }
+
+    function addShoppingCategory() {
+        const category = window.prompt("Category name")
+        if (!category?.trim()) return
+
+        const cleanCategory = category.trim()
+
+        if (preferences.shopping_category_order.includes(cleanCategory)) {
+            alert("That category already exists.")
+            return
+        }
+
+        updatePreference("shopping_category_order", [
+            ...preferences.shopping_category_order,
+            cleanCategory
+        ])
+    }
+
+    function removeShoppingCategory(category) {
+        if (category === "Uncategorized") {
+            alert("Uncategorized cannot be removed.")
+            return
+        }
+
+        updatePreference(
+            "shopping_category_order",
+            preferences.shopping_category_order.filter(item => item !== category)
+        )
     }
 
     function updateForm(field, value) {
@@ -358,6 +427,13 @@ export default function Family() {
 
             return nextForm
         })
+    }
+
+    function updatePreference(field, value) {
+        setPreferences(current => ({
+            ...current,
+            [field]: value
+        }))
     }
 
     function resetForm() {
@@ -400,6 +476,32 @@ export default function Family() {
             alert(error.message || "Could not save family member.")
         } finally {
             setSaving(false)
+        }
+    }
+
+    async function handleSaveHouseholdSettings(event) {
+        event.preventDefault()
+        setSavingPreferences(true)
+
+        try {
+            const savedPreferences = await updatePreferences({
+                household_name: preferences.household_name,
+                timezone: preferences.timezone,
+                week_starts_on: preferences.week_starts_on,
+                shopping_category_order: preferences.shopping_category_order
+            })
+
+            setPreferences(current => ({
+                ...current,
+                ...savedPreferences
+            }))
+
+            alert("Household settings saved.")
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not save household settings.")
+        } finally {
+            setSavingPreferences(false)
         }
     }
 
@@ -452,8 +554,8 @@ export default function Family() {
     return (
         <AppPage>
             <PageHeader
-                eyebrow="Family"
-                title="Family Members"
+                eyebrow="Household"
+                title="Household Management"
                 subtitle={`${familyMembers.length} total • ${groupedMembers.parents.length} parents • ${groupedMembers.children.length} children • ${groupedMembers.pets.length} pets`}
                 action={
                     <Button
@@ -472,27 +574,59 @@ export default function Family() {
 
             <div className="eg-stack">
 
-                <InsightCard
-                    insight={{
-                        title:
-                            familyMembers.length === 0
-                                ? "Start building your household."
-                                : groupedMembers.children.length > 0
-                                    ? `${groupedMembers.children[0].name} is part of your household.`
-                                    : "Your household is set up.",
+                <SectionCard
+                    title="Household Settings"
+                    subtitle="Shared settings for everyone in this household."
+                >
+                    <form className="form-grid" onSubmit={handleSaveHouseholdSettings}>
+                        <label>
+                            Household Name
+                            <input
+                                value={preferences.household_name}
+                                onChange={event =>
+                                    updatePreference("household_name", event.target.value)
+                                }
+                                placeholder="McGee Family"
+                            />
+                        </label>
 
-                        description:
-                            familyMembers.length === 0
-                                ? "Add family members to personalize Evergrove."
-                                : "Manage parents, children, pets, and household members.",
+                        <label>
+                            Time Zone
+                            <select
+                                value={preferences.timezone}
+                                onChange={event =>
+                                    updatePreference("timezone", event.target.value)
+                                }
+                            >
+                                <option value="America/Chicago">Central Time</option>
+                                <option value="America/New_York">Eastern Time</option>
+                                <option value="America/Denver">Mountain Time</option>
+                                <option value="America/Los_Angeles">Pacific Time</option>
+                            </select>
+                        </label>
 
-                        actionLabel:
-                            familyMembers.length === 0
-                                ? "Add Member"
-                                : "Add Member"
-                    }}
-                    onAction={() => setShowForm(true)}
-                />
+                        <label>
+                            Week Starts On
+                            <select
+                                value={preferences.week_starts_on}
+                                onChange={event =>
+                                    updatePreference("week_starts_on", event.target.value)
+                                }
+                            >
+                                <option value="Sunday">Sunday</option>
+                                <option value="Monday">Monday</option>
+                            </select>
+                        </label>
+
+                        <Button
+                            className="full-width"
+                            type="submit"
+                            disabled={savingPreferences}
+                        >
+                            {savingPreferences ? "Saving..." : "Save Household Settings"}
+                        </Button>
+                    </form>
+                </SectionCard>
 
                 <SectionCard
                     title="Invite Adult"
@@ -519,6 +653,76 @@ export default function Family() {
                             {inviting ? "Creating Invite..." : "Create Invite"}
                         </Button>
                     </div>
+                </SectionCard>
+
+                <SectionCard
+                    title="Shopping Categories"
+                    subtitle="This category order is shared across household shopping lists."
+                >
+                    <button
+                        type="button"
+                        className="eg-collapsible-row"
+                        onClick={() => setShoppingCategoriesOpen(current => !current)}
+                    >
+                        <span>
+                            {preferences.shopping_category_order.length} categories configured
+                        </span>
+
+                        <strong>
+                            {shoppingCategoriesOpen ? "Hide" : "Manage"}
+                        </strong>
+                    </button>
+
+                    {shoppingCategoriesOpen && (
+                        <div className="eg-stack">
+                            <div className="settings-category-list">
+                                {preferences.shopping_category_order.map((category, index) => (
+                                    <div key={category} className="settings-category-row">
+                                        <span>{category}</span>
+
+                                        <div className="button-row">
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                type="button"
+                                                onClick={() => moveShoppingCategory(index, -1)}
+                                                disabled={index === 0}
+                                            >
+                                                Up
+                                            </Button>
+
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                type="button"
+                                                onClick={() => moveShoppingCategory(index, 1)}
+                                                disabled={index === preferences.shopping_category_order.length - 1}
+                                            >
+                                                Down
+                                            </Button>
+
+                                            <Button
+                                                variant="danger"
+                                                size="sm"
+                                                type="button"
+                                                onClick={() => removeShoppingCategory(category)}
+                                            >
+                                                Remove
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <Button
+                                variant="secondary"
+                                type="button"
+                                onClick={addShoppingCategory}
+                            >
+                                Add Category
+                            </Button>
+                        </div>
+                    )}
                 </SectionCard>
 
                 {showForm && (

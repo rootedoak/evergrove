@@ -1,4 +1,4 @@
-import useAnalytics from "../hooks/useAnalytics"
+import useAnalytics from "../../../hooks/useAnalytics"
 
 function MetricCard({ label, value }) {
     return (
@@ -9,7 +9,7 @@ function MetricCard({ label, value }) {
     )
 }
 
-export default function Analytics() {
+export default function AdminAnalytics() {
     const { metrics, loading, refresh } = useAnalytics(30)
 
     return (

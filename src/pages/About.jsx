@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { supabase } from "../lib/supabase"
+import { submitProductFeedback } from "../services/productFeedbackService"
 
 import {
     APP_VERSION,
@@ -34,34 +34,24 @@ export default function About() {
         setFeedbackSuccess("")
         setFeedbackError("")
 
-        try {
-            const {
-                data: { user },
-                error: userError
-            } = await supabase.auth.getUser()
+        await submitProductFeedback({
+            feedbackType:
+                feedbackType === "feature"
+                    ? "idea"
+                    : feedbackType === "general"
+                        ? "feedback"
+                        : feedbackType,
+            category: "about",
+            subject: null,
+            message: feedbackMessage.trim(),
+            appVersion: APP_VERSION,
+            pagePath: window.location.pathname,
+            source: "about"
+        })
 
-            if (userError) throw userError
-            if (!user) throw new Error("You must be logged in to submit feedback.")
-
-            const { error } = await supabase
-                .from("feedback")
-                .insert({
-                    user_id: user.id,
-                    type: feedbackType,
-                    message: feedbackMessage.trim()
-                })
-
-            if (error) throw error
-
-            setFeedbackMessage("")
-            setFeedbackType("feature")
-            setFeedbackSuccess("Thanks! Feedback submitted.")
-        } catch (error) {
-            console.error(error)
-            setFeedbackError(error.message || "Could not submit feedback.")
-        } finally {
-            setSavingFeedback(false)
-        }
+        setFeedbackMessage("")
+        setFeedbackType("feature")
+        setFeedbackSuccess("Thanks! Feedback submitted.")
     }
 
     async function handleRestartTour() {
@@ -166,16 +156,6 @@ export default function About() {
                         <li>Household items are visible to household members.</li>
                         <li>Private To-Dos remain visible only to the creator.</li>
                         <li>Children and pets can be tracked without individual accounts.</li>
-                    </ul>
-                </SectionCard>
-
-                <SectionCard title="Roadmap">
-                    <ul className="eg-about-list">
-                        <li>Evergrove Intelligence Engine</li>
-                        <li>Smarter Assistant next-best-action recommendations</li>
-                        <li>Document enhancements</li>
-                        <li>Family avatars and profile images</li>
-                        <li>Expanded beta user feedback cycle</li>
                     </ul>
                 </SectionCard>
 
