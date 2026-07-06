@@ -78,7 +78,6 @@ export default function usePersonalInbox() {
 
     return {
         items,
-        setItems,
         loading,
         refreshInbox: loadItems,
         markRead,

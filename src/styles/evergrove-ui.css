@@ -1217,6 +1217,10 @@
     border-top: 1px solid var(--eg-border);
 }
 
+/* ==========================================
+   Calendar Defaults
+   ========================================== */
+
 .eg-calendar-view-toggle {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1267,6 +1271,54 @@
     color: var(--eg-muted);
     font-size: 12px;
     line-height: 1.35;
+}
+
+.calendar-trip-helper {
+    border: 1px solid #d7dee8;
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 14px;
+}
+
+.calendar-trip-helper p {
+    margin: 6px 0 12px;
+    color: #5d6b7c;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.calendar-type-guidance {
+    margin-top: -6px;
+    color: #5d6b7c;
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+
+.calendar-type-guidance p {
+    margin: 0;
+}
+
+.birthday-detail-stack {
+    display: grid;
+    gap: 14px;
+}
+
+.birthday-detail-stack label {
+    display: grid;
+    gap: 6px;
+    font-weight: 700;
+    color: #172033;
+}
+
+.birthday-detail-stack textarea {
+    width: 100%;
+    border: 1px solid #d7dee8;
+    border-radius: 14px;
+    padding: 12px 14px;
+    font: inherit;
+    background: #ffffff;
+    color: #172033;
+    resize: vertical;
 }
 
 .eg-timeline-row {
@@ -4097,4 +4149,112 @@ button.eg-attention-metric {
 
 .thought-capture-form textarea {
     resize: vertical;
+}
+
+.thought-capture-form {
+    display: grid;
+    gap: 14px;
+    margin-top: 10px;
+}
+
+.thought-capture-form input,
+.thought-capture-form textarea {
+    width: 100%;
+    border: 1px solid #d7dee8;
+    border-radius: 14px;
+    padding: 12px 14px;
+    font: inherit;
+    background: #ffffff;
+    color: #172033;
+}
+
+.thought-capture-form textarea {
+    resize: vertical;
+}
+
+.thought-capture-form input::placeholder,
+.thought-capture-form textarea::placeholder {
+    color: #7a8797;
+}
+
+.thought-note-card {
+    border: 1px solid #e1d7b8;
+    background: #fffaf0;
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 8px 20px rgba(23, 32, 51, 0.06);
+}
+
+.thought-note-header {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #7a5c20;
+    margin-bottom: 8px;
+}
+
+.thought-note-card h3 {
+    margin: 0;
+    color: #172033;
+    font-size: 1.05rem;
+}
+
+.thought-note-card p {
+    margin: 8px 0 0;
+    color: #42526b;
+    line-height: 1.45;
+}
+
+.thought-note-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(122, 92, 32, 0.16);
+}
+
+.thought-note-actions button {
+    border: 1px solid #eadfbd;
+    background: #ffffff;
+    border-radius: 999px;
+    padding: 7px 11px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #24364b;
+}
+
+.thought-list-wrapper {
+    margin-top: 20px;
+}
+
+.thought-list {
+    display: grid;
+    gap: 16px;
+}
+
+.thoughts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.thoughts-header h3 {
+    margin-top: 4px;
+}
+
+.thought-capture-button {
+    border: none;
+    background: transparent;
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    padding: 4px 0;
+    white-space: nowrap;
+}
+
+.thought-capture-button:hover {
+    text-decoration: underline;
 }

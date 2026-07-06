@@ -1699,3 +1699,17 @@ add column if not exists title text,
 add column if not exists body text,
 add column if not exists status text default 'open',
 add column if not exists archived_at timestamptz;
+
+-- ADD NOTES COLUMNS FOR BIRTHDAYS TO FAMILY MEMBERS
+
+create table if not exists birthday_event_details (
+    id uuid primary key default gen_random_uuid(),
+    household_id uuid not null,
+    family_member_id uuid not null references family_members(id) on delete cascade,
+    occurrence_date date not null,
+    notes text,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now(),
+
+    unique (household_id, family_member_id, occurrence_date)
+);

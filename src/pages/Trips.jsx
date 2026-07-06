@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { Plus } from "lucide-react"
 
 import { getFamilyMembers } from "../services/familyService"
@@ -171,6 +171,7 @@ function TripSection({ title, subtitle, trips, emptyText, renderTripRow }) {
 
 export default function Trips() {
     const navigate = useNavigate()
+    const location = useLocation()
 
     const { trips, loading, refreshTrips } = useTrips()
     const { tasks, refreshTasks } = useTasks()
@@ -212,6 +213,30 @@ export default function Trips() {
 
         loadMembers()
     }, [])
+
+    useEffect(() => {
+        if (!location.state?.openTripForm) return
+
+        const draft = location.state.tripDraft || {}
+
+        setEditingTripId(null)
+
+        setForm({
+            name: draft.name || "",
+            destination: draft.destination || "",
+            start_date: draft.start_date || "",
+            end_date: draft.end_date || "",
+            notes: draft.notes || ""
+        })
+
+        setSelectedMembers([])
+        setShowForm(true)
+
+        navigate(location.pathname, {
+            replace: true,
+            state: {}
+        })
+    }, [location, navigate])
 
     function toggleMember(memberId) {
         setSelectedMembers(current =>

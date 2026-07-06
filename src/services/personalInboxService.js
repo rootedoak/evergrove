@@ -2,6 +2,8 @@ import { supabase } from "../lib/supabase"
 import { ensureMyHousehold } from "./householdService"
 
 import { sendPushNotificationToUser } from "./pushNotificationService"
+import { createTask } from "./taskService"
+import { createPersonalReminder } from "./personalReminderService"
 
 async function getCurrentUser() {
     const {
@@ -30,7 +32,7 @@ export async function getPersonalInboxItems() {
         .select("*")
         .eq("household_id", household.id)
         .eq("user_id", user.id)
-        .or("status.is.null,status.eq.open")
+        .or("status.is.null,status.eq.open,status.eq.unread")
         .order("created_at", { ascending: false })
 
     if (error) throw error
@@ -172,4 +174,44 @@ export async function archivePersonalInboxItem(id) {
         .eq("id", id)
 
     if (error) throw error
+}
+
+export async function convertThoughtToTask(thought) {
+    if (!thought) throw new Error("No thought provided.")
+
+    const task = await createTask({
+        title: thought.title || "Untitled task",
+        description: thought.body || thought.message || null,
+        due_date: null,
+        status: "open"
+    })
+
+    await deletePersonalInboxItem(thought.id)
+
+    return task
+}
+
+function getTodayString() {
+    const today = new Date()
+
+    return [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, "0"),
+        String(today.getDate()).padStart(2, "0")
+    ].join("-")
+}
+
+export async function convertThoughtToReminder(thought) {
+    if (!thought) throw new Error("No thought provided.")
+
+    const reminder = await createPersonalReminder({
+        title: thought.title || "Untitled reminder",
+        notes: thought.body || thought.message || null,
+        frequency: "once",
+        next_due: getTodayString()
+    })
+
+    await deletePersonalInboxItem(thought.id)
+
+    return reminder
 }

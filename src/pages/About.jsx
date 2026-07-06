@@ -34,24 +34,31 @@ export default function About() {
         setFeedbackSuccess("")
         setFeedbackError("")
 
-        await submitProductFeedback({
-            feedbackType:
-                feedbackType === "feature"
-                    ? "idea"
-                    : feedbackType === "general"
-                        ? "feedback"
-                        : feedbackType,
-            category: "about",
-            subject: null,
-            message: feedbackMessage.trim(),
-            appVersion: APP_VERSION,
-            pagePath: window.location.pathname,
-            source: "about"
-        })
+        try {
+            await submitProductFeedback({
+                feedbackType:
+                    feedbackType === "feature"
+                        ? "idea"
+                        : feedbackType === "general"
+                            ? "feedback"
+                            : feedbackType,
+                category: "about",
+                subject: null,
+                message: feedbackMessage.trim(),
+                appVersion: APP_VERSION,
+                pagePath: window.location.pathname,
+                source: "about"
+            })
 
-        setFeedbackMessage("")
-        setFeedbackType("feature")
-        setFeedbackSuccess("Thanks! Feedback submitted.")
+            setFeedbackMessage("")
+            setFeedbackType("feature")
+            setFeedbackSuccess("Thanks! Feedback submitted. Have another idea? We'd love to hear it while it's fresh.")
+        } catch (error) {
+            console.error(error)
+            setFeedbackError(error.message || "Could not submit feedback.")
+        } finally {
+            setSavingFeedback(false)
+        }
     }
 
     async function handleRestartTour() {

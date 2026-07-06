@@ -28,8 +28,8 @@ export default function ThoughtCaptureSheet({ open, onClose, onCreated }) {
             onCreated?.()
             onClose()
         } catch (error) {
-            console.error(error)
-            alert("Could not save thought.")
+            console.error("Could not save thought:", error)
+            alert(error.message || "Could not save thought.")
         } finally {
             setSaving(false)
         }
@@ -43,7 +43,7 @@ export default function ThoughtCaptureSheet({ open, onClose, onCreated }) {
                 <div className="eg-sheet-header">
                     <div>
                         <h3>Capture a Thought</h3>
-                        <p>Save it now. Decide what it becomes later.</p>
+                        <p>Capture it now. Organize it later.</p>
                     </div>
 
                     <button type="button" className="eg-icon-button" onClick={onClose}>
@@ -52,28 +52,22 @@ export default function ThoughtCaptureSheet({ open, onClose, onCreated }) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="thought-capture-form">
-                    <label>
-                        Title
-                        <input
-                            value={title}
-                            onChange={event => setTitle(event.target.value)}
-                            placeholder="What’s on your mind?"
-                            autoFocus
-                        />
-                    </label>
+                    <input
+                        value={title}
+                        onChange={event => setTitle(event.target.value)}
+                        placeholder="What’s on your mind?"
+                        autoFocus
+                    />
 
-                    <label>
-                        Details
-                        <textarea
-                            value={body}
-                            onChange={event => setBody(event.target.value)}
-                            placeholder="Optional notes, context, or reminders..."
-                            rows={4}
-                        />
-                    </label>
+                    <textarea
+                        value={body}
+                        onChange={event => setBody(event.target.value)}
+                        placeholder="Add a little more context..."
+                        rows={4}
+                    />
 
                     <button type="submit" className="primary-button" disabled={saving}>
-                        {saving ? "Saving..." : "Save Thought"}
+                        {saving ? "Capturing..." : "Capture Thought"}
                     </button>
                 </form>
             </div>

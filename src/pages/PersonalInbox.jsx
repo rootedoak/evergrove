@@ -2,7 +2,12 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 
 import usePersonalInbox from "../hooks/usePersonalInbox"
-import usePersonalReminders from "../hooks/usePersonalReminders"
+import ThoughtCaptureSheet from "../components/ThoughtCaptureSheet"
+
+import {
+    convertThoughtToTask,
+    convertThoughtToReminder
+} from "../services/personalInboxService"
 
 function getTodayString() {
     const today = new Date()
@@ -64,29 +69,24 @@ export default function PersonalInbox() {
     const {
         items,
         loading: inboxLoading,
+        refreshInbox,
         markRead,
         removeItem
     } = usePersonalInbox()
 
-    const {
-        reminders,
-        loading: remindersLoading,
-        addReminder,
-        removeReminder
-    } = usePersonalReminders()
-
     const [selectedItem, setSelectedItem] = useState(null)
-    const [savingReminder, setSavingReminder] = useState(false)
-
-    const [reminderForm, setReminderForm] = useState({
-        title: "",
-        notes: "",
-        frequency: "monthly",
-        next_due: getTodayString()
-    })
 
     const unreadCount = items.filter(item => item.status === "unread").length
-    const loading = inboxLoading || remindersLoading
+
+    const thoughtItems = items.filter(item => item.item_type === "thought")
+
+    const [showThoughtCapture, setShowThoughtCapture] = useState(false)
+
+    const notificationItems = items.filter(
+        item => item.item_type !== "thought"
+    )
+
+    const loading = inboxLoading
 
     function getInboxDestination(item) {
         const type = item.related_type || item.item_type
@@ -160,6 +160,47 @@ export default function PersonalInbox() {
         setSelectedItem(null)
     }
 
+    async function handleConvertThoughtToTask(item) {
+        try {
+            const task = await convertThoughtToTask(item)
+
+            await refreshInbox()
+
+            navigate("/tasks", {
+                state: {
+                    taskId: task.id
+                }
+            })
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not convert thought to To-Do.")
+        }
+    }
+
+    async function handleConvertThoughtToReminder(item) {
+        try {
+            await convertThoughtToReminder(item)
+            await refreshInbox()
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not convert thought to reminder.")
+        }
+    }
+
+    async function handleScheduleThought(item) {
+        navigate("/calendar", {
+            state: {
+                openCalendarEventForm: true,
+                selectedDate: getTodayString(),
+                thoughtToConvert: {
+                    id: item.id,
+                    title: item.title,
+                    body: item.body || item.message || null
+                }
+            }
+        })
+    }
+
     async function handleCreateReminder(event) {
         event.preventDefault()
         setSavingReminder(true)
@@ -203,59 +244,53 @@ export default function PersonalInbox() {
             </header>
 
             <section className="card">
-                <p className="card-kicker">Inbox</p>
+                <p className="card-kicker">Notifications</p>
 
-                <h3>
-                    {unreadCount === 1
-                        ? "1 unread"
-                        : `${unreadCount} unread`}
-                </h3>
+                <h3>Notifications</h3>
 
                 {loading ? (
                     <p className="dashboard-empty">
                         Loading inbox...
                     </p>
-                ) : items.length === 0 ? (
+                ) : notificationItems.length === 0 ? (
                     <p className="dashboard-empty">
                         Your inbox is clear.
                     </p>
                 ) : (
                     <div className="inbox-list">
-                        {items.map(item => {
+                        {notificationItems.map(item => {
                             if (item.item_type === "thought") {
                                 return (
-                                    <div key={item.id} className="inbox-item thought">
-                                        <div className="inbox-item-icon">
-                                            {getInboxIcon(item.item_type)}
+                                    <div key={item.id} className="thought-note-card">
+                                        <div className="thought-note-header">
+                                            <span>💭 Thought</span>
                                         </div>
 
-                                        <div className="inbox-item-main">
-                                            <div className="inbox-item-topline">
-                                                <strong>{item.title}</strong>
-                                            </div>
+                                        <h3>{item.title}</h3>
 
-                                            {(item.body || item.message) && (
-                                                <p>{item.body || item.message}</p>
-                                            )}
+                                        {(item.body || item.message) && (
+                                            <p>{item.body || item.message}</p>
+                                        )}
 
-                                            <small>Thought</small>
+                                        <div className="thought-note-actions">
+                                            <button type="button">
+                                                ✓ To-Do
+                                            </button>
 
-                                            <div className="inbox-thought-actions">
-                                                <button type="button">
-                                                    ✓ To-Do
-                                                </button>
+                                            <button type="button">
+                                                📅 Event
+                                            </button>
 
-                                                <button type="button">
-                                                    📅 Event
-                                                </button>
+                                            <button type="button">
+                                                🔔 Reminder
+                                            </button>
 
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleArchiveThought(item)}
-                                                >
-                                                    Archive
-                                                </button>
-                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleArchiveThought(item)}
+                                            >
+                                                Archive
+                                            </button>
                                         </div>
                                     </div>
                                 )
@@ -346,122 +381,86 @@ export default function PersonalInbox() {
                     </div>
                 )}
             </section>
-
-            <section className="card form-card">
-                <p className="card-kicker">Custom Reminder</p>
-                <h3>Add Personal Reminder</h3>
-
-                <form onSubmit={handleCreateReminder}>
-                    <div className="form-grid">
-                        <label>
-                            Reminder
-                            <input
-                                required
-                                value={reminderForm.title}
-                                onChange={event =>
-                                    setReminderForm({
-                                        ...reminderForm,
-                                        title: event.target.value
-                                    })
-                                }
-                                placeholder="Do something nice for someone"
-                            />
-                        </label>
-
-                        <label>
-                            Frequency
-                            <select
-                                value={reminderForm.frequency}
-                                onChange={event =>
-                                    setReminderForm({
-                                        ...reminderForm,
-                                        frequency: event.target.value
-                                    })
-                                }
-                            >
-                                <option value="once">Once</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                                <option value="yearly">Yearly</option>
-                            </select>
-                        </label>
-
-                        <label>
-                            Next Due
-                            <input
-                                type="date"
-                                value={reminderForm.next_due}
-                                onChange={event =>
-                                    setReminderForm({
-                                        ...reminderForm,
-                                        next_due: event.target.value
-                                    })
-                                }
-                            />
-                        </label>
-
-                        <label className="full-width">
-                            Notes
-                            <textarea
-                                rows="3"
-                                value={reminderForm.notes}
-                                onChange={event =>
-                                    setReminderForm({
-                                        ...reminderForm,
-                                        notes: event.target.value
-                                    })
-                                }
-                            />
-                        </label>
-
-                        <button
-                            className="primary-button full-width"
-                            type="submit"
-                            disabled={savingReminder}
-                        >
-                            {savingReminder ? "Saving..." : "Save Reminder"}
-                        </button>
-                    </div>
-                </form>
-            </section>
-
             <section className="card">
-                <p className="card-kicker">Active Reminders</p>
-                <h3>My Reminder Rules</h3>
+                <div className="thoughts-header">
+                    <div>
+                        <p className="card-kicker">My Thoughts</p>
+                        <h3>Capture now. Organize later.</h3>
+                    </div>
 
-                {reminders.length === 0 ? (
+                    <button
+                        type="button"
+                        className="thought-capture-button"
+                        onClick={() => setShowThoughtCapture(true)}
+                    >
+                        + Capture
+                    </button>
+                </div>
+
+                {thoughtItems.length === 0 ? (
                     <p className="dashboard-empty">
-                        No personal reminders yet.
+                        Nothing on your mind right now.
                     </p>
                 ) : (
-                    <div className="stack-list">
-                        {reminders.map(reminder => (
-                            <div className="list-row" key={reminder.id}>
-                                <div>
-                                    <strong>{reminder.title}</strong>
+                    <div className="thought-list-wrapper">
+                        <div className="thought-list">
+                            {thoughtItems.map(item => (
+                                <div key={item.id} className="thought-note-card">
 
-                                    {reminder.notes && <p>{reminder.notes}</p>}
+                                    <div className="thought-note-header">
+                                        💭 Thought
+                                    </div>
 
-                                    <small>
-                                        {reminder.frequency}
-                                        {reminder.next_due
-                                            ? ` • Next due ${reminder.next_due}`
-                                            : ""}
-                                    </small>
+                                    <h3>{item.title}</h3>
+
+                                    {(item.body || item.message) && (
+                                        <p>{item.body || item.message}</p>
+                                    )}
+
+                                    <div className="thought-note-actions">
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleConvertThoughtToTask(item)}
+                                        >
+                                            To-Do
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleScheduleThought(item)}
+                                        >
+                                            Schedule
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleConvertThoughtToReminder(item)}
+                                        >
+                                            Reminder
+                                        </button>
+
+                                        <button
+                                            onClick={() => handleArchiveThought(item)}
+                                        >
+                                            Archive
+                                        </button>
+
+                                    </div>
+
                                 </div>
-
-                                <button
-                                    className="danger-button"
-                                    type="button"
-                                    onClick={() => removeReminder(reminder.id)}
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 )}
             </section>
+
+            <ThoughtCaptureSheet
+                open={showThoughtCapture}
+                onClose={() => setShowThoughtCapture(false)}
+                onCreated={refreshInbox}
+            />
+
         </div>
     )
 }

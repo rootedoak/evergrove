@@ -3,6 +3,7 @@ import CalendarHeader from "../components/calendar/CalendarHeader"
 import CalendarAgenda from "../components/calendar/CalendarAgenda"
 import CalendarMonth from "../components/calendar/CalendarMonth"
 import CalendarEventDetailSheet from "../components/calendar/CalendarEventDetailSheet"
+import BirthdayDetailSheet from "../components/calendar/BirthdayDetailSheet"
 
 import { useEffect, useMemo, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
@@ -31,6 +32,8 @@ import { deleteActivity } from "../services/activityService"
 import { createSchoolItem } from "../services/schoolService"
 import { deleteSchoolItem } from "../services/schoolService"
 import { deleteTrip } from "../services/tripService"
+
+import { deletePersonalInboxItem } from "../services/personalInboxService"
 
 function getDateOnly(value) {
     if (!value) return ""
@@ -435,6 +438,8 @@ export default function Calendar() {
         notes: ""
     })
 
+    const [selectedBirthday, setSelectedBirthday] = useState(null)
+
     const [showTaskForm, setShowTaskForm] = useState(false)
     const [savingTask, setSavingTask] = useState(false)
 
@@ -447,6 +452,8 @@ export default function Calendar() {
         status: "open",
         visibility: "household"
     })
+
+    const [thoughtToConvert, setThoughtToConvert] = useState(null)
 
     const { activities, loading: activitiesLoading } = useActivities()
 
@@ -551,12 +558,32 @@ export default function Calendar() {
         const date = location.state?.selectedDate || getTodayString()
 
         if (location.state?.openCalendarEventForm) {
+            const thought = location.state?.thoughtToConvert || null
+
             setSelectedDate(date)
-            resetCalendarEventForm(date)
+            setThoughtToConvert(thought)
+
+            setEditingCalendarEventId(null)
+
+            setCalendarEventForm({
+                title: thought?.title || "",
+                event_type: "Family Event",
+                start_date: date,
+                end_date: "",
+                repeats_yearly: false,
+                session_frequency: "none",
+                session_until: "",
+                start_time: "",
+                end_time: "",
+                location: "",
+                notes: thought?.body || ""
+            })
+
             setShowCalendarEventForm(true)
             setShowTaskForm(false)
             setShowActivityForm(false)
             setShowSchoolItemForm(false)
+
             navigate(location.pathname, { replace: true, state: {} })
             return
         }
@@ -606,6 +633,7 @@ export default function Calendar() {
         if (location.state?.selectedDate || location.state?.calendarEventId) {
             navigate(location.pathname, { replace: true, state: {} })
         }
+
     }, [location, navigate, calendarEvents])
 
     function goToPreviousMonth() {
@@ -657,14 +685,14 @@ export default function Calendar() {
             if (existingEvent) {
                 setEditingCalendarEventId(existingEvent.id)
                 setCalendarEventForm({
-                    title: existingEvent.title || "",
+                    title: existingEvent.title || location.state.thoughtToConvert?.title || "",
                     event_type: existingEvent.event_type || "Important Date",
                     start_date: existingEvent.start_date || selectedDate,
                     end_date: existingEvent.end_date || "",
                     start_time: existingEvent.start_time || "",
                     end_time: existingEvent.end_time || "",
                     location: existingEvent.location || "",
-                    notes: existingEvent.notes || "",
+                    notes: location.state.thoughtToConvert?.body || existingEvent.notes || "",
                     repeats_yearly: Boolean(existingEvent.repeats_yearly),
                     session_frequency: existingEvent.session_frequency || "none",
                     session_until: existingEvent.session_until || ""
@@ -675,7 +703,16 @@ export default function Calendar() {
         }
 
         if (event.type === "birthday") {
-            navigate("/family")
+            const member = familyMembers.find(
+                familyMember => familyMember.id === event.sourceId
+            )
+
+            setSelectedBirthday({
+                event,
+                member
+            })
+
+            return
         }
     }
 
@@ -764,6 +801,16 @@ export default function Calendar() {
                 await updateCalendarEvent(editingCalendarEventId, payload)
             } else {
                 await createCalendarEvent(payload)
+
+                if (thoughtToConvert?.id) {
+                    await deletePersonalInboxItem(thoughtToConvert.id)
+
+                    window.dispatchEvent(
+                        new Event("evergrovePersonalInboxUpdated")
+                    )
+
+                    setThoughtToConvert(null)
+                }
             }
 
             await refreshCalendarEvents()
@@ -961,6 +1008,22 @@ export default function Calendar() {
         "Sat"
     ]
 
+    function getCalendarTypeGuidance(type) {
+        const guidance = {
+            "Family Event": "A basic household event that belongs on the family calendar.",
+            Activity: "Best for practices, lessons, clubs, or recurring family activities.",
+            School: "Use for school deadlines, forms, events, and reminders.",
+            Trip: "Trips include planning, checklists, travelers, and ideas.",
+            "Doctor/Medical": "Use for doctor's and other medical appointments.",
+            Reminder: "Use for date-based nudges that should appear on the calendar.",
+            "Important Date": "Use for birthdays, anniversaries, and yearly dates.",
+            Visitor: "Use for guests, visits, or family coming over.",
+            Other: "Use when it does not fit another category."
+        }
+
+        return guidance[type] || guidance.Other
+    }
+
     return (
         <AppPage>
             <div className="eg-stack">
@@ -1009,6 +1072,20 @@ export default function Calendar() {
                         formatAgendaDateLabel={formatAgendaDateLabel}
                         onSelectEvent={(event) => {
                             setSelectedDate(null)
+
+                            if (event.type === "birthday") {
+                                const member = familyMembers.find(
+                                    familyMember => familyMember.id === event.sourceId
+                                )
+
+                                setSelectedBirthday({
+                                    event,
+                                    member
+                                })
+
+                                return
+                            }
+
                             setSelectedEvent(event)
                         }}
                     />
@@ -1113,6 +1190,7 @@ export default function Calendar() {
                                                     <option>Family Event</option>
                                                     <option>Activity</option>
                                                     <option>School</option>
+                                                    <option>Doctor/Medical</option>
                                                     <option>Trip</option>
                                                     <option>Reminder</option>
                                                     <option>Important Date</option>
@@ -1120,6 +1198,50 @@ export default function Calendar() {
                                                     <option>Other</option>
                                                 </select>
                                             </label>
+
+                                            <div className="calendar-type-guidance full-width">
+                                                <p>{getCalendarTypeGuidance(calendarEventForm.event_type)}</p>
+                                            </div>
+
+                                            {calendarEventForm.event_type === "Trip" && (
+                                                <div className="calendar-trip-helper full-width">
+                                                    <strong>Planning a trip?</strong>
+
+                                                    <p>
+                                                        Trips include planning, checklists, travelers, and ideas. Convert this event
+                                                        into a Trip to unlock those tools.
+                                                    </p>
+
+                                                    <button
+                                                        type="button"
+                                                        className="secondary-button"
+                                                        onClick={() => {
+                                                            resetCalendarEventForm(selectedDate)
+                                                            setThoughtToConvert(null)
+                                                            setShowCalendarEventForm(false)
+
+                                                            navigate("/trips", {
+                                                                state: {
+                                                                    openTripForm: true,
+                                                                    tripDraft: {
+                                                                        name: calendarEventForm.title,
+                                                                        destination: calendarEventForm.location,
+                                                                        start_date:
+                                                                            calendarEventForm.start_date || selectedDate,
+                                                                        end_date:
+                                                                            calendarEventForm.end_date ||
+                                                                            calendarEventForm.start_date ||
+                                                                            selectedDate,
+                                                                        notes: calendarEventForm.notes
+                                                                    }
+                                                                }
+                                                            })
+                                                        }}
+                                                    >
+                                                        Convert to Trip
+                                                    </button>
+                                                </div>
+                                            )}
 
                                             <label>
                                                 Start Date
@@ -1247,6 +1369,7 @@ export default function Calendar() {
                                                     variant="secondary"
                                                     onClick={() => {
                                                         resetCalendarEventForm(selectedDate)
+                                                        setThoughtToConvert(null)
                                                         setShowCalendarEventForm(false)
                                                     }}
                                                 >
@@ -1724,6 +1847,13 @@ export default function Calendar() {
                     open={Boolean(selectedEvent)}
                     onClose={() => setSelectedEvent(null)}
                     onEdit={startEditCalendarEventFromSummary}
+                />
+
+                <BirthdayDetailSheet
+                    open={Boolean(selectedBirthday)}
+                    event={selectedBirthday?.event}
+                    member={selectedBirthday?.member}
+                    onClose={() => setSelectedBirthday(null)}
                 />
             </div>
         </AppPage>
