@@ -1,6 +1,8 @@
 import { supabase } from "../../lib/supabase"
 
 const featureMap = {
+    session_started: "App Sessions",
+    daily_active: "Daily Active",
     task_created: "Tasks",
     task_completed: "Tasks",
 
@@ -24,6 +26,16 @@ function getSinceDate(days) {
     const since = new Date()
     since.setDate(since.getDate() - days)
     return since
+}
+
+function getLocalDateKey(value = new Date()) {
+    const date = new Date(value)
+
+    return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0")
+    ].join("-")
 }
 
 function calculateTrend(current, previous) {
@@ -135,14 +147,14 @@ export async function getDailyActiveHouseholds({ days = 14 } = {}) {
         const date = new Date()
         date.setDate(date.getDate() - i)
 
-        const key = date.toISOString().slice(0, 10)
+        const key = getLocalDateKey(date)
         dailyMap.set(key, new Set())
     }
 
     for (const row of data ?? []) {
         if (!row.household_id || !row.created_at) continue
 
-        const key = row.created_at.slice(0, 10)
+        const key = getLocalDateKey(row.created_at)
 
         if (!dailyMap.has(key)) {
             dailyMap.set(key, new Set())

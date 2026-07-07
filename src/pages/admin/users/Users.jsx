@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "react-router-dom"
 
 import AdminPageHeader from "../../../components/admin/AdminPageHeader"
 import AdminCard from "../../../components/admin/AdminCard"
@@ -51,9 +52,10 @@ export default function Users() {
 
                         {users.map(user => (
 
-                            <div
+                            <Link
                                 key={user.family_member_id}
-                                className="admin-search-result"
+                                to={`/admin/users/${user.user_id}`}
+                                className="admin-search-result admin-dashboard-link-row"
                             >
                                 <div className="admin-user-card">
 
@@ -81,7 +83,7 @@ export default function Users() {
 
                                 </div>
 
-                            </div>
+                            </Link>
 
                         ))}
 

@@ -27,6 +27,11 @@ import {
   APP_STATUS
 } from "./config/appConfig"
 
+import {
+  trackDailyActive,
+  trackUsageEvent
+} from "./services/analytics/usageEventService"
+
 import { supabase } from "./lib/supabase"
 import { runFamilyAutomation } from "./utils/runFamilyAutomation"
 
@@ -66,6 +71,8 @@ import Household360 from "./pages/admin/households/Household360"
 import SupportInbox from "./pages/admin/support/SupportInbox"
 import SupportTicket from "./pages/admin/support/SupportTicket"
 import UsersPage from "./pages/admin/users/Users"
+import UserProfile from "./pages/admin/users/UserProfile"
+import BetaHealth from "./pages/admin/beta/BetaHealth"
 
 import Releases from "./pages/admin/releases/Releases"
 
@@ -263,6 +270,8 @@ function AppRoutes() {
         <Route path="support/:feedbackId" element={<SupportTicket />} />
         <Route path="releases" element={<Releases />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="users/:userId" element={<UserProfile />} />
+        <Route path="beta" element={<BetaHealth />} />
       </Route>
     </Routes>
   )
@@ -337,6 +346,21 @@ function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const { preferences } = usePreferences()
   const { items: inboxItems } = usePersonalInbox()
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/admin")) return
+
+    trackUsageEvent({
+      eventType: "session_started",
+      entityType: "session",
+      metadata: {
+        source: "app_layout",
+        path: location.pathname
+      }
+    })
+
+    trackDailyActive()
+  }, [])
 
   if (location.pathname.startsWith("/admin")) {
     return <AppRoutes />
