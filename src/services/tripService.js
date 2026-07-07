@@ -139,11 +139,34 @@ export async function updateTrip(id, updates, familyMemberIds = []) {
         if (attendeeError) throw attendeeError
     }
 
+    await trackUsageEvent({
+        eventType: "trip_updated",
+        entityType: "trip",
+        entityId: data.id,
+        metadata: {
+            source: "trips",
+            updated_fields: Object.keys(updates),
+            destination: data.destination || null,
+            start_date: data.start_date || null,
+            end_date: data.end_date || null,
+            attendee_count: familyMemberIds.length
+        }
+    })
+
     return data
 }
 
 export async function deleteTrip(id) {
     const household = await getCurrentHousehold()
+
+    await trackUsageEvent({
+        eventType: "trip_deleted",
+        entityType: "trip",
+        entityId: id,
+        metadata: {
+            source: "trips"
+        }
+    })
 
     const { error } = await supabase
         .from("trips")

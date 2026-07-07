@@ -2,6 +2,8 @@ import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
 import { createCalendarEventInboxNotification } from "./calendarEventInboxNotificationService"
 
+import { trackUsageEvent } from "./analytics/usageEventService"
+
 async function getCurrentUserId() {
     const {
         data: { user },
@@ -49,11 +51,34 @@ export async function createCalendarEvent(event) {
 
     await createCalendarEventInboxNotification(data)
 
+    await trackUsageEvent({
+        eventType: "calendar_event_created",
+        entityType: "calendar_event",
+        entityId: data.id,
+        metadata: {
+            source: "calendar",
+            event_type: data.event_type,
+            has_location: Boolean(data.location),
+            has_time: Boolean(data.start_time),
+            repeats: data.session_frequency !== "none",
+            session_frequency: data.session_frequency
+        }
+    })
+
     return data
 }
 
 export async function deleteCalendarEvent(id) {
     const household = await getCurrentHousehold()
+
+    await trackUsageEvent({
+        eventType: "calendar_event_deleted",
+        entityType: "calendar_event",
+        entityId: id,
+        metadata: {
+            source: "calendar"
+        }
+    })
 
     const { error } = await supabase
         .from("calendar_events")
@@ -81,6 +106,18 @@ export async function updateCalendarEvent(id, updates) {
         .single()
 
     if (error) throw error
+
+    await trackUsageEvent({
+        eventType: "calendar_event_updated",
+        entityType: "calendar_event",
+        entityId: data.id,
+        metadata: {
+            source: "calendar",
+            updated_fields: Object.keys(updates),
+            event_type: data.event_type,
+            session_frequency: data.session_frequency
+        }
+    })
 
     return data
 }

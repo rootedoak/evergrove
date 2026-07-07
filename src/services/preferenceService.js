@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
+import { trackUsageEvent } from "./analytics/usageEventService"
 
 const householdPreferenceFields = [
     "household_name",
@@ -126,6 +127,15 @@ export async function completeOnboarding() {
 
     if (error) throw error
 
+    await trackUsageEvent({
+        eventType: "onboarding_completed",
+        entityType: "user_preferences",
+        entityId: data.id,
+        metadata: {
+            source: "preferences"
+        }
+    })
+
     return data
 }
 
@@ -195,6 +205,16 @@ export async function updatePreferences(updates) {
         savedUserDisplayPreferences = data
     }
 
+    await trackUsageEvent({
+        eventType: "preferences_updated",
+        entityType: "preferences",
+        metadata: {
+            source: "preferences",
+            household_fields: Object.keys(householdUpdates),
+            user_fields: Object.keys(userUpdates)
+        }
+    })
+
     return {
         ...(savedHouseholdPreferences || {}),
         ...(savedUserDisplayPreferences || {})
@@ -222,11 +242,31 @@ export async function completeGuidedWalkthrough() {
 
     if (error) throw error
 
+    await trackUsageEvent({
+        eventType: "guided_walkthrough_completed",
+        entityType: "user_preferences",
+        entityId: data.id,
+        metadata: {
+            source: "preferences",
+            guided_walkthrough_version: 1
+        }
+    })
+
     return data
 }
 
 export async function restartGuidedWalkthrough() {
-    return updatePreferences({
+    const data = await updatePreferences({
         has_completed_guided_walkthrough: false,
     })
+
+    await trackUsageEvent({
+        eventType: "guided_walkthrough_restarted",
+        entityType: "user_preferences",
+        metadata: {
+            source: "preferences"
+        }
+    })
+
+    return data
 }

@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { X } from "lucide-react"
 import { createThoughtInboxItem } from "../services/personalInboxService"
+import { trackUsageEvent } from "../services/analytics/usageEventService"
 
 export default function ThoughtCaptureSheet({ open, onClose, onCreated }) {
     const [title, setTitle] = useState("")
@@ -17,9 +18,20 @@ export default function ThoughtCaptureSheet({ open, onClose, onCreated }) {
         try {
             setSaving(true)
 
-            await createThoughtInboxItem({
+            const thought = await createThoughtInboxItem({
                 title,
                 body
+            })
+
+            trackUsageEvent({
+                eventType: "thought_created",
+                entityType: "thought",
+                entityId: thought.id,
+                metadata: {
+                    source: "thought_capture_sheet",
+                    has_title: Boolean(title.trim()),
+                    has_body: Boolean(body.trim())
+                }
             })
 
             setTitle("")

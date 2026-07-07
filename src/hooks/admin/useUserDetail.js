@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 
 import {
     getUserDetail,
+    getUserPreferences,
     getUserSupportTickets,
     getUserUsageEvents
 } from "../../services/admin/userAdminService"
@@ -10,6 +11,7 @@ export default function useUserDetail(userId) {
     const [user, setUser] = useState(null)
     const [tickets, setTickets] = useState([])
     const [events, setEvents] = useState([])
+    const [preferences, setPreferences] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
@@ -25,16 +27,19 @@ export default function useUserDetail(userId) {
             try {
                 const [
                     userDetail,
+                    userPreferences,
                     supportTickets,
                     usageEvents
                 ] = await Promise.all([
                     getUserDetail(userId),
+                    getUserPreferences(userId),
                     getUserSupportTickets(userId),
                     getUserUsageEvents(userId)
                 ])
 
                 if (!cancelled) {
                     setUser(userDetail)
+                    setPreferences(userPreferences)
                     setTickets(supportTickets)
                     setEvents(usageEvents)
                 }
@@ -44,6 +49,7 @@ export default function useUserDetail(userId) {
                 if (!cancelled) {
                     setError(err)
                     setUser(null)
+                    setPreferences(null)
                     setTickets([])
                     setEvents([])
                 }
@@ -63,6 +69,7 @@ export default function useUserDetail(userId) {
 
     return {
         user,
+        preferences,
         tickets,
         events,
         loading,

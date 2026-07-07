@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
+import { trackUsageEvent } from "./analytics/usageEventService"
 
 const DOCUMENT_BUCKET = "family-documents"
 
@@ -92,11 +93,37 @@ export async function uploadDocument({
 
     if (error) throw error
 
+    await trackUsageEvent({
+        eventType: "document_uploaded",
+        entityType: "document",
+        entityId: data.id,
+        metadata: {
+            source: "documents",
+            category: data.category || null,
+            file_type: data.file_type || null,
+            file_size: data.file_size || null,
+            has_family_member: Boolean(data.family_member_id),
+            has_school_item: Boolean(data.school_item_id),
+            has_activity: Boolean(data.activity_id)
+        }
+    })
+
     return data
 }
 
 export async function deleteDocument(document) {
     const household = await getCurrentHousehold()
+
+    await trackUsageEvent({
+        eventType: "document_deleted",
+        entityType: "document",
+        entityId: document.id,
+        metadata: {
+            source: "documents",
+            category: document.category || null,
+            file_type: document.file_type || null
+        }
+    })
 
     const { error: storageError } = await supabase.storage
         .from(DOCUMENT_BUCKET)

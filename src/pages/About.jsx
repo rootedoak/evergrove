@@ -86,14 +86,6 @@ export default function About() {
             />
 
             <div className="eg-stack">
-                <InsightCard
-                    insight={{
-                        title: `You're running ${APP_NAME} ${APP_VERSION}`,
-                        description: "Thanks for helping shape Evergrove during beta.",
-                        actionLabel: "Take Product Tour"
-                    }}
-                    onAction={handleRestartTour}
-                />
 
                 <SectionCard
                     title="Take the Product Tour"
@@ -156,14 +148,6 @@ export default function About() {
                         <Feature title="Documents" text="Store important household files." />
                         <Feature title="Settings" text="Manage household and personal preferences." />
                     </div>
-                </SectionCard>
-
-                <SectionCard title="Privacy & Visibility">
-                    <ul className="eg-about-list">
-                        <li>Household items are visible to household members.</li>
-                        <li>Private To-Dos remain visible only to the creator.</li>
-                        <li>Children and pets can be tracked without individual accounts.</li>
-                    </ul>
                 </SectionCard>
 
                 <SectionCard title="Why Evergrove Exists">

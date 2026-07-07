@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
+import { trackUsageEvent } from "./analytics/usageEventService"
 
 async function getCurrentUser() {
     const {
@@ -51,4 +52,15 @@ export async function completeInsight(insightId, payload = {}) {
         )
 
     if (error) throw error
+
+    await trackUsageEvent({
+        eventType: "insight_completed",
+        entityType: "insight",
+        entityId: insightId,
+        metadata: {
+            source: "assistant_insights",
+            insight_id: insightId,
+            has_payload: Boolean(payload && Object.keys(payload).length > 0)
+        }
+    })
 }

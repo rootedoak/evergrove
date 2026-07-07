@@ -273,3 +273,98 @@ export function generateAnalyticsInsights({
 
     return insights
 }
+
+export async function getEngagementMetrics() {
+    const now = new Date()
+
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(now.getDate() - 7)
+
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(now.getDate() - 30)
+
+    const { data, error } = await supabase
+        .from("usage_events")
+        .select("user_id, event_type, metadata, created_at")
+        .in("event_type", ["session_started", "daily_active"])
+        .gte("created_at", thirtyDaysAgo.toISOString())
+
+    if (error) throw error
+
+    const rows = data ?? []
+
+    const sessions = rows.filter(
+        row => row.event_type === "session_started"
+    )
+
+    const dailyActiveRows = rows.filter(
+        row => row.event_type === "daily_active"
+    )
+
+    const dau = new Set(
+        dailyActiveRows
+            .filter(row => new Date(row.created_at) >= todayStart)
+            .map(row => row.user_id)
+            .filter(Boolean)
+    ).size
+
+    const wau = new Set(
+        dailyActiveRows
+            .filter(row => new Date(row.created_at) >= sevenDaysAgo)
+            .map(row => row.user_id)
+            .filter(Boolean)
+    ).size
+
+    const mau = new Set(
+        dailyActiveRows
+            .map(row => row.user_id)
+            .filter(Boolean)
+    ).size
+
+    const activeUsers = new Set(
+        dailyActiveRows
+            .map(row => row.user_id)
+            .filter(Boolean)
+    ).size
+
+    const sessionsPerActiveUser =
+        activeUsers > 0
+            ? Number((sessions.length / activeUsers).toFixed(1))
+            : 0
+
+    const activeDaysByUser = new Map()
+
+    for (const row of dailyActiveRows) {
+        if (!row.user_id) continue
+
+        const localDate =
+            row.metadata?.local_date ||
+            getLocalDateKey(row.created_at)
+
+        if (!activeDaysByUser.has(row.user_id)) {
+            activeDaysByUser.set(row.user_id, new Set())
+        }
+
+        activeDaysByUser.get(row.user_id).add(localDate)
+    }
+
+    const totalActiveDays = Array.from(activeDaysByUser.values())
+        .reduce((sum, dates) => sum + dates.size, 0)
+
+    const averageActiveDaysPerWeek =
+        activeDaysByUser.size > 0
+            ? Number((totalActiveDays / activeDaysByUser.size / (30 / 7)).toFixed(1))
+            : 0
+
+    return {
+        sessions: sessions.length,
+        dau,
+        wau,
+        mau,
+        sessionsPerActiveUser,
+        averageActiveDaysPerWeek
+    }
+}

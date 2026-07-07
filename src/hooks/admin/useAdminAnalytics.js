@@ -4,6 +4,7 @@ import {
     generateAnalyticsInsights,
     getDailyActiveHouseholds,
     getDashboardKpis,
+    getEngagementMetrics,
     getFeatureUsage,
     getSupportMetrics
 } from "../../services/admin/analyticsService"
@@ -13,6 +14,7 @@ export default function useAdminAnalytics(days = 30) {
         kpis: null,
         featureUsage: [],
         dailyActiveHouseholds: [],
+        engagement: null,
         supportMetrics: null,
         insights: []
     })
@@ -27,11 +29,13 @@ export default function useAdminAnalytics(days = 30) {
         try {
             const [
                 kpis,
+                engagement,
                 featureUsage,
                 dailyActiveHouseholds,
                 supportMetrics
             ] = await Promise.all([
                 getDashboardKpis({ days }),
+                getEngagementMetrics(),
                 getFeatureUsage({ days }),
                 getDailyActiveHouseholds({ days }),
                 getSupportMetrics({ days })
@@ -45,6 +49,7 @@ export default function useAdminAnalytics(days = 30) {
 
             setAnalytics({
                 kpis,
+                engagement,
                 featureUsage,
                 dailyActiveHouseholds,
                 supportMetrics,

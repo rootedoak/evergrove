@@ -161,10 +161,31 @@ export async function updateMeal(
         if (ingredientError) throw ingredientError
     }
 
+    await trackUsageEvent({
+        eventType: "meal_updated",
+        entityType: "meal",
+        entityId: meal.id,
+        metadata: {
+            source: "meals",
+            category: meal.category,
+            updated_ingredient_count: ingredientRows.length,
+            updated_fields: ["meal", "ingredients"]
+        }
+    })
+
     return meal
 }
 
 export async function deleteMeal(id) {
+
+    await trackUsageEvent({
+        eventType: "meal_deleted",
+        entityType: "meal",
+        entityId: id,
+        metadata: {
+            source: "meals"
+        }
+    })
     const { household } = await getUserAndHousehold()
 
     const { error } = await supabase
@@ -291,6 +312,15 @@ export async function createMealPlan({
 }
 
 export async function deleteMealPlan(id) {
+
+    await trackUsageEvent({
+        eventType: "meal_plan_deleted",
+        entityType: "meal_plan",
+        entityId: id,
+        metadata: {
+            source: "meals"
+        }
+    })
     const { household } = await getUserAndHousehold()
 
     const { error: groceryError } = await supabase
@@ -364,6 +394,16 @@ export async function createGroceryItem({ name, quantity, category }) {
         .select()
         .single()
 
+    await trackUsageEvent({
+        eventType: "grocery_item_created",
+        entityType: "grocery_item",
+        entityId: data.id,
+        metadata: {
+            source: "shopping",
+            category: data.category || null
+        }
+    })
+
     if (error) throw error
     return data
 }
@@ -379,11 +419,31 @@ export async function toggleGroceryItem(id, checked) {
         .select()
         .single()
 
+    await trackUsageEvent({
+        eventType: checked
+            ? "grocery_item_checked"
+            : "grocery_item_unchecked",
+        entityType: "grocery_item",
+        entityId: data.id,
+        metadata: {
+            source: "shopping"
+        }
+    })
+
     if (error) throw error
     return data
 }
 
 export async function deleteGroceryItem(id) {
+
+    await trackUsageEvent({
+        eventType: "grocery_item_deleted",
+        entityType: "grocery_item",
+        entityId: id,
+        metadata: {
+            source: "shopping"
+        }
+    })
     const { household } = await getUserAndHousehold()
 
     const { error } = await supabase
@@ -398,6 +458,14 @@ export async function deleteGroceryItem(id) {
 }
 
 export async function clearCheckedGroceryItems() {
+
+    await trackUsageEvent({
+        eventType: "grocery_items_cleared",
+        entityType: "shopping_list",
+        metadata: {
+            source: "shopping"
+        }
+    })
     const { household } = await getUserAndHousehold()
 
     const { error } = await supabase

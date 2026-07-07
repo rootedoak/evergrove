@@ -46,38 +46,47 @@ export default function Analytics() {
                 }
             />
 
-            <section className="admin-grid admin-grid-4">
-
+            <section className="admin-grid admin-grid-3">
                 <AnalyticsKpiCard
-                    title="Active Households"
-                    value={analytics.kpis?.activeHouseholds?.value ?? 0}
-                    trend={`${analytics.kpis?.activeHouseholds?.change ?? 0}%`}
-                    trendDirection={
-                        analytics.kpis?.activeHouseholds?.direction
-                    }
-                    subtitle={`vs previous ${days} days`}
+                    title="App Sessions"
+                    value={analytics.engagement?.sessions ?? 0}
+                    subtitle="Last 30 days"
+                    icon="sessions"
                 />
 
                 <AnalyticsKpiCard
-                    title="Usage Events"
-                    value={analytics.kpis?.events?.value ?? 0}
-                    trend={`${analytics.kpis?.events?.change ?? 0}%`}
-                    trendDirection={
-                        analytics.kpis?.events?.direction
-                    }
-                    subtitle={`vs previous ${days} days`}
+                    title="DAU"
+                    value={analytics.engagement?.dau ?? 0}
+                    subtitle="Active users today"
+                    icon="dau"
                 />
 
                 <AnalyticsKpiCard
-                    title="Open Tickets"
-                    value={analytics.supportMetrics?.openTickets ?? 0}
-                    subtitle="Support queue"
+                    title="WAU"
+                    value={analytics.engagement?.wau ?? 0}
+                    subtitle="Active users in 7 days"
+                    icon="wau"
                 />
 
                 <AnalyticsKpiCard
-                    title="Tracked Features"
-                    value={analytics.featureUsage.length}
-                    subtitle="Receiving usage events"
+                    title="MAU"
+                    value={analytics.engagement?.mau ?? 0}
+                    subtitle="Active users in 30 days"
+                    icon="mau"
+                />
+
+                <AnalyticsKpiCard
+                    title="Sessions / User"
+                    value={analytics.engagement?.sessionsPerActiveUser ?? 0}
+                    subtitle="Last 30 days"
+                    icon="sessionsPerUser"
+                />
+
+                <AnalyticsKpiCard
+                    title="Active Days / Week"
+                    value={analytics.engagement?.averageActiveDaysPerWeek ?? 0}
+                    subtitle="Average per active user"
+                    icon="activeDays"
                 />
 
             </section>

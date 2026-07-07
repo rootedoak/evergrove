@@ -70,3 +70,15 @@ export async function getUserUsageEvents(userId) {
 
     return data ?? []
 }
+
+export async function getUserPreferences(userId) {
+    const { data, error } = await supabase
+        .from("admin_user_preferences")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle()
+
+    if (error) throw error
+
+    return data
+}

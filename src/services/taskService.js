@@ -180,6 +180,15 @@ export async function updateTask(id, updates) {
 }
 
 export async function deleteTask(id) {
+    await trackUsageEvent({
+        eventType: "task_deleted",
+        entityType: "task",
+        entityId: id,
+        metadata: {
+            source: "tasks"
+        }
+    })
+
     const { error } = await supabase
         .from("tasks")
         .delete()

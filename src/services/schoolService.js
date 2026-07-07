@@ -2,6 +2,7 @@ import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
 import { createSchoolInboxNotification } from "./schoolInboxNotificationService"
 import { createFeedEvent } from "./feedService"
+import { trackUsageEvent } from "./analytics/usageEventService"
 
 async function getCurrentUserId() {
     const {
@@ -74,6 +75,19 @@ export async function createSchoolItem(item) {
         },
     })
 
+    await trackUsageEvent({
+        eventType: "school_item_created",
+        entityType: "school_item",
+        entityId: data.id,
+        metadata: {
+            source: "school",
+            family_member_id: data.family_member_id || null,
+            due_date: data.due_date || null,
+            type: data.type || null,
+            has_due_date: Boolean(data.due_date)
+        }
+    })
+
     return data
 }
 
@@ -90,11 +104,35 @@ export async function updateSchoolItem(id, updates) {
 
     if (error) throw error
 
+    await trackUsageEvent({
+        eventType: updates.completed
+            ? "school_item_completed"
+            : "school_item_updated",
+        entityType: "school_item",
+        entityId: data.id,
+        metadata: {
+            source: "school",
+            updated_fields: Object.keys(updates),
+            family_member_id: data.family_member_id || null,
+            due_date: data.due_date || null,
+            type: data.type || null
+        }
+    })
+
     return data
 }
 
 export async function deleteSchoolItem(id) {
     const household = await getCurrentHousehold()
+
+    await trackUsageEvent({
+        eventType: "school_item_deleted",
+        entityType: "school_item",
+        entityId: id,
+        metadata: {
+            source: "school"
+        }
+    })
 
     const { error } = await supabase
         .from("school_items")

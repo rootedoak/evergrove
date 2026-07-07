@@ -5,6 +5,8 @@ import { sendPushNotificationToUser } from "./pushNotificationService"
 import { createTask } from "./taskService"
 import { createPersonalReminder } from "./personalReminderService"
 
+import { trackUsageEvent } from "./analytics/usageEventService"
+
 async function getCurrentUser() {
     const {
         data: { user },
@@ -188,6 +190,16 @@ export async function convertThoughtToTask(thought) {
 
     await deletePersonalInboxItem(thought.id)
 
+    await trackUsageEvent({
+        eventType: "thought_converted_to_task",
+        entityType: "thought",
+        entityId: thought.id,
+        metadata: {
+            source: "personal_inbox",
+            task_id: task.id
+        }
+    })
+
     return task
 }
 
@@ -212,6 +224,16 @@ export async function convertThoughtToReminder(thought) {
     })
 
     await deletePersonalInboxItem(thought.id)
+
+    await trackUsageEvent({
+        eventType: "thought_converted_to_reminder",
+        entityType: "thought",
+        entityId: thought.id,
+        metadata: {
+            source: "personal_inbox",
+            reminder_id: reminder.id
+        }
+    })
 
     return reminder
 }

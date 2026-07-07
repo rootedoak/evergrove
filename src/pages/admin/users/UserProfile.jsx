@@ -11,7 +11,7 @@ import { formatTicketNumber } from "../../../services/admin/productFeedbackAdmin
 
 export default function UserProfile() {
     const { userId } = useParams()
-    const { user, tickets, events, loading, error } = useUserDetail(userId)
+    const { user, preferences, tickets, events, loading, error } = useUserDetail(userId)
 
     if (loading) {
         return (
@@ -29,6 +29,27 @@ export default function UserProfile() {
         )
     }
 
+    const healthScore = calculateHealthScore({
+        user,
+        preferences,
+        tickets,
+        events
+    })
+
+    const adoption = getFeatureAdoption(events)
+
+    const sessionCount = events.filter(event =>
+        event.event_type === "session_started"
+    ).length
+
+    const activeDayCount = events.filter(event =>
+        event.event_type === "daily_active"
+    ).length
+
+    const openTicketCount = tickets.filter(ticket =>
+        ["new", "reviewing", "planned"].includes(ticket.status)
+    ).length
+
     return (
         <div className="admin-page">
             <div className="admin-breadcrumbs">
@@ -43,96 +64,181 @@ export default function UserProfile() {
                 description={user.household_name || "Evergrove user"}
             />
 
-            <section className="admin-grid admin-grid-4">
-                <AdminCard title="Usage Events">
-                    <strong>{user.usage_event_count ?? 0}</strong>
-                    <p className="admin-muted">Tracked activity</p>
-                </AdminCard>
+            <section className="admin-profile-section">
+                <div className="admin-profile-section-header">
+                    <h2>Overview</h2>
+                </div>
 
-                <AdminCard title="Support Tickets">
-                    <strong>{user.ticket_count ?? 0}</strong>
-                    <p className="admin-muted">Submitted tickets</p>
-                </AdminCard>
+                <div className="admin-grid admin-grid-4">
+                    <AdminCard title="Sessions">
+                        <strong>{sessionCount}</strong>
+                        <p className="admin-muted">Recent app opens</p>
+                    </AdminCard>
 
-                <AdminCard title="Last Active">
-                    <strong>{formatDate(user.last_active_at)}</strong>
-                    <p className="admin-muted">Most recent usage event</p>
-                </AdminCard>
+                    <AdminCard title="Active Days">
+                        <strong>{activeDayCount}</strong>
+                        <p className="admin-muted">Tracked active days</p>
+                    </AdminCard>
 
-                <AdminCard title="Status">
-                    <AdminStatusChip status={user.last_active_at ? "active" : "neutral"}>
-                        {user.last_active_at ? "Active" : "No Activity"}
-                    </AdminStatusChip>
-                </AdminCard>
+                    <AdminCard title="Open Tickets">
+                        <strong>{openTicketCount}</strong>
+                        <p className="admin-muted">Needs attention</p>
+                    </AdminCard>
+
+                    <AdminCard title="Last Active">
+                        <strong>{formatDate(user.last_active_at)}</strong>
+                        <p className="admin-muted">Most recent usage event</p>
+                    </AdminCard>
+                </div>
             </section>
 
-            <section className="admin-grid admin-grid-2">
-                <AdminCard title="Household">
-                    <AdminRelationshipCard
-                        title="Household"
-                        primary={user.household_name || "No household"}
-                        secondary={user.household_id}
-                        actionLabel="Open Household"
-                        onClick={() => {
-                            window.location.href = `/admin/households/${user.household_id}`
-                        }}
-                        empty={!user.household_id}
-                    />
-                </AdminCard>
+            <section className="admin-profile-section">
+                <div className="admin-profile-section-header">
+                    <h2>Customer Success</h2>
+                </div>
 
-                <AdminCard title="Recent Support">
-                    {tickets.length === 0 ? (
-                        <AdminEmptyState>No support tickets for this user.</AdminEmptyState>
-                    ) : (
-                        <div className="admin-dashboard-list">
-                            {tickets.map(ticket => (
-                                <Link
-                                    key={ticket.id}
-                                    to={`/admin/support/${ticket.id}`}
-                                    className="admin-dashboard-row admin-dashboard-link-row"
-                                >
-                                    <div>
-                                        <strong>{formatTicketNumber(ticket.ticket_number)}</strong>
-                                        <div className="admin-muted">
-                                            {ticket.subject || ticket.message?.slice(0, 60)}
-                                        </div>
-                                    </div>
-
-                                    <AdminStatusChip status={ticket.status}>
-                                        {formatLabel(ticket.status)}
+                <div className="admin-grid admin-grid-2">
+                    <AdminCard title="Customer Health">
+                        <div className="admin-detail-list">
+                            <DetailItem label="Health Score" value={`${healthScore} / 100`} />
+                            <DetailItem
+                                label="Status"
+                                value={
+                                    <AdminStatusChip status={healthStatus(healthScore)}>
+                                        {healthLabel(healthScore)}
                                     </AdminStatusChip>
-                                </Link>
+                                }
+                            />
+                            <DetailItem label="Sessions" value={sessionCount} />
+                            <DetailItem label="Active Days" value={activeDayCount} />
+                            <DetailItem label="Open Tickets" value={openTicketCount} />
+                        </div>
+                    </AdminCard>
+
+                    <AdminCard title="Product Adoption">
+                        <div className="admin-adoption-grid">
+                            {adoption.map(feature => (
+                                <div
+                                    key={feature.label}
+                                    className={feature.active ? "admin-adoption-item active" : "admin-adoption-item"}
+                                >
+                                    <span>{feature.active ? "✓" : "—"}</span>
+                                    <strong>{feature.label}</strong>
+                                </div>
                             ))}
                         </div>
-                    )}
-                </AdminCard>
+                    </AdminCard>
+                </div>
             </section>
 
-            <AdminCard title="Recent Activity">
-                {events.length === 0 ? (
-                    <AdminEmptyState>No usage events for this user.</AdminEmptyState>
-                ) : (
-                    <div className="admin-dashboard-list">
-                        {events.map(event => (
-                            <div
-                                key={event.id}
-                                className="admin-dashboard-row"
-                            >
-                                <div>
-                                    <strong>{formatLabel(event.event_type)}</strong>
-                                    <div className="admin-muted">
-                                        {event.entity_type || "Event"}
-                                    </div>
-                                </div>
+            <section className="admin-profile-section">
+                <div className="admin-profile-section-header">
+                    <h2>Customer Profile</h2>
+                </div>
 
-                                <span className="admin-muted">
-                                    {formatDateTime(event.created_at)}
-                                </span>
+                <div className="admin-grid admin-grid-3">
+                    <AdminCard title="Household">
+                        <AdminRelationshipCard
+                            title="Household"
+                            primary={user.household_name || "No household"}
+                            secondary={user.household_id}
+                            actionLabel="Open Household"
+                            onClick={() => {
+                                window.location.href = `/admin/households/${user.household_id}`
+                            }}
+                            empty={!user.household_id}
+                        />
+                    </AdminCard>
+
+                    <AdminCard title="Experience">
+                        {!preferences ? (
+                            <AdminEmptyState>No preference data found.</AdminEmptyState>
+                        ) : (
+                            <div className="admin-detail-list">
+                                <DetailItem label="Onboarding" value={preferences.has_completed_onboarding ? "Complete" : "Incomplete"} />
+                                <DetailItem label="Walkthrough" value={preferences.has_completed_guided_walkthrough ? "Complete" : "Incomplete"} />
+                                <DetailItem label="Walkthrough Version" value={preferences.guided_walkthrough_version ?? "—"} />
+                                <DetailItem label="Dashboard Window" value={`${preferences.dashboard_window_days ?? "—"} days`} />
+                                <DetailItem label="Timeline Window" value={`${preferences.timeline_window_days ?? "—"} days`} />
+                                <DetailItem label="Task View" value={formatLabel(preferences.task_default_view)} />
                             </div>
-                        ))}
-                    </div>
-                )}
-            </AdminCard>
+                        )}
+                    </AdminCard>
+
+                    <AdminCard title="Notifications">
+                        {!preferences ? (
+                            <AdminEmptyState>No notification preference data found.</AdminEmptyState>
+                        ) : (
+                            <div className="admin-detail-list">
+                                <DetailItem label="Tasks" value={formatEnabled(preferences.inbox_tasks)} />
+                                <DetailItem label="Calendar" value={formatEnabled(preferences.inbox_calendar)} />
+                                <DetailItem label="Trips" value={formatEnabled(preferences.inbox_trips)} />
+                                <DetailItem label="School" value={formatEnabled(preferences.inbox_school)} />
+                                <DetailItem label="Activities" value={formatEnabled(preferences.inbox_activities)} />
+                                <DetailItem label="Reminders" value={formatEnabled(preferences.inbox_reminders)} />
+                            </div>
+                        )}
+                    </AdminCard>
+                </div>
+            </section>
+
+            <section className="admin-profile-section">
+                <div className="admin-profile-section-header">
+                    <h2>Customer History</h2>
+                </div>
+
+                <div className="admin-grid admin-grid-2">
+                    <AdminCard title="Recent Support">
+                        {tickets.length === 0 ? (
+                            <AdminEmptyState>No support tickets for this user.</AdminEmptyState>
+                        ) : (
+                            <div className="admin-dashboard-list">
+                                {tickets.map(ticket => (
+                                    <Link
+                                        key={ticket.id}
+                                        to={`/admin/support/${ticket.id}`}
+                                        className="admin-dashboard-row admin-dashboard-link-row"
+                                    >
+                                        <div>
+                                            <strong>{formatTicketNumber(ticket.ticket_number)}</strong>
+                                            <div className="admin-muted">
+                                                {ticket.subject || ticket.message?.slice(0, 60)}
+                                            </div>
+                                        </div>
+
+                                        <AdminStatusChip status={ticket.status}>
+                                            {formatLabel(ticket.status)}
+                                        </AdminStatusChip>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </AdminCard>
+
+                    <AdminCard title="Recent Activity">
+                        {events.length === 0 ? (
+                            <AdminEmptyState>No usage events for this user.</AdminEmptyState>
+                        ) : (
+                            <div className="admin-dashboard-list">
+                                {events.map(event => (
+                                    <div key={event.id} className="admin-dashboard-row">
+                                        <div>
+                                            <strong>{formatLabel(event.event_type)}</strong>
+                                            <div className="admin-muted">
+                                                {event.entity_type || "Event"}
+                                            </div>
+                                        </div>
+
+                                        <span className="admin-muted">
+                                            {formatDateTime(event.created_at)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </AdminCard>
+                </div>
+            </section>
         </div>
     )
 }
@@ -164,4 +270,85 @@ function formatDateTime(value) {
         hour: "numeric",
         minute: "2-digit"
     })
+}
+
+function DetailItem({ label, value }) {
+    return (
+        <div className="admin-detail-item">
+            <span>{label}</span>
+            <strong>{value}</strong>
+        </div>
+    )
+}
+
+function formatEnabled(value) {
+    return value === false ? "Disabled" : "Enabled"
+}
+
+function calculateHealthScore({ user, preferences, tickets, events }) {
+    let score = 0
+
+    const openTickets = tickets.filter(ticket =>
+        ["new", "reviewing", "planned"].includes(ticket.status)
+    ).length
+
+    const sessions = events.filter(event =>
+        event.event_type === "session_started"
+    ).length
+
+    const dailyActiveEvents = events.filter(event =>
+        event.event_type === "daily_active"
+    )
+
+    if (user.last_active_at) score += 20
+    if (preferences?.has_completed_onboarding) score += 20
+    if (preferences?.has_completed_guided_walkthrough) score += 15
+    if (openTickets === 0) score += 20
+    if (sessions >= 10) score += 15
+    if (dailyActiveEvents.length >= 3) score += 10
+
+    return Math.min(score, 100)
+}
+
+function healthLabel(score) {
+    if (score >= 80) return "Healthy"
+    if (score >= 50) return "Needs Attention"
+    return "At Risk"
+}
+
+function healthStatus(score) {
+    if (score >= 80) return "fixed"
+    if (score >= 50) return "planned"
+    return "error"
+}
+
+function getFeatureAdoption(events) {
+    const used = new Set(events.map(event => event.event_type))
+
+    return [
+        {
+            label: "Tasks",
+            active: used.has("task_created") || used.has("task_completed")
+        },
+        {
+            label: "Calendar",
+            active: used.has("calendar_event_created") || used.has("activity_created")
+        },
+        {
+            label: "Meals",
+            active: used.has("meal_created") || used.has("meal_planned")
+        },
+        {
+            label: "Shopping",
+            active: used.has("shopping_item_added")
+        },
+        {
+            label: "Trips",
+            active: used.has("trip_created")
+        },
+        {
+            label: "Announcements",
+            active: used.has("announcement_created")
+        }
+    ]
 }

@@ -1,3 +1,6 @@
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+
 import AdminPageHeader from "../../../components/admin/AdminPageHeader"
 import AdminCard from "../../../components/admin/AdminCard"
 import AdminEmptyState from "../../../components/admin/AdminEmptyState"
@@ -6,11 +9,27 @@ import AdminStatusChip from "../../../components/admin/AdminStatusChip"
 
 import useProductFeedback from "../../../hooks/admin/useProductFeedback"
 import { formatTicketNumber } from "../../../services/admin/productFeedbackAdminService"
-import { useNavigate } from "react-router-dom"
+
+const statuses = ["all", "new", "reviewing", "planned", "fixed", "closed"]
 
 export default function SupportInbox() {
     const navigate = useNavigate()
+    const [statusFilter, setStatusFilter] = useState("all")
     const { feedback, loading, error } = useProductFeedback()
+
+    const statusCounts = statuses.reduce((counts, status) => {
+        counts[status] =
+            status === "all"
+                ? feedback.length
+                : feedback.filter(ticket => ticket.status === status).length
+
+        return counts
+    }, {})
+
+    const filteredTickets =
+        statusFilter === "all"
+            ? feedback
+            : feedback.filter(ticket => ticket.status === statusFilter)
 
     const columns = [
         {
@@ -23,7 +42,7 @@ export default function SupportInbox() {
             label: "Subject",
             render: row => (
                 <div>
-                    <strong>{row.subject || row.message.slice(0, 60)}</strong>
+                    <strong>{row.subject || row.message?.slice(0, 60)}</strong>
                     <p className="admin-muted">
                         {row.feedback_type}
                         {row.category ? ` · ${row.category}` : ""}
@@ -46,7 +65,7 @@ export default function SupportInbox() {
             label: "Status",
             render: row => (
                 <AdminStatusChip status={row.status}>
-                    {formatStatus(row.status)}
+                    {formatLabel(row.status)}
                 </AdminStatusChip>
             )
         },
@@ -65,6 +84,19 @@ export default function SupportInbox() {
                 description="Feedback, bugs, ideas, and questions submitted by Evergrove users."
             />
 
+            <div className="admin-filter-row">
+                {statuses.map(status => (
+                    <button
+                        key={status}
+                        type="button"
+                        className={statusFilter === status ? "active" : ""}
+                        onClick={() => setStatusFilter(status)}
+                    >
+                        {formatLabel(status)} ({statusCounts[status] ?? 0})
+                    </button>
+                ))}
+            </div>
+
             <AdminCard title="Tickets">
                 {loading && (
                     <AdminEmptyState>
@@ -81,7 +113,7 @@ export default function SupportInbox() {
                 {!loading && !error && (
                     <AdminTable
                         columns={columns}
-                        rows={feedback}
+                        rows={filteredTickets}
                         emptyMessage="No support tickets found."
                         onRowClick={(ticket) => navigate(`/admin/support/${ticket.id}`)}
                     />
@@ -91,10 +123,10 @@ export default function SupportInbox() {
     )
 }
 
-function formatStatus(status) {
-    if (!status) return "Unknown"
+function formatLabel(value) {
+    if (!value) return "Unknown"
 
-    return status
+    return value
         .replaceAll("_", " ")
         .replace(/\b\w/g, char => char.toUpperCase())
 }

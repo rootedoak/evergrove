@@ -1,6 +1,7 @@
 import { supabase } from "../lib/supabase"
 import { ensureMyHousehold } from "./householdService"
 import { completeOnboarding } from "./preferenceService"
+import { trackUsageEvent } from "./analytics/usageEventService"
 
 function createInviteToken() {
     const randomPart = crypto.randomUUID()
@@ -76,6 +77,18 @@ export async function createFamilyMember(member) {
 
             if (error) throw error
 
+            await trackUsageEvent({
+                eventType: "family_member_created",
+                entityType: "family_member",
+                entityId: data.id,
+                metadata: {
+                    source: "family",
+                    role: data.role || null,
+                    member_type: data.member_type || null,
+                    linked_to_user: Boolean(data.user_id)
+                }
+            })
+
             return data
         }
     }
@@ -110,11 +123,32 @@ export async function updateFamilyMember(id, updates) {
 
     if (error) throw error
 
+    await trackUsageEvent({
+        eventType: "family_member_updated",
+        entityType: "family_member",
+        entityId: data.id,
+        metadata: {
+            source: "family",
+            updated_fields: Object.keys(cleanMember),
+            role: data.role || null,
+            member_type: data.member_type || null
+        }
+    })
+
     return data
 }
 
 export async function deleteFamilyMember(id) {
     const household = await ensureMyHousehold()
+
+    await trackUsageEvent({
+        eventType: "family_member_deleted",
+        entityType: "family_member",
+        entityId: id,
+        metadata: {
+            source: "family"
+        }
+    })
 
     const { error } = await supabase
         .from("family_members")
@@ -148,6 +182,17 @@ export async function createPendingInvite(email) {
         .single()
 
     if (error) throw error
+
+    await trackUsageEvent({
+        eventType: "household_invite_created",
+        entityType: "family_member",
+        entityId: data.id,
+        metadata: {
+            source: "family",
+            role: data.role || null,
+            member_type: data.member_type || null
+        }
+    })
 
     return data
 }
@@ -210,6 +255,17 @@ export async function acceptPendingInvite(email) {
 
     await completeOnboarding()
 
+    await trackUsageEvent({
+        eventType: "household_invite_accepted",
+        entityType: "family_member",
+        entityId: data.id,
+        metadata: {
+            source: "family",
+            household_id: data.household_id,
+            role: data.role || null
+        }
+    })
+
     return data
 }
 
@@ -238,6 +294,17 @@ export async function getPendingInviteForCurrentUser() {
         .maybeSingle()
 
     if (error) throw error
+
+    await trackUsageEvent({
+        eventType: "household_invite_accepted",
+        entityType: "family_member",
+        entityId: data.id,
+        metadata: {
+            source: "family",
+            household_id: data.household_id,
+            role: data.role || null
+        }
+    })
 
     return data
 }

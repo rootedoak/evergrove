@@ -44,6 +44,8 @@ import { getTaskTemplate } from "../utils/taskTemplates"
 
 import { createIntelligenceContext } from "../intelligence/createIntelligenceContext"
 
+import { trackUsageEvent } from "../services/analytics/usageEventService"
+
 import {
     getCompletedInsightIds,
     completeInsight,
@@ -373,6 +375,18 @@ function dedupeEvents(events) {
 
         seen.add(key)
         return true
+    })
+}
+
+function trackDashboardAction(action, metadata = {}) {
+    trackUsageEvent({
+        eventType: "dashboard_action_used",
+        entityType: "dashboard",
+        metadata: {
+            action,
+            source: "dashboard",
+            ...metadata
+        }
     })
 }
 
@@ -774,6 +788,10 @@ export default function Dashboard() {
             return
         }
 
+        trackDashboardAction("insight_action_used", {
+            insight_id: insight.id
+        })
+
         try {
             const completed = await insight.execute(
                 intelligenceContext,
@@ -953,9 +971,18 @@ export default function Dashboard() {
                     events={todayEvents}
                     tasks={openTasks.filter(task => task.due_date <= todayString)}
                     dinner={dinnerTonight}
-                    onOpenEvents={() => setBriefModal("events")}
-                    onOpenTasks={() => setBriefModal("tasks")}
-                    onOpenDinner={() => setBriefModal("dinner")}
+                    onOpenEvents={() => {
+                        trackDashboardAction("open_today_events")
+                        setBriefModal("events")
+                    }}
+                    onOpenTasks={() => {
+                        trackDashboardAction("open_today_tasks")
+                        setBriefModal("tasks")
+                    }}
+                    onOpenDinner={() => {
+                        trackDashboardAction("open_dinner")
+                        setBriefModal("dinner")
+                    }}
                 />
 
                 {(visibleInsights.length > 0 || completedInsight) && (
@@ -1421,39 +1448,49 @@ export default function Dashboard() {
                 />
 
                 <FloatingQuickActions
-                    onAddTask={() =>
+                    onAddTask={() => {
+                        trackDashboardAction("quick_add_task")
                         navigate("/calendar", {
                             state: {
                                 openTaskForm: true,
                                 selectedDate: todayString
                             }
                         })
-                    }
-                    onAddEvent={() =>
+                    }}
+                    onAddEvent={() => {
+                        trackDashboardAction("quick_add_event")
                         navigate("/calendar", {
                             state: {
                                 openCalendarEventForm: true,
                                 selectedDate: todayString
                             }
                         })
-                    }
-                    onAddMeal={() =>
+                    }}
+                    onAddMeal={() => {
+                        trackDashboardAction("quick_add_meal")
                         navigate("/meals", {
                             state: {
                                 openMealPlanForm: true,
                                 selectedDate: todayString
                             }
                         })
-                    }
-                    onAddShopping={() =>
+                    }}
+                    onAddShopping={() => {
+                        trackDashboardAction("quick_add_shopping")
                         navigate("/shopping", {
                             state: {
                                 openShoppingForm: true
                             }
                         })
-                    }
-                    onAddAnnouncement={() => setShowAnnouncementForm(true)}
-                    onCaptureThought={() => setShowThoughtCapture(true)}
+                    }}
+                    onAddAnnouncement={() => {
+                        trackDashboardAction("quick_add_announcement")
+                        setShowAnnouncementForm(true)
+                    }}
+                    onCaptureThought={() => {
+                        trackDashboardAction("thought_capture_opened")
+                        setShowThoughtCapture(true)
+                    }}
                 />
             </div>
         </AppPage>
