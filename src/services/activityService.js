@@ -2,7 +2,7 @@ import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
 import { createActivityInboxNotification } from "./activityInboxNotificationService"
 import { createFeedEvent } from "./feedService"
-import { trackEvent } from "./analyticsService"
+import { trackUsageEvent } from "./analytics/usageEventService"
 
 async function getCurrentUserId() {
     const {
@@ -74,20 +74,20 @@ export async function createActivity(activity) {
         },
     })
 
-    await trackEvent({
-        eventName: "activity_created",
-        eventType: "planning",
-        source: "activities",
+    await trackUsageEvent({
+        eventType: "calendar_event_created",
+        entityType: "activity",
+        entityId: data.id,
         metadata: {
-            activity_id: data.id,
+            source: "activities",
             family_member_id: data.family_member_id || null,
             organization: data.organization || null,
             season: data.season || null,
             has_registration_open_date: Boolean(data.registration_open_date),
             has_registration_close_date: Boolean(data.registration_close_date),
             has_start_date: Boolean(data.start_date),
-            has_end_date: Boolean(data.end_date),
-        },
+            has_end_date: Boolean(data.end_date)
+        }
     })
 
     return data

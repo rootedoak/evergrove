@@ -1,5 +1,8 @@
 import Button from "../ui/Button"
-import { updateFeedbackStatus } from "../../services/admin/productFeedbackActionService"
+import {
+    assignFeedbackToMe,
+    updateFeedbackStatus
+} from "../../services/admin/productFeedbackActionService"
 
 const statusActions = {
     new: [
@@ -30,6 +33,16 @@ export default function TicketActions({
 }) {
     const actions = statusActions[ticket?.status] || []
 
+    async function handleAssignToMe() {
+        try {
+            await assignFeedbackToMe(ticket)
+            await onStatusChanged?.()
+        } catch (error) {
+            console.error(error)
+            alert(error.message)
+        }
+    }
+
     async function handleStatusChange(nextStatus) {
         try {
             await updateFeedbackStatus(ticket, nextStatus)
@@ -46,6 +59,17 @@ export default function TicketActions({
 
     return (
         <div className="admin-ticket-actions">
+
+            {!ticket.assigned_to && (
+                <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={handleAssignToMe}
+                >
+                    Assign to Me
+                </Button>
+            )}
+
             {actions.map(action => (
                 <Button
                     key={action.status}
@@ -56,6 +80,7 @@ export default function TicketActions({
                     {action.label}
                 </Button>
             ))}
+
         </div>
     )
 }

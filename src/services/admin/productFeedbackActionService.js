@@ -48,3 +48,37 @@ function formatStatus(status) {
         .replaceAll("_", " ")
         .replace(/\b\w/g, char => char.toUpperCase())
 }
+
+export async function assignFeedbackToMe(ticket) {
+    if (!ticket?.id) {
+        throw new Error("Ticket is required")
+    }
+
+    const {
+        data: { user },
+        error: userError
+    } = await supabase.auth.getUser()
+
+    if (userError) throw userError
+    if (!user) throw new Error("No authenticated user")
+
+    const { error } = await supabase
+        .from("product_feedback")
+        .update({
+            assigned_to: user.id,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", ticket.id)
+
+    if (error) throw error
+
+    await addFeedbackHistoryEvent({
+        feedbackId: ticket.id,
+        eventType: "assigned",
+        title: "Ticket Assigned",
+        description: "Ticket assigned to current admin.",
+        oldValue: ticket.assigned_to,
+        newValue: user.id,
+        visibleToUser: false
+    })
+}

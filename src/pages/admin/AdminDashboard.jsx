@@ -8,17 +8,33 @@ import AdminEmptyState from "../../components/admin/AdminEmptyState"
 import AdminActionCard from "../../components/admin/AdminActionCard"
 import AdminPageHeader from "../../components/admin/AdminPageHeader"
 
+import useAdminAnalytics from "../../hooks/admin/useAdminAnalytics"
+import AnalyticsInsightCard from "../../components/admin/dashboard/AnalyticsInsightCard"
+
+import useDashboardSupport from "../../hooks/admin/useDashboardSupport"
+
 export default function AdminDashboard() {
     const { summary, loading } = usePlatformSummary()
+    const {
+        analytics,
+        loading: analyticsLoading
+    } = useAdminAnalytics(30)
+
+    const {
+        tickets,
+        releases,
+        loading: dashboardLoading
+    } = useDashboardSupport()
+
     const [search, setSearch] = useState("")
     const { results, loading: searching } = usePlatformSearch(search)
 
     return (
         <div className="admin-page">
             <AdminPageHeader
-                eyebrow="Control Center"
-                title="Evergrove HQ"
-                description="Monitor beta health, support households, and manage platform operations."
+                eyebrow="Dashboard"
+                title="Good Evening, Matt"
+                description="Here's what's happening across Evergrove today."
             />
 
             <section className="admin-grid admin-grid-4">
@@ -48,11 +64,45 @@ export default function AdminDashboard() {
             </section>
 
             <section className="admin-grid admin-grid-2">
-                <AdminCard eyebrow="Needs Attention" title="Operational Alerts">
-                    <AdminEmptyState>
-                        No alerts yet. We’ll surface onboarding issues, failed push notifications,
-                        client errors, and data cleanup warnings here.
-                    </AdminEmptyState>
+                <AdminCard
+                    eyebrow="Product Intelligence"
+                    title="Product Pulse"
+                >
+
+                    {analyticsLoading ? (
+
+                        <AdminEmptyState>
+                            Loading product insights...
+                        </AdminEmptyState>
+
+                    ) : analytics.insights.length === 0 ? (
+
+                        <AdminEmptyState>
+                            No insights available yet.
+                        </AdminEmptyState>
+
+                    ) : (
+
+                        <div className="admin-insight-stack">
+
+                            {analytics.insights
+                                .slice(0, 3)
+                                .map((insight, index) => (
+
+                                    <AnalyticsInsightCard
+                                        key={index}
+                                        tone={insight.tone}
+                                        title={insight.title}
+                                        description={insight.description}
+                                        footer={insight.footer}
+                                    />
+
+                                ))}
+
+                        </div>
+
+                    )}
+
                 </AdminCard>
 
                 <AdminCard eyebrow="Support" title="Household Lookup">
@@ -105,39 +155,113 @@ export default function AdminDashboard() {
                 </AdminCard>
             </section>
 
-            <AdminCard eyebrow="Quick Actions" title="Admin Tools">
-                <div className="admin-action-grid">
-                    <AdminActionCard
-                        title="Manage Households"
-                        description="Review households, members, and beta status."
-                    />
+            <AdminCard
+                eyebrow="Support"
+                title="Recent Tickets"
+            >
 
-                    <AdminActionCard
-                        title="User Administration"
-                        description="Find users and troubleshoot account issues."
-                    />
+                {dashboardLoading ? (
 
-                    <AdminActionCard
-                        title="Analytics"
-                        description="Review engagement and retention signals."
-                    />
+                    <AdminEmptyState>
+                        Loading tickets...
+                    </AdminEmptyState>
 
-                    <AdminActionCard
-                        title="Feature Flags"
-                        description="Control beta features by household or globally."
-                    />
+                ) : tickets.length === 0 ? (
 
-                    <AdminActionCard
-                        title="Releases"
-                        description="Track versions, release notes, and deployment history."
-                    />
+                    <AdminEmptyState>
+                        No support tickets.
+                    </AdminEmptyState>
 
-                    <AdminActionCard
-                        title="Maintenance"
-                        description="Run cleanup checks and support utilities."
-                    />
-                </div>
+                ) : (
+
+                    <div className="admin-dashboard-list">
+
+                        {tickets.map(ticket => (
+
+                            <div
+                                key={ticket.id}
+                                className="admin-dashboard-row"
+                            >
+                                <div>
+
+                                    <strong>
+                                        EG-{String(ticket.ticket_number).padStart(4, "0")}
+                                    </strong>
+
+                                    <div>
+                                        {ticket.subject || "No subject"}
+                                    </div>
+
+                                </div>
+
+                                <span className={`admin-status ${ticket.status}`}>
+                                    {ticket.status}
+                                </span>
+
+                            </div>
+
+                        ))}
+
+                    </div>
+
+                )}
+
             </AdminCard>
+
+            <AdminCard
+                eyebrow="Releases"
+                title="Upcoming Releases"
+            >
+
+                {loading ? (
+
+                    <AdminEmptyState>
+                        Loading releases...
+                    </AdminEmptyState>
+
+                ) : releases.length === 0 ? (
+
+                    <AdminEmptyState>
+                        No upcoming releases.
+                    </AdminEmptyState>
+
+                ) : (
+
+                    <div className="admin-dashboard-list">
+
+                        {releases.map(release => (
+
+                            <div
+                                key={release.id}
+                                className="admin-dashboard-row"
+                            >
+
+                                <div>
+
+                                    <strong>
+                                        {release.version}
+                                    </strong>
+
+                                    <div>
+                                        {release.ticketCount} linked tickets
+                                    </div>
+
+                                </div>
+
+                                <span>
+                                    {release.status}
+                                </span>
+
+                            </div>
+
+                        ))}
+
+                    </div>
+
+                )}
+
+            </AdminCard>
+
         </div>
     )
 }

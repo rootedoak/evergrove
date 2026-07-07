@@ -65,6 +65,9 @@ import Households from "./pages/admin/households/Households"
 import Household360 from "./pages/admin/households/Household360"
 import SupportInbox from "./pages/admin/support/SupportInbox"
 import SupportTicket from "./pages/admin/support/SupportTicket"
+import UsersPage from "./pages/admin/users/Users"
+
+import Releases from "./pages/admin/releases/Releases"
 
 import UIKit from "./pages/UIKit"
 
@@ -258,6 +261,8 @@ function AppRoutes() {
         <Route path="households/:householdId" element={<Household360 />} />
         <Route path="support" element={<SupportInbox />} />
         <Route path="support/:feedbackId" element={<SupportTicket />} />
+        <Route path="releases" element={<Releases />} />
+        <Route path="users" element={<UsersPage />} />
       </Route>
     </Routes>
   )

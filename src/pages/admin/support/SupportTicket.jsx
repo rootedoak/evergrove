@@ -1,5 +1,9 @@
 import { Link, useParams } from "react-router-dom"
 
+import { useState } from "react"
+import Button from "../../../components/ui/Button"
+import LinkReleaseModal from "../../../components/admin/LinkReleaseModal"
+
 import AdminPageHeader from "../../../components/admin/AdminPageHeader"
 import AdminCard from "../../../components/admin/AdminCard"
 import AdminEmptyState from "../../../components/admin/AdminEmptyState"
@@ -10,6 +14,11 @@ import { formatTicketNumber } from "../../../services/admin/productFeedbackAdmin
 import TicketActions from "../../../components/admin/TicketActions"
 import TicketTimeline from "../../../components/admin/TicketTimeline"
 import useProductFeedbackHistory from "../../../hooks/admin/useProductFeedbackHistory"
+
+import TicketConversation from "../../../components/admin/TicketConversation"
+import useProductFeedbackMessages from "../../../hooks/admin/useProductFeedbackMessages"
+
+import AdminRelationshipCard from "../../../components/admin/AdminRelationshipCard"
 
 export default function SupportTicket() {
     const { feedbackId } = useParams()
@@ -25,6 +34,16 @@ export default function SupportTicket() {
         loading: historyLoading,
         refreshHistory
     } = useProductFeedbackHistory(feedbackId)
+
+    const {
+        messages,
+        loading: messagesLoading,
+        refreshMessages
+    } = useProductFeedbackMessages(feedbackId)
+
+    const [showLinkReleaseModal, setShowLinkReleaseModal] = useState(false)
+
+    const [optimisticRelease, setOptimisticRelease] = useState(null)
 
     if (loading) {
         return (
@@ -45,6 +64,11 @@ export default function SupportTicket() {
             </div>
         )
     }
+
+    const linkedRelease =
+        optimisticRelease ||
+        ticket.release_feedback?.[0]?.app_releases ||
+        null
 
     return (
         <div className="admin-page">
@@ -69,7 +93,7 @@ export default function SupportTicket() {
                 }
             />
 
-            <section className="admin-grid admin-grid-4">
+            <section className="admin-grid admin-grid-auto">
                 <AdminCard title="Type">
                     <AdminStatusChip status="beta">
                         {formatLabel(ticket.feedback_type)}
@@ -88,10 +112,53 @@ export default function SupportTicket() {
                     </AdminStatusChip>
                 </AdminCard>
 
+                <AdminCard title="Assigned To">
+                    <p className="admin-muted">
+                        {ticket.assigned_to ? "Assigned" : "Unassigned"}
+                    </p>
+                </AdminCard>
+
                 <AdminCard title="Submitted">
                     <p className="admin-muted">
                         {formatDateTime(ticket.created_at)}
                     </p>
+                </AdminCard>
+
+                <AdminCard title="Release">
+                    <AdminRelationshipCard
+                        title="Release"
+                        primary={
+                            linkedRelease
+                                ? `${linkedRelease.version} ${formatLabel(linkedRelease.channel)}`
+                                : null
+                        }
+                        secondary={
+                            linkedRelease
+                                ? formatLabel(linkedRelease.status)
+                                : null
+                        }
+                        status={linkedRelease?.status}
+                        statusLabel={
+                            linkedRelease
+                                ? formatLabel(linkedRelease.status)
+                                : null
+                        }
+                        empty={!linkedRelease}
+                        emptyLabel="No release linked"
+                        actionLabel={
+                            linkedRelease
+                                ? "Open Release"
+                                : "Link Release"
+                        }
+                        onClick={() => {
+                            if (linkedRelease) {
+                                // route will exist after Release Workspace
+                                return
+                            }
+
+                            setShowLinkReleaseModal(true)
+                        }}
+                    />
                 </AdminCard>
             </section>
 
@@ -141,12 +208,31 @@ export default function SupportTicket() {
                 </p>
             </AdminCard>
 
+            <AdminCard title="Conversation">
+                <TicketConversation
+                    feedbackId={feedbackId}
+                    messages={messages}
+                    loading={messagesLoading}
+                    onMessageAdded={refreshMessages}
+                />
+            </AdminCard>
+
             <AdminCard title="Timeline">
                 <TicketTimeline
                     history={history}
                     loading={historyLoading}
                 />
             </AdminCard>
+
+            <LinkReleaseModal
+                open={showLinkReleaseModal}
+                onClose={() => setShowLinkReleaseModal(false)}
+                feedbackId={ticket.id}
+                onLinked={async (release) => {
+                    setOptimisticRelease(release)
+                    await refreshHistory()
+                }}
+            />
         </div>
     )
 }

@@ -2,7 +2,7 @@ import { supabase } from "../lib/supabase"
 import { getCurrentHousehold } from "./householdService"
 
 import { createFeedEvent } from "./feedService"
-import { trackEvent } from "./analyticsService"
+import { trackUsageEvent } from "./analytics/usageEventService"
 
 async function getCurrentUser() {
     const {
@@ -87,15 +87,15 @@ export async function createAnnouncement(announcement) {
         },
     })
 
-    await trackEvent({
-        eventName: "announcement_created",
-        eventType: "engagement",
-        source: "announcements",
+    await trackUsageEvent({
+        eventType: "announcement_created",
+        entityType: "announcement",
+        entityId: data.id,
         metadata: {
-            announcement_id: data.id,
+            source: "announcements",
             is_pinned: Boolean(data.is_pinned),
-            has_expiration: Boolean(data.expires_at),
-        },
+            has_expiration: Boolean(data.expires_at)
+        }
     })
 
     const { data: member, error: memberError } = await supabase

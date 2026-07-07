@@ -1,7 +1,7 @@
 import { supabase } from "../lib/supabase"
 import { ensureMyHousehold } from "./householdService"
 import { createFeedEvent } from "./feedService"
-import { trackEvent } from "./analyticsService"
+import { trackUsageEvent } from "./analytics/usageEventService"
 
 async function getCurrentUser() {
     const {
@@ -89,17 +89,17 @@ export async function createMeal({
         if (ingredientError) throw ingredientError
     }
 
-    await trackEvent({
-        eventName: "meal_created",
-        eventType: "planning",
-        source: "meals",
+    await trackUsageEvent({
+        eventType: "meal_created",
+        entityType: "meal",
+        entityId: meal.id,
         metadata: {
-            meal_id: meal.id,
+            source: "meals",
             category: meal.category || null,
             is_favorite: Boolean(meal.is_favorite),
             ingredient_count: ingredientRows.length,
-            has_recipe_url: Boolean(meal.recipe_url),
-        },
+            has_recipe_url: Boolean(meal.recipe_url)
+        }
     })
 
     return meal
@@ -272,19 +272,19 @@ export async function createMealPlan({
         },
     })
 
-    await trackEvent({
-        eventName: "meal_planned",
-        eventType: "planning",
-        source: "meals",
+    await trackUsageEvent({
+        eventType: "meal_planned",
+        entityType: "meal_plan",
+        entityId: plan.id,
         metadata: {
-            meal_plan_id: plan.id,
+            source: "meals",
             meal_id: plan.meal_id || null,
             meal_name: plan.meal_name || null,
             planned_date: plan.planned_date || null,
             plan_type: plan.plan_type || null,
             is_leftovers: Boolean(plan.is_leftovers),
-            is_restaurant: plan.plan_type === "restaurant",
-        },
+            is_restaurant: plan.plan_type === "restaurant"
+        }
     })
 
     return plan

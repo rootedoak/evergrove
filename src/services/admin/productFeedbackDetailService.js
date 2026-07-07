@@ -8,12 +8,23 @@ export async function getProductFeedbackDetail(id) {
     const { data, error } = await supabase
         .from("product_feedback")
         .select(`
-            *,
-            households (
+        *,
+        households (
+            id,
+            name
+        ),
+        release_feedback (
+            id,
+            release_id,
+            app_releases (
                 id,
-                name
+                version,
+                channel,
+                status,
+                title
             )
-        `)
+        )
+    `)
         .eq("id", id)
         .single()
 
