@@ -1,5 +1,11 @@
-import webpush from "web-push"
 import { createClient } from "@supabase/supabase-js"
+
+import {
+    configureWebPush,
+    sendPushToUser
+} from "./lib/pushNotifications.js"
+
+import { buildMorningBrief } from "./lib/morningBriefBuilder.js"
 
 function getMissingEnvVars() {
     return [
@@ -8,7 +14,7 @@ function getMissingEnvVars() {
         "VITE_VAPID_PUBLIC_KEY",
         "VAPID_PRIVATE_KEY",
         "VAPID_SUBJECT",
-        "MORNING_BRIEF_SECRET",
+        "MORNING_BRIEF_SECRET"
     ].filter(envVar => !process.env[envVar])
 }
 
@@ -17,7 +23,7 @@ function todayInTimezone(timezone) {
         timeZone: timezone,
         year: "numeric",
         month: "2-digit",
-        day: "2-digit",
+        day: "2-digit"
     }).format(new Date())
 }
 
@@ -25,7 +31,7 @@ function currentHourInTimezone(timezone) {
     return new Intl.DateTimeFormat("en-US", {
         timeZone: timezone,
         hour: "2-digit",
-        hour12: false,
+        hour12: false
     }).format(new Date())
 }
 
@@ -36,96 +42,10 @@ function alreadySentToday(value, timezone) {
         timeZone: timezone,
         year: "numeric",
         month: "2-digit",
-        day: "2-digit",
+        day: "2-digit"
     }).format(new Date(value))
 
     return sentDay === todayInTimezone(timezone)
-}
-
-function buildBriefBody({ eventCount, taskCount, dinner }) {
-    const parts = []
-
-    if (eventCount > 0) {
-        parts.push(`${eventCount} event${eventCount === 1 ? "" : "s"}`)
-    }
-
-    if (taskCount > 0) {
-        parts.push(`${taskCount} To-Do${taskCount === 1 ? "" : "s"}`)
-    }
-
-    if (dinner) {
-        parts.push(`dinner: ${dinner}`)
-    }
-
-    if (parts.length === 0) {
-        return "No big plans yet. Evergrove is ready when you are."
-    }
-
-    return `Today: ${parts.join(", ")}.`
-}
-
-async function sendPushToUser({ supabase, userId, title, body, url }) {
-    const { data: subscriptions, error } = await supabase
-        .from("push_subscriptions")
-        .select("id, endpoint, p256dh, auth")
-        .eq("user_id", userId)
-
-    if (error) throw error
-
-    if (!subscriptions?.length) {
-        return {
-            sent: 0,
-            failed: 0,
-            expiredRemoved: 0,
-        }
-    }
-
-    const payload = JSON.stringify({
-        title,
-        body,
-        url,
-    })
-
-    const results = await Promise.allSettled(
-        subscriptions.map(subscription =>
-            webpush.sendNotification(
-                {
-                    endpoint: subscription.endpoint,
-                    keys: {
-                        p256dh: subscription.p256dh,
-                        auth: subscription.auth,
-                    },
-                },
-                payload
-            )
-        )
-    )
-
-    const expiredSubscriptionIds = results
-        .map((result, index) => ({
-            result,
-            subscription: subscriptions[index],
-        }))
-        .filter(({ result }) => {
-            return (
-                result.status === "rejected" &&
-                [404, 410].includes(result.reason?.statusCode)
-            )
-        })
-        .map(({ subscription }) => subscription.id)
-
-    if (expiredSubscriptionIds.length > 0) {
-        await supabase
-            .from("push_subscriptions")
-            .delete()
-            .in("id", expiredSubscriptionIds)
-    }
-
-    return {
-        sent: results.filter(result => result.status === "fulfilled").length,
-        failed: results.filter(result => result.status === "rejected").length,
-        expiredRemoved: expiredSubscriptionIds.length,
-    }
 }
 
 export default async function handler(req, res) {
@@ -138,7 +58,7 @@ export default async function handler(req, res) {
 
         if (missingEnvVars.length > 0) {
             return res.status(500).json({
-                error: `Missing environment variables: ${missingEnvVars.join(", ")}`,
+                error: `Missing environment variables: ${missingEnvVars.join(", ")}`
             })
         }
 
@@ -154,11 +74,7 @@ export default async function handler(req, res) {
             process.env.SUPABASE_SERVICE_ROLE_KEY
         )
 
-        webpush.setVapidDetails(
-            process.env.VAPID_SUBJECT,
-            process.env.VITE_VAPID_PUBLIC_KEY,
-            process.env.VAPID_PRIVATE_KEY
-        )
+        configureWebPush()
 
         const { data: users, error: usersError } = await supabase
             .from("user_display_preferences")
@@ -221,45 +137,19 @@ export default async function handler(req, res) {
                     continue
                 }
 
-                const today = todayInTimezone(timezone)
-
-                const [{ data: events }, { data: tasks }, { data: mealPlans }] =
-                    await Promise.all([
-                        supabase
-                            .from("calendar_events")
-                            .select("id")
-                            .eq("household_id", householdId)
-                            .lte("start_date", today)
-                            .or(`end_date.gte.${today},end_date.is.null`),
-
-                        supabase
-                            .from("tasks")
-                            .select("id")
-                            .eq("household_id", householdId)
-                            .eq("user_id", userPreference.user_id)
-                            .eq("due_date", today)
-                            .not("status", "in", '("complete","completed")'),
-
-                        supabase
-                            .from("meal_plans")
-                            .select("meal_name")
-                            .eq("household_id", householdId)
-                            .eq("planned_date", today)
-                            .limit(1),
-                    ])
-
-                const dinner = mealPlans?.[0]?.meal_name || null
+                const brief = await buildMorningBrief({
+                    supabase,
+                    userId: userPreference.user_id,
+                    householdId,
+                    timezone
+                })
 
                 const pushResult = await sendPushToUser({
                     supabase,
                     userId: userPreference.user_id,
-                    title: "Good morning from Evergrove 🌿",
-                    body: buildBriefBody({
-                        eventCount: events?.length || 0,
-                        taskCount: tasks?.length || 0,
-                        dinner,
-                    }),
-                    url: "/",
+                    title: brief.title,
+                    body: brief.body,
+                    url: brief.url
                 })
 
                 expiredRemoved += pushResult.expiredRemoved
@@ -268,7 +158,7 @@ export default async function handler(req, res) {
                     await supabase
                         .from("user_display_preferences")
                         .update({
-                            last_morning_brief_sent_at: new Date().toISOString(),
+                            last_morning_brief_sent_at: new Date().toISOString()
                         })
                         .eq("id", userPreference.id)
 
@@ -278,9 +168,10 @@ export default async function handler(req, res) {
                 }
             } catch (error) {
                 failedUsers += 1
+
                 errors.push({
                     userId: userPreference.user_id,
-                    error: error.message || "Unknown error",
+                    error: error.message || "Unknown error"
                 })
             }
         }
@@ -292,13 +183,13 @@ export default async function handler(req, res) {
             skippedUsers,
             failedUsers,
             expiredRemoved,
-            errors,
+            errors
         })
     } catch (error) {
         console.error("send-morning-briefs error:", error)
 
         return res.status(500).json({
-            error: error.message || "Unable to send morning briefs.",
+            error: error.message || "Unable to send morning briefs."
         })
     }
 }
