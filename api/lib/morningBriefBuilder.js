@@ -58,7 +58,7 @@ export async function buildMorningBrief({
 
         supabase
             .from("calendar_events")
-            .select("id, title, name, start_time")
+            .select("id, title, start_time")
             .eq("household_id", householdId)
             .lte("start_date", today)
             .or(`end_date.gte.${today},end_date.is.null`)
@@ -91,7 +91,7 @@ export async function buildMorningBrief({
     const highlights = []
 
     for (const event of events || []) {
-        const eventTitle = event.title || event.name || "Family event"
+        const eventTitle = event.title || "Family event"
         const time = formatTime(event.start_time)
 
         highlights.push(
