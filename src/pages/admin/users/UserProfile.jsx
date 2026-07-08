@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
 
 import AdminPageHeader from "../../../components/admin/AdminPageHeader"
@@ -8,9 +9,12 @@ import AdminRelationshipCard from "../../../components/admin/AdminRelationshipCa
 
 import useUserDetail from "../../../hooks/admin/useUserDetail"
 import { formatTicketNumber } from "../../../services/admin/productFeedbackAdminService"
+import { sendMorningBriefToUser } from "../../../services/admin/morningBriefAdminService"
 
 export default function UserProfile() {
     const { userId } = useParams()
+    const [sendingMorningBrief, setSendingMorningBrief] = useState(false)
+    const [morningBriefResult, setMorningBriefResult] = useState(null)
     const { user, preferences, tickets, events, loading, error } = useUserDetail(userId)
 
     if (loading) {
@@ -49,6 +53,20 @@ export default function UserProfile() {
     const openTicketCount = tickets.filter(ticket =>
         ["new", "reviewing", "planned"].includes(ticket.status)
     ).length
+    async function handleSendMorningBrief() {
+        setSendingMorningBrief(true)
+        setMorningBriefResult(null)
+
+        try {
+            const result = await sendMorningBriefToUser(userId)
+            setMorningBriefResult(result)
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Unable to send morning brief.")
+        } finally {
+            setSendingMorningBrief(false)
+        }
+    }
 
     return (
         <div className="admin-page">
@@ -177,6 +195,25 @@ export default function UserProfile() {
                                 <DetailItem label="Activities" value={formatEnabled(preferences.inbox_activities)} />
                                 <DetailItem label="Reminders" value={formatEnabled(preferences.inbox_reminders)} />
                             </div>
+                        )}
+
+                        <div className="admin-ticket-actions" style={{ marginTop: 16 }}>
+                            <button
+                                type="button"
+                                className="secondary-button"
+                                onClick={handleSendMorningBrief}
+                                disabled={sendingMorningBrief}
+                            >
+                                {sendingMorningBrief ? "Sending..." : "Send Morning Brief"}
+                            </button>
+                        </div>
+
+                        {morningBriefResult && (
+                            <p className="admin-muted" style={{ marginTop: 10 }}>
+                                Sent to {morningBriefResult.sentUsers} user(s).{" "}
+                                Skipped {morningBriefResult.skippedUsers}.{" "}
+                                Failed {morningBriefResult.failedUsers}.
+                            </p>
                         )}
                     </AdminCard>
                 </div>
