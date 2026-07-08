@@ -213,6 +213,12 @@ export default function UserProfile() {
                                 Sent to {morningBriefResult.sentUsers} user(s).{" "}
                                 Skipped {morningBriefResult.skippedUsers}.{" "}
                                 Failed {morningBriefResult.failedUsers}.
+
+                                {morningBriefResult.errors?.length > 0 && (
+                                    <span>
+                                        {" "}Error: {morningBriefResult.errors[0].error}
+                                    </span>
+                                )}
                             </p>
                         )}
                     </AdminCard>
