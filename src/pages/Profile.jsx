@@ -28,6 +28,8 @@ const initialPreferences = {
     dashboard_window_days: "7",
     timeline_window_days: "90",
     week_starts_on: "Sunday",
+    morning_brief_enabled: true,
+    morning_brief_time: "07:00",
     birthday_reminders: true,
     trip_reminders: true,
     activity_reminders: true,
@@ -140,6 +142,8 @@ export default function Profile() {
         try {
             const savedPreferences = await updatePreferences({
                 timeline_window_days: Number(preferences.timeline_window_days),
+                morning_brief_enabled: preferences.morning_brief_enabled,
+                morning_brief_time: preferences.morning_brief_time,
                 birthday_reminders: preferences.birthday_reminders,
                 trip_reminders: preferences.trip_reminders,
                 activity_reminders: preferences.activity_reminders,
@@ -412,6 +416,41 @@ export default function Profile() {
                                     onChange={value => updatePreference("task_reminders", value)}
                                 />
                             </div>
+                        </SettingsSection>
+
+                        <SettingsSection
+                            title="Good Morning"
+                            scope="Personal user setting"
+                            subtitle="Start every day with a personalized summary of what matters most."
+                        >
+                            <div className="eg-stack">
+                                <div className="form-grid">
+                                    <label>
+                                        Delivery Time
+                                        <input
+                                            type="time"
+                                            value={preferences.morning_brief_time || "07:00"}
+                                            onChange={event =>
+                                                updatePreference("morning_brief_time", event.target.value)
+                                            }
+                                        />
+                                    </label>
+                                </div>
+
+                                <div className="settings-toggle-grid">
+                                    <PreferenceToggle
+                                        label="Send me my morning summary"
+                                        checked={preferences.morning_brief_enabled ?? true}
+                                        onChange={value =>
+                                            updatePreference("morning_brief_enabled", value)
+                                        }
+                                    />
+                                </div>
+                            </div>
+
+                            <p className="settings-help-text">
+                                Your morning summary includes today's events, To-Dos, meals, and other important household updates.
+                            </p>
                         </SettingsSection>
 
                         <SettingsSection
