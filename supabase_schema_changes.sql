@@ -1713,3 +1713,10 @@ create table if not exists birthday_event_details (
 
     unique (household_id, family_member_id, occurrence_date)
 );
+
+-- UPDATE PREFERENCE TABLE FOR CRON PUSH NOTIFICATIONS
+
+alter table public.user_display_preferences
+add column if not exists morning_brief_enabled boolean not null default true,
+add column if not exists morning_brief_time time not null default '07:00',
+add column if not exists last_morning_brief_sent_at timestamptz;

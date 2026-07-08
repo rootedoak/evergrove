@@ -1,5 +1,9 @@
-import webpush from "web-push"
 import { createClient } from "@supabase/supabase-js"
+
+import {
+    configureWebPush,
+    sendPushToUser
+} from "./lib/pushNotifications.js"
 
 function getMissingEnvVars() {
     return [
@@ -7,7 +11,7 @@ function getMissingEnvVars() {
         "SUPABASE_SERVICE_ROLE_KEY",
         "VITE_VAPID_PUBLIC_KEY",
         "VAPID_PRIVATE_KEY",
-        "VAPID_SUBJECT",
+        "VAPID_SUBJECT"
     ].filter(envVar => !process.env[envVar])
 }
 
@@ -21,7 +25,7 @@ export default async function handler(req, res) {
 
         if (missingEnvVars.length > 0) {
             return res.status(500).json({
-                error: `Missing environment variables: ${missingEnvVars.join(", ")}`,
+                error: `Missing environment variables: ${missingEnvVars.join(", ")}`
             })
         }
 
@@ -40,79 +44,22 @@ export default async function handler(req, res) {
             process.env.SUPABASE_SERVICE_ROLE_KEY
         )
 
-        webpush.setVapidDetails(
-            process.env.VAPID_SUBJECT,
-            process.env.VITE_VAPID_PUBLIC_KEY,
-            process.env.VAPID_PRIVATE_KEY
-        )
+        configureWebPush()
 
-        const { data: subscriptions, error } = await supabase
-            .from("push_subscriptions")
-            .select("id, endpoint, p256dh, auth")
-            .eq("user_id", userId)
-
-        if (error) throw error
-
-        if (!subscriptions?.length) {
-            return res.status(200).json({
-                sent: 0,
-                failed: 0,
-                expiredRemoved: 0,
-                message: "No push subscriptions found.",
-            })
-        }
-
-        const payload = JSON.stringify({
+        const result = await sendPushToUser({
+            supabase,
+            userId,
             title,
             body,
-            url,
+            url
         })
 
-        const results = await Promise.allSettled(
-            subscriptions.map(subscription =>
-                webpush.sendNotification(
-                    {
-                        endpoint: subscription.endpoint,
-                        keys: {
-                            p256dh: subscription.p256dh,
-                            auth: subscription.auth,
-                        },
-                    },
-                    payload
-                )
-            )
-        )
-
-        const expiredSubscriptionIds = results
-            .map((result, index) => ({
-                result,
-                subscription: subscriptions[index],
-            }))
-            .filter(({ result }) => {
-                return (
-                    result.status === "rejected" &&
-                    [404, 410].includes(result.reason?.statusCode)
-                )
-            })
-            .map(({ subscription }) => subscription.id)
-
-        if (expiredSubscriptionIds.length > 0) {
-            await supabase
-                .from("push_subscriptions")
-                .delete()
-                .in("id", expiredSubscriptionIds)
-        }
-
-        return res.status(200).json({
-            sent: results.filter(result => result.status === "fulfilled").length,
-            failed: results.filter(result => result.status === "rejected").length,
-            expiredRemoved: expiredSubscriptionIds.length,
-        })
+        return res.status(200).json(result)
     } catch (error) {
         console.error("send-push error:", error)
 
         return res.status(500).json({
-            error: error.message || "Unable to send push notification.",
+            error: error.message || "Unable to send push notification."
         })
     }
 }

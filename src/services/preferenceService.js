@@ -32,6 +32,9 @@ const userPreferenceFields = [
     "has_completed_onboarding",
     "has_completed_guided_walkthrough",
     "guided_walkthrough_version",
+    "morning_brief_enabled",
+    "morning_brief_time",
+    "last_morning_brief_sent_at",
 ]
 
 async function getCurrentUserId() {
