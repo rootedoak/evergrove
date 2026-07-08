@@ -36,9 +36,8 @@ export default function Onboarding() {
     const onboardingSteps = [
         "Welcome",
         "You",
-        "Household",
+        "Home",
         "Family",
-        "Preferences",
         "Ready"
     ]
 
@@ -58,11 +57,6 @@ export default function Onboarding() {
     const [familyMembers, setFamilyMembers] = useState([])
     const [memberName, setMemberName] = useState("")
     const [memberType, setMemberType] = useState("child")
-
-    const [birthdayReminders, setBirthdayReminders] = useState(true)
-    const [tripReminders, setTripReminders] = useState(true)
-    const [schoolReminders, setSchoolReminders] = useState(true)
-    const [showSuggestedTasks, setShowSuggestedTasks] = useState(true)
 
     async function handleNameStep() {
         if (!displayName.trim()) return
@@ -134,15 +128,16 @@ export default function Onboarding() {
 
     async function finishOnboarding() {
         setLoading(true)
+        setSetupComplete(true)
 
         try {
             await updatePreferences({
                 household_name: householdName.trim(),
                 timezone,
-                birthday_reminders: birthdayReminders,
-                trip_reminders: tripReminders,
-                school_reminders: schoolReminders,
-                show_suggested_tasks: showSuggestedTasks
+                birthday_reminders: true,
+                trip_reminders: true,
+                school_reminders: true,
+                show_suggested_tasks: true
             })
 
             await createFamilyMember({
@@ -158,11 +153,11 @@ export default function Onboarding() {
 
             await completeOnboarding()
 
-            setSetupComplete(true)
+            sessionStorage.setItem("evergrove_skip_walkthrough_once", "true")
 
             setTimeout(() => {
-                window.location.href = "/"
-            }, 1400)
+                window.location.href = "/first-week"
+            }, 2200)
         } catch (error) {
             console.error(error)
             alert(error.message || "Could not finish onboarding.")
@@ -176,7 +171,7 @@ export default function Onboarding() {
         <div className="onboarding-page">
             <div className="onboarding-brand">
                 <img src={logo} alt="Evergrove" />
-                <span>Step {step} of {totalSteps}</span>
+                <span>Moving In</span>
             </div>
 
             <div className="onboarding-steps">
@@ -203,22 +198,32 @@ export default function Onboarding() {
             </div>
 
             {step === 1 && (
-                <section className="eg-card onboarding-card">
+                <section className="eg-card onboarding-card onboarding-welcome-card">
                     <div className="eg-stack">
-                        <h1>Welcome to Evergrove</h1>
+                        <div className="onboarding-hero-icon">🏡</div>
 
-                        <p>
-                            Let’s build your family’s command center in just a few minutes.
-                        </p>
+                        <div>
+                            <h1>Welcome Home</h1>
+
+                            <p>
+                                Evergrove helps families spend less time coordinating life
+                                and more time living it.
+                            </p>
+
+                            <p>
+                                In just a few minutes, we’ll get your home ready and help
+                                your family start the week with a little more calm.
+                            </p>
+                        </div>
 
                         <div className="onboarding-feature-list onboarding-welcome-list">
-                            <div>✅ Keep everyone aligned</div>
-                            <div>✅ Plan meals, To-Dos, trips, and school</div>
-                            <div>✅ Share one organized household view</div>
+                            <div>✓ Create your family’s home base</div>
+                            <div>✓ Add the people you care for</div>
+                            <div>✓ Start with a household that feels ready</div>
                         </div>
 
                         <Button onClick={() => setStep(2)}>
-                            Get Started
+                            Let’s Get Started
                         </Button>
                     </div>
                 </section>
@@ -227,12 +232,15 @@ export default function Onboarding() {
             {step === 2 && (
                 <section className="eg-card onboarding-card">
                     <div className="eg-stack">
-                        <h1>Let’s start with you.</h1>
+                        <div>
+                            <p className="onboarding-eyebrow">Moving In</p>
+                            <h1>Let’s start with you.</h1>
 
-                        <p>
-                            What should everyone call you? This name will appear on To-Dos,
-                            events, announcements, and household activity.
-                        </p>
+                            <p>
+                                What should your family see when you add a To-Do, event,
+                                announcement, or update?
+                            </p>
+                        </div>
 
                         <label>
                             Your Name
@@ -257,11 +265,15 @@ export default function Onboarding() {
             {step === 3 && (
                 <section className="eg-card onboarding-card">
                     <div className="eg-stack">
-                        <h1>Tell us about your household.</h1>
+                        <div>
+                            <p className="onboarding-eyebrow">Create Your Home</p>
+                            <h1>What should we call your home?</h1>
 
-                        <p>
-                            This gives Evergrove a shared home base for your family.
-                        </p>
+                            <p>
+                                This becomes the shared space where your family calendar,
+                                To-Dos, meals, shopping, and plans come together.
+                            </p>
+                        </div>
 
                         <label>
                             Household Name
@@ -275,14 +287,16 @@ export default function Onboarding() {
                         <div className="onboarding-info-card">
                             <strong>Time Zone</strong>
                             <p>{timezone}</p>
-                            <small>Detected automatically. You can change this later in Settings.</small>
+                            <small>
+                                Detected automatically. You can change this later in Settings.
+                            </small>
                         </div>
 
                         <Button
                             onClick={handleHouseholdStep}
                             disabled={loading || !householdName.trim()}
                         >
-                            {loading ? "Saving..." : "Continue"}
+                            {loading ? "Creating your home..." : "Continue"}
                         </Button>
                     </div>
                 </section>
@@ -292,11 +306,13 @@ export default function Onboarding() {
                 <section className="eg-card onboarding-card">
                     <div className="eg-stack">
                         <div>
-                            <h1>Who should Evergrove help you keep organized?</h1>
+                            <p className="onboarding-eyebrow">Meet Your Family</p>
+                            <h1>Who should Evergrove help you care for?</h1>
 
                             <p>
                                 Add the adults, children, and pets in your household.
-                                You can always add more later.
+                                This helps Evergrove feel like it belongs to your family,
+                                not just one person.
                             </p>
                         </div>
 
@@ -345,7 +361,7 @@ export default function Onboarding() {
                         </div>
 
                         <div className="onboarding-household-preview">
-                            <h2>Your Household</h2>
+                            <h2>Your Home So Far</h2>
 
                             <div className="onboarding-member-card you">
                                 <span>🌳</span>
@@ -390,7 +406,7 @@ export default function Onboarding() {
                                 variant="secondary"
                                 onClick={() => setStep(5)}
                             >
-                                I’ll do this later
+                                I’ll add more later
                             </Button>
                         </div>
                     </div>
@@ -398,99 +414,41 @@ export default function Onboarding() {
             )}
 
             {step === 5 && (
-                <section className="eg-card onboarding-card">
-                    <div className="eg-stack">
-                        <div>
-                            <h1>Let’s personalize Evergrove.</h1>
-
-                            <p>
-                                Choose what matters most to your family. You can change these later.
-                            </p>
-                        </div>
-
-                        <div className="onboarding-preference-grid">
-                            <PreferenceCard
-                                icon="🎂"
-                                title="Birthdays"
-                                description="Get reminders for upcoming birthdays."
-                                checked={birthdayReminders}
-                                onChange={setBirthdayReminders}
-                            />
-
-                            <PreferenceCard
-                                icon="🧳"
-                                title="Trips"
-                                description="Get reminders for trips and travel plans."
-                                checked={tripReminders}
-                                onChange={setTripReminders}
-                            />
-
-                            <PreferenceCard
-                                icon="🎒"
-                                title="School"
-                                description="Track school events and important dates."
-                                checked={schoolReminders}
-                                onChange={setSchoolReminders}
-                            />
-
-                            <PreferenceCard
-                                icon="✅"
-                                title="Suggested To-Dos"
-                                description="See helpful To-Do suggestions based on your schedule."
-                                checked={showSuggestedTasks}
-                                onChange={setShowSuggestedTasks}
-                            />
-                        </div>
-
-                        <div className="onboarding-action-row">
-                            <Button onClick={() => setStep(6)}>
-                                Continue
-                            </Button>
-
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={() => setStep(6)}
-                            >
-                                I’ll do this later
-                            </Button>
-                        </div>
-                    </div>
-                </section>
-            )}
-
-            {step === 6 && (
                 <section className="eg-card onboarding-card onboarding-ready-card">
                     <div className="eg-stack">
+                        <div className="onboarding-hero-icon">✨</div>
+
                         <div>
-                            <h1>Welcome home.</h1>
+                            <p className="onboarding-eyebrow">Welcome Home</p>
+                            <h1>{householdName || "Your home"} is ready.</h1>
 
                             <p>
-                                Your family command center is ready. Evergrove will help your
-                                household stay organized, prepared, and connected.
+                                We’ll create your household, prepare your family workspace,
+                                and get Evergrove ready for your first week.
                             </p>
                         </div>
 
                         <div className="onboarding-feature-list onboarding-ready-list">
-                            <div>✅ Family Calendar</div>
-                            <div>✅ Shared To-Dos</div>
-                            <div>✅ Meal Planning</div>
-                            <div>✅ Shopping Lists</div>
-                            <div>✅ School Tracking</div>
-                            <div>✅ Trips & Routines</div>
+                            <div>✓ Family Calendar</div>
+                            <div>✓ Shared To-Dos</div>
+                            <div>✓ Meal Planning</div>
+                            <div>✓ Shopping Lists</div>
+                            <div>✓ Trips</div>
+                            <div>✓ Household Activity</div>
                         </div>
 
                         {setupComplete && (
                             <div className="onboarding-setup-status">
                                 <div>✅ Creating your household</div>
-                                <div>✅ Adding family members</div>
-                                <div>✅ Setting up preferences</div>
+                                <div>✅ Adding your family</div>
+                                <div>✅ Preparing your shared calendar</div>
+                                <div>✅ Organizing your family planner</div>
                                 <div>⏳ Almost ready...</div>
                             </div>
                         )}
 
                         <p className="onboarding-helper-text">
-                            You can change these settings later.
+                            Next, we’ll help you plan your first week.
                         </p>
 
                         <Button
@@ -498,39 +456,12 @@ export default function Onboarding() {
                             disabled={loading || setupComplete}
                         >
                             {loading || setupComplete
-                                ? "Setting up your household..."
-                                : "Open Evergrove"}
+                                ? "Getting your home ready..."
+                                : "Move In"}
                         </Button>
                     </div>
                 </section>
             )}
         </div>
-    )
-}
-
-function PreferenceCard({
-    icon,
-    title,
-    description,
-    checked,
-    onChange
-}) {
-    return (
-        <label className="onboarding-preference-card">
-            <span className="onboarding-preference-icon">
-                {icon}
-            </span>
-
-            <div>
-                <strong>{title}</strong>
-                <p>{description}</p>
-            </div>
-
-            <input
-                type="checkbox"
-                checked={checked}
-                onChange={(event) => onChange(event.target.checked)}
-            />
-        </label>
     )
 }

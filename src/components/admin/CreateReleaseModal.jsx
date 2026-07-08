@@ -1,47 +1,77 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import Button from "../ui/Button"
-
 import AdminModal from "./AdminModal"
 
 import useCreateRelease from "../../hooks/admin/useCreateRelease"
+import { updateRelease } from "../../services/admin/releaseAdminService"
 
 export default function CreateReleaseModal({
     open,
     onClose,
-    onCreated
+    onCreated,
+    onUpdated,
+    release = null
 }) {
     const { save, saving } = useCreateRelease()
+    const [updating, setUpdating] = useState(false)
 
     const [version, setVersion] = useState("")
     const [channel, setChannel] = useState("beta")
     const [title, setTitle] = useState("")
     const [summary, setSummary] = useState("")
 
+    const isEditing = Boolean(release)
+
+    useEffect(() => {
+        if (!open) return
+
+        setVersion(release?.version || "")
+        setChannel(release?.channel || "beta")
+        setTitle(release?.title || "")
+        setSummary(release?.summary || "")
+    }, [open, release])
+
     async function handleSubmit() {
         if (!version.trim()) return
 
-        const release = await save({
+        if (isEditing) {
+            try {
+                setUpdating(true)
+
+                const updatedRelease = await updateRelease(release.id, {
+                    version: version.trim(),
+                    channel,
+                    title: title.trim() || null,
+                    summary: summary.trim() || null
+                })
+
+                onUpdated?.(updatedRelease)
+                onClose()
+            } finally {
+                setUpdating(false)
+            }
+
+            return
+        }
+
+        const newRelease = await save({
             version,
             channel,
             title,
             summary
         })
 
-        setVersion("")
-        setChannel("beta")
-        setTitle("")
-        setSummary("")
-
-        onCreated?.(release)
-
+        onCreated?.(newRelease)
         onClose()
     }
+
+    const busy = saving || updating
 
     return (
         <AdminModal
             open={open}
-            title="Create Release"
+            title={isEditing ? "Edit Release" : "Create Release"}
             onClose={onClose}
             actions={
                 <>
@@ -54,17 +84,16 @@ export default function CreateReleaseModal({
 
                     <Button
                         onClick={handleSubmit}
-                        disabled={saving}
+                        disabled={busy}
                     >
-                        {saving
-                            ? "Creating..."
-                            : "Create Release"}
+                        {busy
+                            ? isEditing ? "Saving..." : "Creating..."
+                            : isEditing ? "Save Changes" : "Create Release"}
                     </Button>
                 </>
             }
         >
             <div className="admin-form">
-
                 <label>
                     Version
 
@@ -82,13 +111,8 @@ export default function CreateReleaseModal({
                         value={channel}
                         onChange={e => setChannel(e.target.value)}
                     >
-                        <option value="beta">
-                            Beta
-                        </option>
-
-                        <option value="production">
-                            Production
-                        </option>
+                        <option value="beta">Beta</option>
+                        <option value="production">Production</option>
                     </select>
                 </label>
 
@@ -110,7 +134,6 @@ export default function CreateReleaseModal({
                         onChange={e => setSummary(e.target.value)}
                     />
                 </label>
-
             </div>
         </AdminModal>
     )

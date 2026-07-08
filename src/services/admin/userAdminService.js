@@ -82,3 +82,7 @@ export async function getUserPreferences(userId) {
 
     return data
 }
+
+export async function searchUsers(search = "") {
+    return getUsers(search)
+}

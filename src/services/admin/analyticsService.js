@@ -1,26 +1,75 @@
 import { supabase } from "../../lib/supabase"
 
 const featureMap = {
-    session_started: "App Sessions",
-    daily_active: "Daily Active",
     task_created: "Tasks",
+    task_updated: "Tasks",
     task_completed: "Tasks",
+    task_deleted: "Tasks",
 
     calendar_event_created: "Calendar",
+    calendar_event_updated: "Calendar",
+    calendar_event_deleted: "Calendar",
     activity_created: "Calendar",
 
     meal_created: "Meals",
+    meal_updated: "Meals",
+    meal_deleted: "Meals",
     meal_planned: "Meals",
+    meal_plan_deleted: "Meals",
 
+    grocery_item_created: "Shopping",
+    grocery_item_checked: "Shopping",
+    grocery_item_unchecked: "Shopping",
+    grocery_item_deleted: "Shopping",
+    grocery_items_cleared: "Shopping",
     shopping_item_added: "Shopping",
+    shopping_mode_started: "Shopping",
+    shopping_mode_ended: "Shopping",
 
     trip_created: "Trips",
+    trip_updated: "Trips",
+    trip_deleted: "Trips",
+
+    school_item_created: "School",
+    school_item_updated: "School",
+    school_item_completed: "School",
+    school_item_deleted: "School",
+
+    document_uploaded: "Documents",
+    document_deleted: "Documents",
+
+    thought_created: "Thoughts",
+    thought_archived: "Thoughts",
+    thought_converted_to_task: "Thoughts",
+    thought_converted_to_reminder: "Thoughts",
+
+    inbox_item_read: "Personal Inbox",
+    inbox_item_deleted: "Personal Inbox",
+
+    family_member_created: "Family",
+    family_member_updated: "Family",
+    family_member_deleted: "Family",
+    household_invite_created: "Family",
+    household_invite_accepted: "Family",
 
     announcement_created: "Announcements",
 
-    feedback_submitted: "Support",
-    login: "Logins"
+    dashboard_action_used: "Dashboard",
+
+    insight_completed: "Assistant",
+
+    feedback_submitted: "Support"
 }
+
+const ignoredFeatureEvents = new Set([
+    "session_started",
+    "daily_active",
+    "preferences_updated",
+    "onboarding_completed",
+    "guided_walkthrough_completed",
+    "guided_walkthrough_restarted",
+    "login"
+])
 
 function getSinceDate(days) {
     const since = new Date()
@@ -111,24 +160,83 @@ export async function getFeatureUsage({ days = 30 } = {}) {
 
     const { data, error } = await supabase
         .from("usage_events")
-        .select("event_type")
+        .select("event_type, household_id")
         .gte("created_at", since.toISOString())
 
     if (error) throw error
 
-    const counts = {}
+    const featureStats = {}
+    const allHouseholds = new Set()
 
     for (const row of data ?? []) {
-        const feature = featureMap[row.event_type] || "Other"
-        counts[feature] = (counts[feature] || 0) + 1
+        if (!row.household_id) continue
+        if (ignoredFeatureEvents.has(row.event_type)) continue
+
+        allHouseholds.add(row.household_id)
+
+        const feature = featureMap[row.event_type] || `Other: ${row.event_type}`
+
+        if (!featureStats[feature]) {
+            featureStats[feature] = {
+                count: 0,
+                households: new Set()
+            }
+        }
+
+        featureStats[feature].count += 1
+        featureStats[feature].households.add(row.household_id)
     }
 
-    return Object.entries(counts)
-        .map(([feature, count]) => ({
+    const totalHouseholds = allHouseholds.size
+
+    return Object.entries(featureStats)
+        .map(([feature, stats]) => ({
             feature,
-            count
+            count: stats.count,
+            households: stats.households.size,
+            adoption:
+                totalHouseholds > 0
+                    ? Math.round((stats.households.size / totalHouseholds) * 100)
+                    : 0
         }))
-        .sort((a, b) => b.count - a.count)
+        .sort((a, b) => b.adoption - a.adoption || b.count - a.count)
+}
+
+export async function getDailyAppSessions({ days = 14 } = {}) {
+    const since = getSinceDate(days)
+
+    const { data, error } = await supabase
+        .from("usage_events")
+        .select("created_at")
+        .eq("event_type", "session_started")
+        .gte("created_at", since.toISOString())
+
+    if (error) throw error
+
+    const dailyMap = new Map()
+
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date()
+        date.setDate(date.getDate() - i)
+
+        const key = getLocalDateKey(date)
+        dailyMap.set(key, 0)
+    }
+
+    for (const row of data ?? []) {
+        const key = getLocalDateKey(row.created_at)
+
+        if (!dailyMap.has(key)) {
+            dailyMap.set(key, 0)
+        }
+
+        dailyMap.set(key, dailyMap.get(key) + 1)
+    }
+
+    return Array.from(dailyMap.entries()).map(([date, sessions]) => ({
+        date,
+        sessions
+    }))
 }
 
 export async function getDailyActiveHouseholds({ days = 14 } = {}) {
@@ -366,5 +474,40 @@ export async function getEngagementMetrics() {
         mau,
         sessionsPerActiveUser,
         averageActiveDaysPerWeek
+    }
+}
+
+export async function getOnboardingMetrics() {
+    const { data, error } = await supabase
+        .from("user_display_preferences")
+        .select(`
+            user_id,
+            has_completed_onboarding,
+            has_completed_guided_walkthrough
+        `)
+
+    if (error) throw error
+
+    const rows = data ?? []
+    const totalUsers = rows.length
+
+    const onboardingCompleted = rows.filter(
+        row => row.has_completed_onboarding
+    ).length
+
+    const walkthroughCompleted = rows.filter(
+        row => row.has_completed_guided_walkthrough
+    ).length
+
+    return {
+        totalUsers,
+        onboardingCompleted,
+        onboardingRate: totalUsers > 0
+            ? Math.round((onboardingCompleted / totalUsers) * 100)
+            : 0,
+        walkthroughCompleted,
+        walkthroughRate: totalUsers > 0
+            ? Math.round((walkthroughCompleted / totalUsers) * 100)
+            : 0
     }
 }

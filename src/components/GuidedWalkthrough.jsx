@@ -4,34 +4,46 @@ import Button from "./ui/Button"
 
 const steps = [
     {
-        eyebrow: "Command Center",
-        title: "Welcome to your family’s home base.",
-        body: "Dashboard brings together the things that need your household’s attention today."
+        icon: "🏡",
+        eyebrow: "Welcome Home",
+        title: "This is your family’s command center.",
+        body: "Every morning, start here. Evergrove brings together what’s happening today, what needs attention, dinner plans, reminders, and the things your family should know."
     },
     {
-        eyebrow: "Inbox",
-        title: "Start with your Personal Inbox.",
-        body: "Inbox highlights updates, assignments, reminders, and shared household activity meant for you."
+        icon: "💭",
+        eyebrow: "Capture It",
+        title: "Life moves fast. Don’t try to organize everything immediately.",
+        body: "When you remember something, capture it in your Personal Inbox. It gives you a safe place to put thoughts, reminders, and loose ends before they become plans."
     },
     {
-        eyebrow: "To-Dos",
-        title: "Track what needs to get done.",
-        body: "Use To-Dos for chores, reminders, school follow-ups, trip prep, and everyday tasks."
+        icon: "✅",
+        eyebrow: "Turn Thoughts Into Plans",
+        title: "When something needs action, turn it into a To-Do.",
+        body: "Evergrove helps you move from “we should remember that” to “it’s handled.” Use To-Dos for household tasks, school follow-ups, errands, chores, and anything your family needs to get done."
     },
     {
-        eyebrow: "Calendar",
-        title: "Keep everyone aligned.",
-        body: "Calendar brings together events, school dates, birthdays, trips, and important family plans."
+        icon: "📅",
+        eyebrow: "Keep Everyone In Sync",
+        title: "Your calendar is where family life comes together.",
+        body: "Events, school dates, birthdays, trips, appointments, and family plans all have a place here, so everyone can see what’s coming next."
     },
     {
-        eyebrow: "Meals & Shopping",
-        title: "Plan dinner and shop with less friction.",
-        body: "Meals and Shopping work together so your grocery list can follow your weekly meal plan."
+        icon: "🍽️",
+        eyebrow: "Dinner Has A Place",
+        title: "Meals help answer one of the daily questions every family asks.",
+        body: "Evergrove keeps dinner planning close to the rest of your household rhythm, so everyone can see what’s for dinner and what needs to be picked up."
     },
     {
-        eyebrow: "Household",
-        title: "Bring your household into Evergrove.",
-        body: "Add family members, invite another adult, and let Evergrove become your shared source of truth."
+        icon: "👨‍👩‍👧",
+        eyebrow: "Bring Everyone Together",
+        title: "Evergrove works best when your family is here with you.",
+        body: "Invite your spouse or another adult whenever you’re ready. The goal is simple: one shared place where your household can stay organized together."
+    },
+    {
+        icon: "🎉",
+        eyebrow: "You’re Ready",
+        title: "Your home is ready.",
+        body: "You’ve already started your calendar, added a To-Do, and planned dinner. From here, just keep living life. Evergrove will help keep everyone on the same page."
     }
 ]
 
@@ -75,6 +87,10 @@ export default function GuidedWalkthrough({ onComplete }) {
                 </div>
 
                 <div className="eg-stack">
+                    <div className="walkthrough-icon">
+                        {step.icon}
+                    </div>
+
                     <div>
                         <p className="eg-section-title">{step.eyebrow}</p>
                         <h2>{step.title}</h2>
@@ -102,7 +118,11 @@ export default function GuidedWalkthrough({ onComplete }) {
                             }
                             disabled={saving}
                         >
-                            {saving ? "Saving..." : isLastStep ? "Finish" : "Next"}
+                            {saving
+                                ? "Saving..."
+                                : isLastStep
+                                    ? "Let’s Go"
+                                    : "Next"}
                         </Button>
                     </div>
 
@@ -112,7 +132,7 @@ export default function GuidedWalkthrough({ onComplete }) {
                         onClick={finishWalkthrough}
                         disabled={saving}
                     >
-                        Skip walkthrough
+                        I’ll explore on my own
                     </button>
                 </div>
             </section>

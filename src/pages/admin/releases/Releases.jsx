@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 import AdminPageHeader from "../../../components/admin/AdminPageHeader"
 import AdminCard from "../../../components/admin/AdminCard"
@@ -12,6 +13,8 @@ import Button from "../../../components/ui/Button"
 import CreateReleaseModal from "../../../components/admin/CreateReleaseModal"
 
 export default function Releases() {
+    const navigate = useNavigate()
+
     const {
         releases,
         loading,
@@ -39,6 +42,11 @@ export default function Releases() {
                     {formatLabel(row.status)}
                 </AdminStatusChip>
             )
+        },
+        {
+            key: "tickets",
+            label: "Tickets",
+            render: row => row.ticketCount ?? 0
         },
         {
             key: "published",
@@ -72,6 +80,7 @@ export default function Releases() {
                         columns={columns}
                         rows={releases}
                         emptyMessage="No releases found."
+                        onRowClick={(release) => navigate(`/admin/releases/${release.id}`)}
                     />
                 )}
             </AdminCard>

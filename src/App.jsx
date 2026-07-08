@@ -73,8 +73,12 @@ import SupportTicket from "./pages/admin/support/SupportTicket"
 import UsersPage from "./pages/admin/users/Users"
 import UserProfile from "./pages/admin/users/UserProfile"
 import BetaHealth from "./pages/admin/beta/BetaHealth"
+import ReleaseDetail from "./pages/admin/releases/ReleaseDetail"
 
 import Releases from "./pages/admin/releases/Releases"
+import FeatureFlags from "./pages/admin/featureFlags/FeatureFlags"
+
+import FirstWeekSetup from "./pages/FirstWeekSetup"
 
 import UIKit from "./pages/UIKit"
 
@@ -253,6 +257,7 @@ function AppRoutes() {
       <Route path="/join-household" element={<JoinHousehold />} />
       <Route path="/invite/:token" element={<AuthenticatedInviteRedirect />} />
       <Route path="/uikit" element={<UIKit />} />
+      <Route path="/first-week" element={<FirstWeekSetup />} />
       <Route path="*" element={<Navigate to="/" replace />} />
       <Route
         path="/admin"
@@ -269,9 +274,11 @@ function AppRoutes() {
         <Route path="support" element={<SupportInbox />} />
         <Route path="support/:feedbackId" element={<SupportTicket />} />
         <Route path="releases" element={<Releases />} />
+        <Route path="releases/:releaseId" element={<ReleaseDetail />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="users/:userId" element={<UserProfile />} />
         <Route path="beta" element={<BetaHealth />} />
+        <Route path="/admin/feature-flags" element={<FeatureFlags />} />
       </Route>
     </Routes>
   )
@@ -331,6 +338,7 @@ function OnboardingGuard({ children }) {
 
       {hasCompletedOnboarding &&
         !hasCompletedGuidedWalkthrough &&
+        location.pathname !== "/first-week" &&
         location.pathname !== "/join-household" &&
         !location.pathname.startsWith("/invite/") && (
           <GuidedWalkthrough

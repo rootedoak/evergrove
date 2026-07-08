@@ -41,3 +41,67 @@ export async function getHouseholds() {
 
     return Array.from(households.values())
 }
+
+export async function searchHouseholds(search = "") {
+    const households = await getHouseholds()
+    const term = search.trim().toLowerCase()
+
+    if (!term) return households.slice(0, 25)
+
+    return households
+        .filter((household) =>
+            household.household?.toLowerCase().includes(term) ||
+            household.memberNames?.some((name) =>
+                name.toLowerCase().includes(term)
+            ) ||
+            household.emails?.some((email) =>
+                email.toLowerCase().includes(term)
+            )
+        )
+        .slice(0, 25)
+}
+
+export async function exportHouseholdData(householdId) {
+    if (!householdId) {
+        throw new Error("householdId is required")
+    }
+
+    const tables = [
+        "households",
+        "family_members",
+        "tasks",
+        "calendar_events",
+        "meals",
+        "meal_ingredients",
+        "meal_plans",
+        "shopping_lists",
+        "shopping_items",
+        "trips",
+        "family_announcements",
+        "personal_inbox_items",
+        "household_feed",
+        "product_feedback",
+        "usage_events",
+        "user_display_preferences"
+    ]
+
+    const exportData = {
+        exported_at: new Date().toISOString(),
+        household_id: householdId,
+        tables: {}
+    }
+
+    for (const table of tables) {
+        const { data, error } = await supabase
+            .from(table)
+            .select("*")
+            .eq("household_id", householdId)
+
+        exportData.tables[table] = {
+            error: error ? error.message : null,
+            rows: data || []
+        }
+    }
+
+    return exportData
+}

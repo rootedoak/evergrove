@@ -6,7 +6,8 @@ import ThoughtCaptureSheet from "../components/ThoughtCaptureSheet"
 
 import {
     convertThoughtToTask,
-    convertThoughtToReminder
+    convertThoughtToReminder,
+    updatePersonalInboxItem
 } from "../services/personalInboxService"
 
 function getTodayString() {
@@ -75,6 +76,11 @@ export default function PersonalInbox() {
     } = usePersonalInbox()
 
     const [selectedItem, setSelectedItem] = useState(null)
+
+    const [editingThought, setEditingThought] = useState(null)
+    const [editThoughtTitle, setEditThoughtTitle] = useState("")
+    const [editThoughtBody, setEditThoughtBody] = useState("")
+    const [savingThoughtEdit, setSavingThoughtEdit] = useState(false)
 
     const unreadCount = items.filter(item => item.status === "unread").length
 
@@ -224,6 +230,40 @@ export default function PersonalInbox() {
             alert(error.message || "Could not create reminder.")
         } finally {
             setSavingReminder(false)
+        }
+    }
+
+    function startEditingThought(item) {
+        setEditingThought(item)
+        setEditThoughtTitle(item.title || "")
+        setEditThoughtBody(item.body || item.message || "")
+    }
+
+    function cancelEditingThought() {
+        setEditingThought(null)
+        setEditThoughtTitle("")
+        setEditThoughtBody("")
+    }
+
+    async function saveEditingThought() {
+        if (!editingThought) return
+        if (!editThoughtTitle.trim()) return
+
+        setSavingThoughtEdit(true)
+
+        try {
+            await updatePersonalInboxItem(editingThought.id, {
+                title: editThoughtTitle,
+                body: editThoughtBody
+            })
+
+            cancelEditingThought()
+            await refreshInbox()
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not update thought.")
+        } finally {
+            setSavingThoughtEdit(false)
         }
     }
 
@@ -404,52 +444,111 @@ export default function PersonalInbox() {
                 ) : (
                     <div className="thought-list-wrapper">
                         <div className="thought-list">
-                            {thoughtItems.map(item => (
-                                <div key={item.id} className="thought-note-card">
+                            {thoughtItems.map(item => {
+                                const isEditing = editingThought?.id === item.id
 
-                                    <div className="thought-note-header">
-                                        💭 Thought
+                                return (
+                                    <div key={item.id} className="thought-note-card">
+                                        <div className="thought-note-header">
+                                            💭 Thought
+                                        </div>
+
+                                        {isEditing ? (
+                                            <>
+                                                <div className="thought-capture-form">
+                                                    <label>
+                                                        Title
+                                                        <input
+                                                            value={editThoughtTitle}
+                                                            onChange={(event) =>
+                                                                setEditThoughtTitle(event.target.value)
+                                                            }
+                                                            autoFocus
+                                                        />
+                                                    </label>
+
+                                                    <label>
+                                                        Notes
+                                                        <textarea
+                                                            value={editThoughtBody}
+                                                            onChange={(event) =>
+                                                                setEditThoughtBody(event.target.value)
+                                                            }
+                                                            placeholder="Add details..."
+                                                        />
+                                                    </label>
+                                                </div>
+
+                                                <div className="thought-note-actions">
+                                                    <button
+                                                        type="button"
+                                                        onClick={saveEditingThought}
+                                                        disabled={
+                                                            savingThoughtEdit ||
+                                                            !editThoughtTitle.trim()
+                                                        }
+                                                    >
+                                                        {savingThoughtEdit ? "Saving..." : "Save"}
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={cancelEditingThought}
+                                                        disabled={savingThoughtEdit}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <h3>{item.title}</h3>
+
+                                                {(item.body || item.message) && (
+                                                    <p>{item.body || item.message}</p>
+                                                )}
+
+                                                <div className="thought-note-actions">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => startEditingThought(item)}
+                                                    >
+                                                        Edit
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleConvertThoughtToTask(item)}
+                                                    >
+                                                        To-Do
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleScheduleThought(item)}
+                                                    >
+                                                        Schedule
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleConvertThoughtToReminder(item)}
+                                                    >
+                                                        Reminder
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleArchiveThought(item)}
+                                                    >
+                                                        Archive
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
-
-                                    <h3>{item.title}</h3>
-
-                                    {(item.body || item.message) && (
-                                        <p>{item.body || item.message}</p>
-                                    )}
-
-                                    <div className="thought-note-actions">
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleConvertThoughtToTask(item)}
-                                        >
-                                            To-Do
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleScheduleThought(item)}
-                                        >
-                                            Schedule
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleConvertThoughtToReminder(item)}
-                                        >
-                                            Reminder
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleArchiveThought(item)}
-                                        >
-                                            Archive
-                                        </button>
-
-                                    </div>
-
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     </div>
                 )}

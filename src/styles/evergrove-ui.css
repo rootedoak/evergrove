@@ -3667,6 +3667,10 @@ button.eg-attention-metric {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.admin-grid-6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
 .admin-stat-card,
 .admin-action-card {
     background: white;
@@ -4533,6 +4537,82 @@ button.eg-attention-metric {
     padding-bottom: 8px;
 }
 
+.admin-table input,
+.admin-table textarea,
+.admin-table select {
+    width: 100%;
+    padding: 10px 12px;
+    font: inherit;
+    color: #0f172a;
+    background: white;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+}
+
+.admin-table input:focus,
+.admin-table textarea:focus,
+.admin-table select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+}
+
+.admin-table textarea {
+    min-height: 72px;
+    resize: vertical;
+}
+
+.admin-button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-table .admin-checkbox-row {
+    flex-direction: row !important;
+    align-items: center;
+}
+
+.admin-target-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.admin-target-picker+.admin-target-picker {
+    margin-top: 16px;
+}
+
+.admin-target-picker strong {
+    color: #334155;
+    font-size: 0.85rem;
+}
+
+.admin-target-results {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.admin-target-results button {
+    width: 100%;
+    text-align: left;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #f8fafc;
+    color: #0f172a;
+    font: inherit;
+    cursor: pointer;
+}
+
+.admin-target-results button:hover {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+}
+
 /* ==========================================
    Inbox Defaults
    ========================================== */
@@ -4691,6 +4771,33 @@ button.eg-attention-metric {
 
 .thought-capture-button:hover {
     text-decoration: underline;
+}
+
+.thought-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.thought-edit-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-weight: 700;
+}
+
+.thought-edit-form input,
+.thought-edit-form textarea {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font: inherit;
+}
+
+.thought-edit-form textarea {
+    min-height: 96px;
+    resize: vertical;
 }
 
 /* ==========================================
@@ -4932,4 +5039,67 @@ button.eg-attention-metric {
 .analytics-kpi-trend-label {
     color: #64748b;
     font-size: 0.85rem;
+}
+
+/* ==========================================
+   First Week Defaults
+   ========================================== */
+
+.first-week-progress {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.first-week-progress-track {
+    flex: 1;
+    height: 8px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    overflow: hidden;
+}
+
+.first-week-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: #2563eb;
+    transition: width 0.25s ease;
+}
+
+.first-week-progress span {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.first-week-success {
+    text-align: center;
+    padding: 24px 0;
+}
+
+.first-week-success h1 {
+    margin-bottom: 8px;
+}
+
+.first-week-finished-card {
+    text-align: center;
+}
+
+.walkthrough-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 24px;
+    display: grid;
+    place-items: center;
+    font-size: 2.2rem;
+    background: #f1f5f9;
+    margin: 0 auto;
+}
+
+.walkthrough-card h2 {
+    margin-top: 0;
+}
+
+.walkthrough-card {
+    text-align: center;
 }

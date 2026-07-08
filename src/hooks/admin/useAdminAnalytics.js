@@ -3,9 +3,11 @@ import { useEffect, useState } from "react"
 import {
     generateAnalyticsInsights,
     getDailyActiveHouseholds,
+    getDailyAppSessions,
     getDashboardKpis,
     getEngagementMetrics,
     getFeatureUsage,
+    getOnboardingMetrics,
     getSupportMetrics
 } from "../../services/admin/analyticsService"
 
@@ -14,9 +16,12 @@ export default function useAdminAnalytics(days = 30) {
         kpis: null,
         featureUsage: [],
         dailyActiveHouseholds: [],
+        dailyAppSessions: [],
         engagement: null,
         supportMetrics: null,
-        insights: []
+        insights: [],
+        getOnboardingMetrics,
+        onboarding: null
     })
 
     const [loading, setLoading] = useState(true)
@@ -30,14 +35,18 @@ export default function useAdminAnalytics(days = 30) {
             const [
                 kpis,
                 engagement,
+                onboarding,
                 featureUsage,
                 dailyActiveHouseholds,
+                dailyAppSessions,
                 supportMetrics
             ] = await Promise.all([
                 getDashboardKpis({ days }),
                 getEngagementMetrics(),
+                getOnboardingMetrics(),
                 getFeatureUsage({ days }),
                 getDailyActiveHouseholds({ days }),
+                getDailyAppSessions({ days }),
                 getSupportMetrics({ days })
             ])
 
@@ -52,6 +61,8 @@ export default function useAdminAnalytics(days = 30) {
                 engagement,
                 featureUsage,
                 dailyActiveHouseholds,
+                dailyAppSessions,
+                onboarding,
                 supportMetrics,
                 insights
             })

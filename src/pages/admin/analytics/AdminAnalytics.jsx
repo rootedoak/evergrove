@@ -89,6 +89,20 @@ export default function Analytics() {
                     icon="activeDays"
                 />
 
+                <AnalyticsKpiCard
+                    title="Onboarding"
+                    value={`${analytics.onboarding?.onboardingRate ?? 0}%`}
+                    subtitle={`${analytics.onboarding?.onboardingCompleted ?? 0} of ${analytics.onboarding?.totalUsers ?? 0} users`}
+                    icon="dau"
+                />
+
+                <AnalyticsKpiCard
+                    title="Walkthrough"
+                    value={`${analytics.onboarding?.walkthroughRate ?? 0}%`}
+                    subtitle={`${analytics.onboarding?.walkthroughCompleted ?? 0} of ${analytics.onboarding?.totalUsers ?? 0} users`}
+                    icon="activeDays"
+                />
+
             </section>
 
             <section className="admin-grid admin-grid-2">
@@ -159,6 +173,14 @@ export default function Analytics() {
 
                 </AdminCard>
 
+                <AnalyticsBarChart
+                    title="Feature Adoption %"
+                    description="Percent of active households using each feature in the selected period."
+                    data={analytics.featureUsage}
+                    xKey="feature"
+                    yKey="adoption"
+                />
+
             </section>
 
             <AnalyticsLineChart
@@ -167,6 +189,14 @@ export default function Analytics() {
                 data={analytics.dailyActiveHouseholds}
                 xKey="date"
                 yKey="activeHouseholds"
+            />
+
+            <AnalyticsLineChart
+                title="Daily App Sessions"
+                description="How many times users opened Evergrove each day."
+                data={analytics.dailyAppSessions}
+                xKey="date"
+                yKey="sessions"
             />
 
         </div>

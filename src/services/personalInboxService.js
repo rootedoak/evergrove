@@ -237,3 +237,34 @@ export async function convertThoughtToReminder(thought) {
 
     return reminder
 }
+
+export async function updatePersonalInboxItem(id, updates) {
+    const { user, household } = await getUserAndHousehold()
+
+    const { data, error } = await supabase
+        .from("personal_inbox_items")
+        .update({
+            title: updates.title?.trim() || "Untitled thought",
+            body: updates.body?.trim() || null,
+        })
+        .eq("id", id)
+        .eq("user_id", user.id)
+        .eq("household_id", household.id)
+        .select()
+        .single()
+
+    if (error) throw error
+
+    window.dispatchEvent(new Event("evergrovePersonalInboxUpdated"))
+
+    await trackUsageEvent({
+        eventType: "thought_updated",
+        entityType: "thought",
+        entityId: data.id,
+        metadata: {
+            source: "personal_inbox"
+        }
+    })
+
+    return data
+}
