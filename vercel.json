@@ -8,5 +8,11 @@
             "source": "/(.*)",
             "destination": "/"
         }
+    ],
+    "crons": [
+        {
+            "path": "/api/send-morning-briefs",
+            "schedule": "0 * * * *"
+        }
     ]
 }

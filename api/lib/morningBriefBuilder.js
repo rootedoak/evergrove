@@ -7,6 +7,11 @@ function todayInTimezone(timezone) {
     }).format(new Date())
 }
 
+function monthDay(value) {
+    if (!value) return null
+    return String(value).slice(5, 10)
+}
+
 function formatTime(value) {
     if (!value) return null
 
@@ -40,15 +45,20 @@ function dayTone(itemCount) {
     return "You’ve got a full day ahead."
 }
 
+function dayEnding(itemCount) {
+    if (itemCount === 0) return "Enjoy the slower pace today."
+    if (itemCount >= 4) return "You’ve got this."
+    return "Have a great day!"
+}
+
 function buildTitle(itemCount) {
     if (itemCount === 0) return "🌿 Enjoy your quiet day"
     if (itemCount >= 4) return "🌿 Good Morning • Busy day ahead"
     return "🌿 Good Morning"
 }
 
-function trimBody(body, maxLength = 220) {
+function trimBody(body, maxLength = 240) {
     if (body.length <= maxLength) return body
-
     return `${body.slice(0, maxLength - 1).trim()}…`
 }
 
@@ -59,10 +69,13 @@ export async function buildMorningBrief({
     timezone = "America/Chicago"
 }) {
     const today = todayInTimezone(timezone)
+    const todayMonthDay = monthDay(today)
 
     const [
         { data: userData, error: userError },
         { data: familyMember, error: familyMemberError },
+        { data: birthdays, error: birthdayError },
+        { data: trips, error: tripsError },
         { data: events, error: eventsError },
         { data: tasks, error: tasksError },
         { data: mealPlans, error: mealsError }
@@ -75,6 +88,19 @@ export async function buildMorningBrief({
             .eq("household_id", householdId)
             .eq("user_id", userId)
             .maybeSingle(),
+
+        supabase
+            .from("family_members")
+            .select("name, birthdate")
+            .eq("household_id", householdId)
+            .not("birthdate", "is", null),
+
+        supabase
+            .from("trips")
+            .select("name, title, destination, start_date")
+            .eq("household_id", householdId)
+            .eq("start_date", today)
+            .limit(1),
 
         supabase
             .from("calendar_events")
@@ -104,11 +130,25 @@ export async function buildMorningBrief({
 
     if (userError) throw userError
     if (familyMemberError) throw familyMemberError
+    if (birthdayError) throw birthdayError
+    if (tripsError) throw tripsError
     if (eventsError) throw eventsError
     if (tasksError) throw tasksError
     if (mealsError) throw mealsError
 
     const highlights = []
+
+    for (const birthday of birthdays || []) {
+        if (monthDay(birthday.birthdate) === todayMonthDay) {
+            highlights.push(`🎂 ${birthday.name}'s birthday`)
+        }
+    }
+
+    for (const trip of trips || []) {
+        const tripName = trip.name || trip.title || "Trip"
+        const destination = trip.destination ? ` to ${trip.destination}` : ""
+        highlights.push(`✈️ ${tripName}${destination} starts today`)
+    }
 
     for (const event of events || []) {
         const eventTitle = event.title || "Family event"
@@ -128,6 +168,7 @@ export async function buildMorningBrief({
     }
 
     const visibleHighlights = highlights.slice(0, 4)
+
     const greetingName = getGreetingName({
         familyMember,
         user: userData?.user
@@ -137,7 +178,7 @@ export async function buildMorningBrief({
         `Good morning, ${greetingName}!`,
         dayTone(visibleHighlights.length),
         ...visibleHighlights,
-        visibleHighlights.length === 0 ? "Enjoy it!" : "Have a great day!"
+        dayEnding(visibleHighlights.length)
     ].join("\n")
 
     return {
@@ -146,6 +187,8 @@ export async function buildMorningBrief({
         url: "/",
         metadata: {
             today,
+            birthday_count: birthdays?.filter(item => monthDay(item.birthdate) === todayMonthDay).length || 0,
+            trip_count: trips?.length || 0,
             event_count: events?.length || 0,
             task_count: tasks?.length || 0,
             has_dinner: Boolean(dinner),
