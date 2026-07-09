@@ -280,7 +280,7 @@ export default function Onboarding() {
                             <input
                                 value={householdName}
                                 onChange={(event) => setHouseholdName(event.target.value)}
-                                placeholder="McGee Family"
+                                placeholder="Smith Family"
                             />
                         </label>
 

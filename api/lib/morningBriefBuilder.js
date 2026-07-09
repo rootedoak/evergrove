@@ -20,9 +20,15 @@ function formatTime(value) {
     })
 }
 
-function getGreetingName(user) {
+function firstName(value) {
+    if (!value) return null
+    return String(value).trim().split(" ")[0]
+}
+
+function getGreetingName({ familyMember, user }) {
     return (
-        user?.raw_user_meta_data?.full_name ||
+        firstName(familyMember?.name) ||
+        firstName(user?.raw_user_meta_data?.full_name) ||
         user?.email?.split("@")[0] ||
         "there"
     )
@@ -32,6 +38,12 @@ function dayTone(itemCount) {
     if (itemCount === 0) return "Looks like a quiet day."
     if (itemCount <= 2) return "Today looks pretty manageable."
     return "You’ve got a full day ahead."
+}
+
+function buildTitle(itemCount) {
+    if (itemCount === 0) return "🌿 Enjoy your quiet day"
+    if (itemCount >= 4) return "🌿 Good Morning • Busy day ahead"
+    return "🌿 Good Morning"
 }
 
 function trimBody(body, maxLength = 220) {
@@ -50,11 +62,19 @@ export async function buildMorningBrief({
 
     const [
         { data: userData, error: userError },
+        { data: familyMember, error: familyMemberError },
         { data: events, error: eventsError },
         { data: tasks, error: tasksError },
         { data: mealPlans, error: mealsError }
     ] = await Promise.all([
         supabase.auth.admin.getUserById(userId),
+
+        supabase
+            .from("family_members")
+            .select("name")
+            .eq("household_id", householdId)
+            .eq("user_id", userId)
+            .maybeSingle(),
 
         supabase
             .from("calendar_events")
@@ -83,20 +103,18 @@ export async function buildMorningBrief({
     ])
 
     if (userError) throw userError
+    if (familyMemberError) throw familyMemberError
     if (eventsError) throw eventsError
     if (tasksError) throw tasksError
     if (mealsError) throw mealsError
 
-    const greetingName = getGreetingName(userData?.user)
     const highlights = []
 
     for (const event of events || []) {
         const eventTitle = event.title || "Family event"
         const time = formatTime(event.start_time)
 
-        highlights.push(
-            `📅 ${eventTitle}${time ? ` • ${time}` : ""}`
-        )
+        highlights.push(`📅 ${eventTitle}${time ? ` • ${time}` : ""}`)
     }
 
     for (const task of tasks || []) {
@@ -110,6 +128,10 @@ export async function buildMorningBrief({
     }
 
     const visibleHighlights = highlights.slice(0, 4)
+    const greetingName = getGreetingName({
+        familyMember,
+        user: userData?.user
+    })
 
     const body = [
         `Good morning, ${greetingName}!`,
@@ -119,7 +141,7 @@ export async function buildMorningBrief({
     ].join("\n")
 
     return {
-        title: "🌿 Good Morning",
+        title: buildTitle(visibleHighlights.length),
         body: trimBody(body),
         url: "/",
         metadata: {
