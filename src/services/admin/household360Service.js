@@ -65,13 +65,29 @@ export async function getHousehold360(householdId) {
 
     if (!firstRow) return null
 
+    const userIds = rows
+        .map(row => row.user_id)
+        .filter(Boolean)
+
+    const preferencesResult = await getHouseholdUserPreferences(userIds)
+
+    const preferencesByUserId = new Map(
+        preferencesResult.map(preferences => [
+            preferences.user_id,
+            preferences
+        ])
+    )
+
     const members = rows
         .filter(row => row.family_member_id)
         .map(row => ({
             id: row.family_member_id,
             name: row.family_member_name,
             userId: row.user_id,
-            email: row.email
+            email: row.email,
+            preferences: row.user_id
+                ? preferencesByUserId.get(row.user_id) ?? null
+                : null
         }))
 
     const openTickets = supportResult.filter(ticket =>
@@ -105,6 +121,19 @@ async function getHouseholdDirectory(householdId) {
         .select("*")
         .eq("household_id", householdId)
         .order("family_member_name")
+
+    if (error) throw error
+
+    return data ?? []
+}
+
+async function getHouseholdUserPreferences(userIds) {
+    if (!userIds.length) return []
+
+    const { data, error } = await supabase
+        .from("user_display_preferences")
+        .select("*")
+        .in("user_id", userIds)
 
     if (error) throw error
 

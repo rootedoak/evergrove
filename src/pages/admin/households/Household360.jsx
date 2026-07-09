@@ -9,11 +9,14 @@ import AdminPageHeader from "../../../components/admin/AdminPageHeader"
 
 import { formatTicketNumber } from "../../../services/admin/productFeedbackAdminService"
 
-import { exportHouseholdData } from "../../../services/admin/householdAdminService"
+import {
+    exportHouseholdData,
+    removeFamilyMember
+} from "../../../services/admin/householdAdminService"
 
 export default function Household360() {
     const { householdId } = useParams()
-    const { data, loading, error } = useHousehold360(householdId)
+    const { data, loading, error, refresh } = useHousehold360(householdId)
 
     async function handleExportHouseholdData() {
         try {
@@ -35,6 +38,27 @@ export default function Household360() {
         } catch (err) {
             console.error(err)
             alert("Unable to export household data.")
+        }
+    }
+
+    async function handleRemoveFamilyMember(member) {
+        if (member.userId) {
+            alert("Authenticated users cannot be removed from HQ.")
+            return
+        }
+
+        const confirmed = window.confirm(
+            `Remove ${member.name} from this household?\n\nThis only removes the family member profile. It does not delete or modify any authenticated Supabase user.`
+        )
+
+        if (!confirmed) return
+
+        try {
+            await removeFamilyMember(member.id, householdId)
+            await refresh()
+        } catch (err) {
+            console.error(err)
+            alert(err.message || "Unable to remove family member profile.")
         }
     }
 
@@ -120,26 +144,96 @@ export default function Household360() {
 
             <AdminCard eyebrow="People" title="Members">
                 <div className="admin-member-list">
-                    {members.map(member => (
-                        <div
-                            key={member.id}
-                            className="admin-member-row"
-                        >
-                            <div>
-                                <strong>{member.name}</strong>
+                    {members.map(member => {
+                        const preferences = member.preferences
 
-                                {member.email && (
-                                    <p>{member.email}</p>
+                        return (
+                            <div
+                                key={member.id}
+                                className="admin-member-row admin-member-row-expanded"
+                            >
+                                <div className="admin-member-main">
+                                    <div>
+                                        <strong className="admin-member-name">
+                                            {member.name}
+                                        </strong>
+
+                                        {member.email ? (
+                                            <p>{member.email}</p>
+                                        ) : (
+                                            <p className="admin-muted">
+                                                Household profile only
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="admin-member-actions">
+                                        <AdminStatusChip status={getMemberTypeStatus(member)}>
+                                            {getMemberTypeLabel(member)}
+                                        </AdminStatusChip>
+
+                                        {!member.userId && (
+                                            <button
+                                                type="button"
+                                                className="text-action-button danger-text"
+                                                onClick={() => handleRemoveFamilyMember(member)}
+                                            >
+                                                Remove Profile
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {preferences ? (
+                                    <div className="admin-member-details-grid">
+                                        <AdminMiniDetail
+                                            label="Onboarding"
+                                            value={preferences.has_completed_onboarding ? "Complete" : "Incomplete"}
+                                        />
+
+                                        <AdminMiniDetail
+                                            label="Walkthrough"
+                                            value={preferences.has_completed_guided_walkthrough ? "Complete" : "Incomplete"}
+                                        />
+
+                                        <AdminMiniDetail
+                                            label="Timeline Window"
+                                            value={`${preferences.timeline_window_days ?? "—"} days`}
+                                        />
+
+                                        <AdminMiniDetail
+                                            label="Timezone"
+                                            value={preferences.timezone || "—"}
+                                        />
+
+                                        <AdminMiniDetail
+                                            label="Tasks Inbox"
+                                            value={preferences.inbox_tasks ? "On" : "Off"}
+                                        />
+
+                                        <AdminMiniDetail
+                                            label="Events Inbox"
+                                            value={preferences.inbox_calendar_events ? "On" : "Off"}
+                                        />
+
+                                        <AdminMiniDetail
+                                            label="Meals Inbox"
+                                            value={preferences.inbox_meals ? "On" : "Off"}
+                                        />
+
+                                        <AdminMiniDetail
+                                            label="Shopping Inbox"
+                                            value={preferences.inbox_shopping ? "On" : "Off"}
+                                        />
+                                    </div>
+                                ) : (
+                                    <p className="admin-muted admin-member-empty-note">
+                                        No experience or notification preferences found for this profile.
+                                    </p>
                                 )}
                             </div>
-
-                            <AdminStatusChip
-                                status={member.userId ? "beta" : "neutral"}
-                            >
-                                {member.userId ? "User" : "Profile"}
-                            </AdminStatusChip>
-                        </div>
-                    ))}
+                        )
+                    })}
                 </div>
             </AdminCard>
 
@@ -215,6 +309,23 @@ export default function Household360() {
                     )}
                 </AdminCard>
             </section>
+        </div>
+    )
+}
+
+function getMemberTypeLabel(member) {
+    return member.userId ? "Linked Account" : "Profile Only"
+}
+
+function getMemberTypeStatus(member) {
+    return member.userId ? "fixed" : "neutral"
+}
+
+function AdminMiniDetail({ label, value }) {
+    return (
+        <div className="admin-mini-detail">
+            <span>{label}</span>
+            <strong>{value}</strong>
         </div>
     )
 }

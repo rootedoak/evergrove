@@ -10,18 +10,25 @@ import AdminStatusChip from "../../../components/admin/AdminStatusChip"
 import useProductFeedback from "../../../hooks/admin/useProductFeedback"
 import { formatTicketNumber } from "../../../services/admin/productFeedbackAdminService"
 
-const statuses = ["all", "new", "reviewing", "planned", "fixed", "closed"]
+const statuses = ["active", "all", "new", "reviewing", "planned", "fixed", "closed"]
 
 export default function SupportInbox() {
     const navigate = useNavigate()
-    const [statusFilter, setStatusFilter] = useState("all")
+    const [statusFilter, setStatusFilter] = useState("active")
     const { feedback, loading, error } = useProductFeedback()
 
+    const activeStatuses = ["new", "reviewing", "planned", "fixed"]
+
     const statusCounts = statuses.reduce((counts, status) => {
-        counts[status] =
-            status === "all"
-                ? feedback.length
-                : feedback.filter(ticket => ticket.status === status).length
+        if (status === "all") {
+            counts[status] = feedback.length
+        } else if (status === "active") {
+            counts[status] = feedback.filter(ticket =>
+                activeStatuses.includes(ticket.status)
+            ).length
+        } else {
+            counts[status] = feedback.filter(ticket => ticket.status === status).length
+        }
 
         return counts
     }, {})
@@ -29,7 +36,9 @@ export default function SupportInbox() {
     const filteredTickets =
         statusFilter === "all"
             ? feedback
-            : feedback.filter(ticket => ticket.status === statusFilter)
+            : statusFilter === "active"
+                ? feedback.filter(ticket => activeStatuses.includes(ticket.status))
+                : feedback.filter(ticket => ticket.status === statusFilter)
 
     const columns = [
         {

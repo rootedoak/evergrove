@@ -53,6 +53,7 @@ export default function usePersonalInbox() {
 
         try {
             await markInboxItemRead(id)
+            window.dispatchEvent(new Event("evergrovePersonalInboxUpdated"))
         } catch (error) {
             console.error(error)
             setItems(previousItems)
@@ -69,6 +70,7 @@ export default function usePersonalInbox() {
 
         try {
             await deletePersonalInboxItem(id)
+            window.dispatchEvent(new Event("evergrovePersonalInboxUpdated"))
         } catch (error) {
             console.error(error)
             setItems(previousItems)

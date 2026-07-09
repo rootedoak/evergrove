@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { getHousehold360 } from "../../services/admin/household360Service"
 
 export default function useHousehold360(householdId) {
@@ -6,43 +6,32 @@ export default function useHousehold360(householdId) {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
-    useEffect(() => {
-        let cancelled = false
+    const refresh = useCallback(async () => {
+        if (!householdId) return
 
-        async function load() {
-            setLoading(true)
-            setError(null)
+        setLoading(true)
+        setError(null)
 
-            try {
-                const result = await getHousehold360(householdId)
-
-                if (!cancelled) {
-                    setData(result)
-                }
-            } catch (err) {
-                console.error("Failed to load Household 360:", err)
-
-                if (!cancelled) {
-                    setError(err)
-                    setData(null)
-                }
-            } finally {
-                if (!cancelled) {
-                    setLoading(false)
-                }
-            }
-        }
-
-        load()
-
-        return () => {
-            cancelled = true
+        try {
+            const result = await getHousehold360(householdId)
+            setData(result)
+        } catch (err) {
+            console.error("Failed to load Household 360:", err)
+            setError(err)
+            setData(null)
+        } finally {
+            setLoading(false)
         }
     }, [householdId])
+
+    useEffect(() => {
+        refresh()
+    }, [refresh])
 
     return {
         data,
         loading,
-        error
+        error,
+        refresh
     }
 }

@@ -61,6 +61,43 @@ export async function searchHouseholds(search = "") {
         .slice(0, 25)
 }
 
+export async function removeFamilyMember(familyMemberId, householdId) {
+    if (!familyMemberId) {
+        throw new Error("familyMemberId is required")
+    }
+
+    if (!householdId) {
+        throw new Error("householdId is required")
+    }
+
+    const { data: member, error: lookupError } = await supabase
+        .from("family_members")
+        .select("id, user_id")
+        .eq("id", familyMemberId)
+        .eq("household_id", householdId)
+        .maybeSingle()
+
+    if (lookupError) throw lookupError
+
+    if (!member) {
+        throw new Error("Family member profile was not found.")
+    }
+
+    if (member.user_id) {
+        throw new Error("Authenticated users cannot be removed from HQ.")
+    }
+
+    const { error } = await supabase
+        .from("family_members")
+        .delete()
+        .eq("id", familyMemberId)
+        .eq("household_id", householdId)
+
+    if (error) throw error
+
+    return true
+}
+
 export async function exportHouseholdData(householdId) {
     if (!householdId) {
         throw new Error("householdId is required")

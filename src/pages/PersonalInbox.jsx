@@ -99,6 +99,10 @@ export default function PersonalInbox() {
 
     const loading = inboxLoading
 
+    function notifyInboxUpdated() {
+        window.dispatchEvent(new Event("evergrovePersonalInboxUpdated"))
+    }
+
     function getInboxDestination(item) {
         const type = item.related_type || item.item_type
 
@@ -158,16 +162,19 @@ export default function PersonalInbox() {
 
     async function handleMarkRead(item) {
         await markRead(item.id)
+        //notifyInboxUpdated()
         setSelectedItem(null)
     }
 
     async function handleDeleteItem(item) {
         await removeItem(item.id)
+        //notifyInboxUpdated()
         setSelectedItem(null)
     }
 
     async function handleArchiveThought(item) {
         await removeItem(item.id)
+        notifyInboxUpdated()
         setSelectedItem(null)
     }
 
@@ -176,6 +183,7 @@ export default function PersonalInbox() {
             const task = await convertThoughtToTask(item)
 
             await refreshInbox()
+            notifyInboxUpdated()
 
             navigate("/tasks", {
                 state: {
@@ -192,6 +200,7 @@ export default function PersonalInbox() {
         try {
             await convertThoughtToReminder(item)
             await refreshInbox()
+            notifyInboxUpdated()
         } catch (error) {
             console.error(error)
             alert(error.message || "Could not convert thought to reminder.")
@@ -264,6 +273,7 @@ export default function PersonalInbox() {
 
             cancelEditingThought()
             await refreshInbox()
+            notifyInboxUpdated()
         } catch (error) {
             console.error(error)
             alert(error.message || "Could not update thought.")
@@ -276,6 +286,7 @@ export default function PersonalInbox() {
         try {
             await markAllNotificationItemsRead()
             await refreshInbox()
+            notifyInboxUpdated()
             setSelectedItem(null)
         } catch (error) {
             console.error(error)
@@ -586,7 +597,10 @@ export default function PersonalInbox() {
             <ThoughtCaptureSheet
                 open={showThoughtCapture}
                 onClose={() => setShowThoughtCapture(false)}
-                onCreated={refreshInbox}
+                onCreated={() => {
+                    refreshInbox()
+                    notifyInboxUpdated()
+                }}
             />
 
         </div>
