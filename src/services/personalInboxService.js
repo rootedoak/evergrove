@@ -136,6 +136,36 @@ export async function markInboxItemRead(id) {
     return data
 }
 
+export async function markAllNotificationItemsRead() {
+    const { user, household } = await getUserAndHousehold()
+
+    const { data, error } = await supabase
+        .from("personal_inbox_items")
+        .update({
+            status: "read",
+            read_at: new Date().toISOString()
+        })
+        .eq("household_id", household.id)
+        .eq("user_id", user.id)
+        .neq("item_type", "thought")
+        .eq("status", "unread")
+        .select()
+
+    if (error) throw error
+
+    window.dispatchEvent(new Event("evergrovePersonalInboxUpdated"))
+
+    await trackUsageEvent({
+        eventType: "notifications_marked_all_read",
+        entityType: "personal_inbox",
+        metadata: {
+            count: data?.length || 0
+        }
+    })
+
+    return data || []
+}
+
 export async function deletePersonalInboxItem(id) {
     const { error } = await supabase
         .from("personal_inbox_items")

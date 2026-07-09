@@ -105,6 +105,14 @@ export default function Analytics() {
 
             </section>
 
+            <AnalyticsLineChart
+                title="New Households"
+                description="Households created each day in the selected period."
+                data={analytics.householdGrowth}
+                xKey="date"
+                yKey="households"
+            />
+
             <section className="admin-grid admin-grid-2">
                 {analytics.insights.map((insight, index) => (
                     <AnalyticsInsightCard

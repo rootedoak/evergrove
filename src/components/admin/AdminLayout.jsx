@@ -8,6 +8,7 @@ import {
     MessageSquare,
     Rocket,
     Shield,
+    TrendingUp,
     Users,
     Wrench
 } from "lucide-react"
@@ -31,7 +32,8 @@ const adminNavSections = [
             { to: "/admin/households", label: "Households", icon: House },
             { to: "/admin/users", label: "Users", icon: Users },
             { to: "/admin/support", label: "Support", icon: MessageSquare },
-            { to: "/admin/analytics", label: "Analytics", icon: BarChart3 }
+            { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+            { to: "/admin/sales", label: "Sales & Marketing", icon: TrendingUp }
         ]
     },
     {

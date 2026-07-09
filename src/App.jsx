@@ -78,6 +78,8 @@ import ReleaseDetail from "./pages/admin/releases/ReleaseDetail"
 import Releases from "./pages/admin/releases/Releases"
 import FeatureFlags from "./pages/admin/featureFlags/FeatureFlags"
 
+import SalesMarketing from "./pages/admin/sales/SalesMarketing"
+
 import FirstWeekSetup from "./pages/FirstWeekSetup"
 
 import UIKit from "./pages/UIKit"
@@ -279,6 +281,7 @@ function AppRoutes() {
         <Route path="users/:userId" element={<UserProfile />} />
         <Route path="beta" element={<BetaHealth />} />
         <Route path="/admin/feature-flags" element={<FeatureFlags />} />
+        <Route path="sales" element={<SalesMarketing />} />
       </Route>
     </Routes>
   )

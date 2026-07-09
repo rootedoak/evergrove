@@ -6,6 +6,9 @@ import useHouseholds from "../../../hooks/admin/useHouseholds"
 import { useNavigate } from "react-router-dom"
 import AdminPageHeader from "../../../components/admin/AdminPageHeader"
 
+import { getHouseholdBadges } from "../../../utils/adminBadges"
+import AdminBadge from "../../../components/admin/AdminBadge"
+
 export default function Households() {
     const {
         households,
@@ -17,7 +20,19 @@ export default function Households() {
     const columns = [
         {
             key: "household",
-            label: "Household"
+            label: "Household",
+            render: household => (
+                <div className="admin-row-title-with-badge">
+                    <span>{household.household}</span>
+
+                    {getHouseholdBadges(household).map(badge => (
+                        <AdminBadge
+                            key={badge.label}
+                            badge={badge}
+                        />
+                    ))}
+                </div>
+            )
         },
         {
             key: "members",

@@ -7,6 +7,7 @@ import ThoughtCaptureSheet from "../components/ThoughtCaptureSheet"
 import {
     convertThoughtToTask,
     convertThoughtToReminder,
+    markAllNotificationItemsRead,
     updatePersonalInboxItem
 } from "../services/personalInboxService"
 
@@ -91,6 +92,10 @@ export default function PersonalInbox() {
     const notificationItems = items.filter(
         item => item.item_type !== "thought"
     )
+
+    const unreadNotificationCount = notificationItems.filter(
+        item => item.status === "unread"
+    ).length
 
     const loading = inboxLoading
 
@@ -267,6 +272,17 @@ export default function PersonalInbox() {
         }
     }
 
+    async function handleClearNotifications() {
+        try {
+            await markAllNotificationItemsRead()
+            await refreshInbox()
+            setSelectedItem(null)
+        } catch (error) {
+            console.error(error)
+            alert(error.message || "Could not clear notifications.")
+        }
+    }
+
     return (
         <div className="page-shell">
             <header className="page-header">
@@ -284,9 +300,22 @@ export default function PersonalInbox() {
             </header>
 
             <section className="card">
-                <p className="card-kicker">Notifications</p>
+                <div className="section-header-row">
+                    <div>
+                        <p className="card-kicker">Notifications</p>
+                        <h3>Notifications</h3>
+                    </div>
 
-                <h3>Notifications</h3>
+                    {unreadNotificationCount > 0 && (
+                        <button
+                            type="button"
+                            className="text-action-button"
+                            onClick={handleClearNotifications}
+                        >
+                            Clear All
+                        </button>
+                    )}
+                </div>
 
                 {loading ? (
                     <p className="dashboard-empty">

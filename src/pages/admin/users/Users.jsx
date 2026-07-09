@@ -7,6 +7,9 @@ import AdminEmptyState from "../../../components/admin/AdminEmptyState"
 
 import useUsers from "../../../hooks/admin/useUsers"
 
+import AdminBadge from "../../../components/admin/AdminBadge"
+import { getUserBadges } from "../../../utils/adminBadges"
+
 export default function Users() {
     const [search, setSearch] = useState("")
 
@@ -61,7 +64,16 @@ export default function Users() {
 
                                     <div>
 
-                                        <strong>{user.name}</strong>
+                                        <div className="admin-row-title-with-badge">
+                                            <strong>{user.name}</strong>
+
+                                            {getUserBadges(user).map(badge => (
+                                                <AdminBadge
+                                                    key={badge.label}
+                                                    badge={badge}
+                                                />
+                                            ))}
+                                        </div>
 
                                         <div className="admin-muted">
                                             {user.household_name ?? "No household"}

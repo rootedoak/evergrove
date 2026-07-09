@@ -8,7 +8,8 @@ import {
     getEngagementMetrics,
     getFeatureUsage,
     getOnboardingMetrics,
-    getSupportMetrics
+    getSupportMetrics,
+    getHouseholdGrowth
 } from "../../services/admin/analyticsService"
 
 export default function useAdminAnalytics(days = 30) {
@@ -20,8 +21,8 @@ export default function useAdminAnalytics(days = 30) {
         engagement: null,
         supportMetrics: null,
         insights: [],
-        getOnboardingMetrics,
-        onboarding: null
+        onboarding: null,
+        householdGrowth: []
     })
 
     const [loading, setLoading] = useState(true)
@@ -39,6 +40,7 @@ export default function useAdminAnalytics(days = 30) {
                 featureUsage,
                 dailyActiveHouseholds,
                 dailyAppSessions,
+                householdGrowth,
                 supportMetrics
             ] = await Promise.all([
                 getDashboardKpis({ days }),
@@ -47,6 +49,7 @@ export default function useAdminAnalytics(days = 30) {
                 getFeatureUsage({ days }),
                 getDailyActiveHouseholds({ days }),
                 getDailyAppSessions({ days }),
+                getHouseholdGrowth({ days }),
                 getSupportMetrics({ days })
             ])
 
@@ -62,6 +65,7 @@ export default function useAdminAnalytics(days = 30) {
                 featureUsage,
                 dailyActiveHouseholds,
                 dailyAppSessions,
+                householdGrowth,
                 onboarding,
                 supportMetrics,
                 insights

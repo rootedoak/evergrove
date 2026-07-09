@@ -277,6 +277,42 @@ export async function getDailyActiveHouseholds({ days = 14 } = {}) {
     }))
 }
 
+export async function getHouseholdGrowth({ days = 30 } = {}) {
+    const since = getSinceDate(days)
+
+    const { data, error } = await supabase
+        .from("households")
+        .select("created_at")
+        .gte("created_at", since.toISOString())
+
+    if (error) throw error
+
+    const dailyMap = new Map()
+
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date()
+        date.setDate(date.getDate() - i)
+
+        const key = getLocalDateKey(date)
+        dailyMap.set(key, 0)
+    }
+
+    for (const row of data ?? []) {
+        if (!row.created_at) continue
+
+        const key = getLocalDateKey(row.created_at)
+
+        if (dailyMap.has(key)) {
+            dailyMap.set(key, dailyMap.get(key) + 1)
+        }
+    }
+
+    return Array.from(dailyMap.entries()).map(([date, households]) => ({
+        date,
+        households
+    }))
+}
+
 export async function getSupportMetrics({ days = 30 } = {}) {
     const since = getSinceDate(days)
 
