@@ -10,6 +10,7 @@ import {
     Palette,
     Rocket,
     Shield,
+    ShieldCheck,
     TrendingUp,
     Users,
     Wrench
@@ -71,6 +72,11 @@ const adminNavSections = [
                 to: "/admin/growth",
                 label: "Growth",
                 icon: TrendingUp
+            },
+            {
+                to: "/admin/trust",
+                label: "Trust Center",
+                icon: ShieldCheck
             }
         ]
     },

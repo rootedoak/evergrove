@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   Repeat,
   Settings,
+  ShieldCheck,
   ShoppingCart,
   User,
   Users,
@@ -89,6 +90,11 @@ import Growth from "./pages/admin/company/Growth"
 
 import PublicHome from "./pages/public/PublicHome"
 import ReferralLanding from "./pages/public/ReferralLanding"
+
+import TrustCenter from "./pages/trust/TrustCenter"
+import TrustDocumentPage from "./pages/trust/TrustDocumentPage"
+import LegalAcceptanceGate from "./components/trust/LegalAcceptanceGate"
+import AdminTrustCenter from "./pages/admin/trust/AdminTrustCenter"
 
 import UIKit from "./pages/UIKit"
 
@@ -262,6 +268,8 @@ function AppRoutes() {
       <Route path="/trips" element={<Trips />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/about" element={<About />} />
+      <Route path="/trust" element={<TrustCenter />} />
+      <Route path="/trust/:slug" element={<TrustDocumentPage />} />
       <Route path="/personal-inbox" element={<PersonalInbox />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/join-household" element={<JoinHousehold />} />
@@ -285,6 +293,10 @@ function AppRoutes() {
         />
         <Route path="brand" element={<Brand />} />
         <Route path="go-to-market" element={<GoToMarket />} />
+        <Route
+          path="trust"
+          element={<AdminTrustCenter />}
+        />
         <Route path="growth" element={<Growth />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="households" element={<Households />} />
@@ -310,6 +322,10 @@ function PublicRoutes() {
       <Route path="/r/:code" element={<ReferralLanding />} />
       <Route path="/invite/:token" element={<InvitePage />} />
       <Route path="/login" element={<Login onLogin={() => { }} />} />
+
+      <Route path="/trust" element={<TrustCenter />} />
+      <Route path="/trust/:slug" element={<TrustDocumentPage />} />
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
@@ -341,7 +357,8 @@ function OnboardingGuard({ children }) {
     !hasCompletedOnboarding &&
     location.pathname !== "/onboarding" &&
     location.pathname !== "/join-household" &&
-    !location.pathname.startsWith("/invite/")
+    !location.pathname.startsWith("/invite/") &&
+    !location.pathname.startsWith("/trust")
   ) {
     return <Navigate to="/onboarding" replace />
   }
@@ -361,7 +378,8 @@ function OnboardingGuard({ children }) {
         !hasCompletedGuidedWalkthrough &&
         location.pathname !== "/first-week" &&
         location.pathname !== "/join-household" &&
-        !location.pathname.startsWith("/invite/") && (
+        !location.pathname.startsWith("/invite/") &&
+        !location.pathname.startsWith("/trust") && (
           <GuidedWalkthrough
             onComplete={refreshPreferences}
           />
@@ -520,12 +538,12 @@ export default function App() {
   }
 
   return (
-    <>
+    <LegalAcceptanceGate>
       <PersonalInboxEngine />
 
       <OnboardingGuard>
         <AppLayout />
       </OnboardingGuard>
-    </>
+    </LegalAcceptanceGate>
   )
 }
