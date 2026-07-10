@@ -20,7 +20,7 @@ import {
 
 import {
     getTrustDocumentBySlug
-} from "./trustDocuments"
+} from "./TrustDocuments"
 
 function renderInlineFormatting(text) {
     const parts = text.split(/(\*\*[^*]+\*\*)/g)

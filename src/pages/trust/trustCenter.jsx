@@ -12,7 +12,7 @@ import AppPage from "../../components/ui/AppPage"
 import PageHeader from "../../components/ui/PageHeader"
 import SectionCard from "../../components/ui/SectionCard"
 
-import { TRUST_DOCUMENTS } from "./trustDocuments"
+import { TRUST_DOCUMENTS } from "./TrustDocuments"
 
 const DOCUMENT_ICONS = {
     privacy: ShieldCheck,
