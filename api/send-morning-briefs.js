@@ -47,12 +47,11 @@ export default async function handler(req, res) {
             })
         }
 
-        const authHeader = req.headers.authorization || ""
-        const expectedHeader = `Bearer ${process.env.CRON_SECRET}`
+        const cronSecretHeader = req.headers["x-evergrove-cron-secret"] || ""
 
-        if (authHeader !== expectedHeader) {
-            console.warn("Unauthorized morning brief cron request", {
-                runId
+        if (cronSecretHeader !== process.env.CRON_SECRET) {
+            return res.status(401).json({
+                error: "Unauthorized"
             })
 
             return res.status(401).json({
