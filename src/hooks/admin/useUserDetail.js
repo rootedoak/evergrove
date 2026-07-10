@@ -4,10 +4,13 @@ import {
     getUserDetail,
     getUserPreferences,
     getUserSupportTickets,
-    getUserUsageEvents
+    getUserUsageEvents,
+    getUserAdoptionEvents,
 } from "../../services/admin/userAdminService"
 
 export default function useUserDetail(userId) {
+    const [adoptionEvents, setAdoptionEvents] = useState([])
+
     const [user, setUser] = useState(null)
     const [tickets, setTickets] = useState([])
     const [events, setEvents] = useState([])
@@ -29,12 +32,14 @@ export default function useUserDetail(userId) {
                     userDetail,
                     userPreferences,
                     supportTickets,
-                    usageEvents
+                    usageEvents,
+                    userAdoptionEvents
                 ] = await Promise.all([
                     getUserDetail(userId),
                     getUserPreferences(userId),
                     getUserSupportTickets(userId),
-                    getUserUsageEvents(userId)
+                    getUserUsageEvents(userId),
+                    getUserAdoptionEvents(userId)
                 ])
 
                 if (!cancelled) {
@@ -42,6 +47,7 @@ export default function useUserDetail(userId) {
                     setPreferences(userPreferences)
                     setTickets(supportTickets)
                     setEvents(usageEvents)
+                    setAdoptionEvents(userAdoptionEvents)
                 }
             } catch (err) {
                 console.error("Failed to load user detail:", err)
@@ -52,6 +58,7 @@ export default function useUserDetail(userId) {
                     setPreferences(null)
                     setTickets([])
                     setEvents([])
+                    setAdoptionEvents([])
                 }
             } finally {
                 if (!cancelled) {
@@ -73,6 +80,7 @@ export default function useUserDetail(userId) {
         tickets,
         events,
         loading,
+        adoptionEvents,
         error
     }
 }

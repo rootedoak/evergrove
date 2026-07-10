@@ -14,7 +14,7 @@ function currentHourInTimezone(timezone) {
     return new Intl.DateTimeFormat("en-US", {
         timeZone: timezone,
         hour: "2-digit",
-        hour12: false
+        hourCycle: "h23"
     }).format(new Date())
 }
 
@@ -43,12 +43,12 @@ export async function runMorningBriefs({
     let usersQuery = supabase
         .from("user_display_preferences")
         .select(`
-        id,
-        user_id,
-        morning_brief_enabled,
-        morning_brief_time,
-        last_morning_brief_sent_at
-    `)
+            id,
+            user_id,
+            morning_brief_enabled,
+            morning_brief_time,
+            last_morning_brief_sent_at
+        `)
         .eq("morning_brief_enabled", true)
 
     if (userId) {
@@ -59,11 +59,20 @@ export async function runMorningBriefs({
 
     if (usersError) throw usersError
 
-    let sentUsers = 0
-    let skippedUsers = 0
-    let failedUsers = 0
-    let expiredRemoved = 0
-    const errors = []
+    const summary = {
+        checkedUsers: users?.length || 0,
+        sentUsers: 0,
+        failedUsers: 0,
+        expiredRemoved: 0,
+        skips: {
+            noHousehold: 0,
+            householdMismatch: 0,
+            alreadySentToday: 0,
+            outsideScheduledHour: 0,
+            noPushDelivered: 0
+        },
+        errors: []
+    }
 
     for (const userPreference of users || []) {
         try {
@@ -78,41 +87,54 @@ export async function runMorningBriefs({
 
             const resolvedHouseholdId = membership?.household_id
 
-            if (householdId && resolvedHouseholdId !== householdId) {
-                skippedUsers += 1
-                continue
-            }
-
             if (!resolvedHouseholdId) {
-                skippedUsers += 1
+                summary.skips.noHousehold += 1
                 continue
             }
 
-            const { data: householdPreferences, error: householdPreferenceError } = await supabase
+            if (householdId && resolvedHouseholdId !== householdId) {
+                summary.skips.householdMismatch += 1
+                continue
+            }
+
+            const {
+                data: householdPreferences,
+                error: householdPreferenceError
+            } = await supabase
                 .from("household_preferences")
                 .select("timezone")
                 .eq("household_id", resolvedHouseholdId)
                 .maybeSingle()
 
-            if (householdPreferenceError) throw householdPreferenceError
+            if (householdPreferenceError) {
+                throw householdPreferenceError
+            }
 
-            const timezone = householdPreferences?.timezone || "America/Chicago"
+            const timezone =
+                householdPreferences?.timezone || "America/Chicago"
 
             if (
                 !ignoreAlreadySentToday &&
-                alreadySentToday(userPreference.last_morning_brief_sent_at, timezone)
+                alreadySentToday(
+                    userPreference.last_morning_brief_sent_at,
+                    timezone
+                )
             ) {
-                skippedUsers += 1
+                summary.skips.alreadySentToday += 1
                 continue
             }
 
             if (respectScheduledHour) {
                 const currentHour = currentHourInTimezone(timezone)
-                const briefHour = String(userPreference.morning_brief_time || "07:00")
+
+                const briefHour = String(
+                    userPreference.morning_brief_time || "07:00"
+                )
                     .slice(0, 2)
+                    .padStart(2, "0")
 
                 if (currentHour !== briefHour) {
-                    skippedUsers += 1
+                    summary.skips.outsideScheduledHour += 1
                     continue
                 }
             }
@@ -132,37 +154,44 @@ export async function runMorningBriefs({
                 url: brief.url
             })
 
-            expiredRemoved += pushResult.expiredRemoved
+            summary.expiredRemoved += pushResult.expiredRemoved || 0
 
-            if (pushResult.sent > 0) {
-                await supabase
-                    .from("user_display_preferences")
-                    .update({
-                        last_morning_brief_sent_at: new Date().toISOString()
-                    })
-                    .eq("id", userPreference.id)
-
-                sentUsers += 1
-            } else {
-                skippedUsers += 1
+            if ((pushResult.sent || 0) === 0) {
+                summary.skips.noPushDelivered += 1
+                continue
             }
-        } catch (error) {
-            failedUsers += 1
 
-            errors.push({
+            const { error: updateError } = await supabase
+                .from("user_display_preferences")
+                .update({
+                    last_morning_brief_sent_at: new Date().toISOString()
+                })
+                .eq("id", userPreference.id)
+
+            if (updateError) throw updateError
+
+            summary.sentUsers += 1
+        } catch (error) {
+            summary.failedUsers += 1
+
+            summary.errors.push({
                 userId: userPreference.user_id,
                 error: error.message || "Unknown error"
+            })
+
+            console.error("Morning brief user failed", {
+                userId: userPreference.user_id,
+                error
             })
         }
     }
 
+    const skippedUsers = Object.values(summary.skips)
+        .reduce((total, count) => total + count, 0)
+
     return {
-        ok: true,
-        checkedUsers: users?.length || 0,
-        sentUsers,
-        skippedUsers,
-        failedUsers,
-        expiredRemoved,
-        errors
+        ok: summary.failedUsers === 0,
+        ...summary,
+        skippedUsers
     }
 }

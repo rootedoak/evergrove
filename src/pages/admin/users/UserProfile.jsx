@@ -15,7 +15,7 @@ export default function UserProfile() {
     const { userId } = useParams()
     const [sendingMorningBrief, setSendingMorningBrief] = useState(false)
     const [morningBriefResult, setMorningBriefResult] = useState(null)
-    const { user, preferences, tickets, events, loading, error } = useUserDetail(userId)
+    const { user, preferences, tickets, events, adoptionEvents, loading, error } = useUserDetail(userId)
 
     if (loading) {
         return (
@@ -40,7 +40,7 @@ export default function UserProfile() {
         events
     })
 
-    const adoption = getFeatureAdoption(events)
+    const adoption = getFeatureAdoption(adoptionEvents)
 
     const sessionCount = events.filter(event =>
         event.event_type === "session_started"
@@ -133,15 +133,19 @@ export default function UserProfile() {
                         </div>
                     </AdminCard>
 
-                    <AdminCard title="Product Adoption">
+                    <AdminCard title="Feature Engagement">
                         <div className="admin-adoption-grid">
                             {adoption.map(feature => (
                                 <div
                                     key={feature.label}
-                                    className={feature.active ? "admin-adoption-item active" : "admin-adoption-item"}
+                                    className={`admin-adoption-item ${feature.status}`}
                                 >
-                                    <span>{feature.active ? "✓" : "—"}</span>
-                                    <strong>{feature.label}</strong>
+                                    <span>{getAdoptionIcon(feature.status)}</span>
+
+                                    <div>
+                                        <strong>{feature.label}</strong>
+                                        <p className="admin-muted">{feature.labelText}</p>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -366,32 +370,89 @@ function healthStatus(score) {
 }
 
 function getFeatureAdoption(events) {
-    const used = new Set(events.map(event => event.event_type))
-
-    return [
+    const features = [
         {
             label: "Tasks",
-            active: used.has("task_created") || used.has("task_completed")
+            eventTypes: ["task_created", "task_updated", "task_completed"]
         },
         {
             label: "Calendar",
-            active: used.has("calendar_event_created") || used.has("activity_created")
+            eventTypes: [
+                "calendar_event_created",
+                "calendar_event_updated",
+                "activity_created"
+            ]
         },
         {
             label: "Meals",
-            active: used.has("meal_created") || used.has("meal_planned")
+            eventTypes: ["meal_created", "meal_updated", "meal_planned"]
         },
         {
             label: "Shopping",
-            active: used.has("shopping_item_added")
+            eventTypes: [
+                "grocery_item_created",
+                "grocery_item_checked",
+                "shopping_item_added"
+            ]
         },
         {
             label: "Trips",
-            active: used.has("trip_created")
+            eventTypes: ["trip_created", "trip_updated"]
         },
         {
             label: "Announcements",
-            active: used.has("announcement_created")
+            eventTypes: ["announcement_created"]
         }
     ]
+
+    return features.map(feature => {
+        const matchingEvents = events.filter(event =>
+            feature.eventTypes.includes(event.event_type)
+        )
+
+        const latestEvent = matchingEvents[0]
+        const lastUsedAt = latestEvent?.created_at ?? null
+        const daysSinceUsed = getDaysSince(lastUsedAt)
+
+        return {
+            label: feature.label,
+            lastUsedAt,
+            daysSinceUsed,
+            status: getAdoptionStatus(daysSinceUsed),
+            labelText: getAdoptionLabel(daysSinceUsed)
+        }
+    })
+}
+
+function getDaysSince(value) {
+    if (!value) return null
+
+    const then = new Date(value)
+    const now = new Date()
+    const diffMs = now.getTime() - then.getTime()
+
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24))
+}
+
+function getAdoptionStatus(daysSinceUsed) {
+    if (daysSinceUsed === null) return "neutral"
+    if (daysSinceUsed <= 7) return "fixed"
+    if (daysSinceUsed <= 30) return "planned"
+    if (daysSinceUsed <= 60) return "error"
+
+    return "neutral"
+}
+
+function getAdoptionLabel(daysSinceUsed) {
+    if (daysSinceUsed === null) return "Not used in 60 days"
+    if (daysSinceUsed === 0) return "Used today"
+    if (daysSinceUsed === 1) return "Used yesterday"
+    return `Used ${daysSinceUsed} days ago`
+}
+
+function getAdoptionIcon(status) {
+    if (status === "fixed") return "✓"
+    if (status === "planned") return "!"
+    if (status === "error") return "×"
+    return "—"
 }

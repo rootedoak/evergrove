@@ -1,0 +1,607 @@
+import {
+    Check,
+    CircleHelp,
+    Copy,
+    Heart,
+    Image,
+    Leaf,
+    MessageCircle,
+    Palette,
+    ShieldCheck,
+    Sparkles,
+    Smartphone,
+    Sun,
+    Type
+} from "lucide-react"
+
+import AppPage from "../../../components/ui/AppPage"
+import PageHeader from "../../../components/ui/PageHeader"
+import SectionCard from "../../../components/ui/SectionCard"
+
+const personalityTraits = [
+    {
+        title: "Calm",
+        description:
+            "We reduce noise, uncertainty, and pressure. Evergrove should make family life feel more manageable.",
+        icon: Leaf
+    },
+    {
+        title: "Helpful",
+        description:
+            "Every interaction should solve a real problem or make the next step easier to understand.",
+        icon: CircleHelp
+    },
+    {
+        title: "Human",
+        description:
+            "We speak like a thoughtful person, not a system message, workflow engine, or corporate platform.",
+        icon: Heart
+    },
+    {
+        title: "Encouraging",
+        description:
+            "We recognize progress without creating guilt, judgment, or pressure to be perfect.",
+        icon: Sparkles
+    },
+    {
+        title: "Trustworthy",
+        description:
+            "We are honest, reliable, careful with family information, and clear about what Evergrove can do.",
+        icon: ShieldCheck
+    },
+    {
+        title: "Hopeful",
+        description:
+            "Our language reflects the belief that family life can feel more connected, prepared, and supported.",
+        icon: Sun
+    }
+]
+
+const voiceExamples = [
+    {
+        say: "Welcome Home",
+        avoid: "Household created successfully"
+    },
+    {
+        say: "You're all set.",
+        avoid: "Operation completed"
+    },
+    {
+        say: "Let's plan dinner.",
+        avoid: "Create meal-plan record"
+    },
+    {
+        say: "Capture a Thought",
+        avoid: "Add personal note"
+    },
+    {
+        say: "Invite your family",
+        avoid: "Add household members"
+    },
+    {
+        say: "Save changes",
+        avoid: "Submit configuration"
+    }
+]
+
+const emotionalOutcomes = [
+    "Confident",
+    "Prepared",
+    "Connected",
+    "Calm",
+    "Supported"
+]
+
+const colors = [
+    {
+        name: "Deep Navy",
+        value: "#10263D",
+        purpose: "Trust, stability, leadership, and primary brand moments",
+        className: "brand-color-swatch--deep-navy"
+    },
+    {
+        name: "Evergreen",
+        value: "#4E795C",
+        purpose: "Growth, reassurance, progress, and positive action",
+        className: "brand-color-swatch--evergreen"
+    },
+    {
+        name: "Grove Blue",
+        value: "#173A52",
+        purpose: "Depth, calm, supporting surfaces, and gradients",
+        className: "brand-color-swatch--grove-blue"
+    },
+    {
+        name: "Morning Sky",
+        value: "#D9EAF3",
+        purpose: "Optimism, light accents, and soft informational states",
+        className: "brand-color-swatch--morning-sky"
+    },
+    {
+        name: "Warm Sand",
+        value: "#F3EFE6",
+        purpose: "Comfort, warmth, family storytelling, and soft contrast",
+        className: "brand-color-swatch--warm-sand"
+    },
+    {
+        name: "Stone",
+        value: "#667586",
+        purpose: "Secondary text, balance, and understated support",
+        className: "brand-color-swatch--stone"
+    },
+    {
+        name: "Cloud",
+        value: "#F7F9FB",
+        purpose: "Primary background and calm page structure",
+        className: "brand-color-swatch--cloud"
+    },
+    {
+        name: "White",
+        value: "#FFFFFF",
+        purpose: "Cards, clarity, space, and clean content surfaces",
+        className: "brand-color-swatch--white"
+    }
+]
+
+const uiPrinciples = [
+    {
+        title: "Reduce taps",
+        description:
+            "Common household actions should be available without unnecessary screens, menus, or detours.",
+        icon: Smartphone
+    },
+    {
+        title: "Remove decisions",
+        description:
+            "Use thoughtful defaults and clear hierarchy so families do not have to configure everything.",
+        icon: Check
+    },
+    {
+        title: "Default to simplicity",
+        description:
+            "Start with the clearest version of a workflow and add complexity only when it delivers real value.",
+        icon: Leaf
+    },
+    {
+        title: "Hide complexity",
+        description:
+            "Evergrove can be powerful behind the scenes without making the experience feel technical.",
+        icon: ShieldCheck
+    },
+    {
+        title: "Reward progress",
+        description:
+            "Show completion, momentum, and preparedness without turning family life into a competition.",
+        icon: Sparkles
+    },
+    {
+        title: "Design mobile first",
+        description:
+            "The primary experience should be excellent on a phone before desktop polish is considered finished.",
+        icon: Smartphone
+    }
+]
+
+const languagePairs = [
+    ["Home", "Dashboard"],
+    ["Family", "Household entity"],
+    ["Save", "Submit"],
+    ["Plan", "Record"],
+    ["Settings", "Configuration"],
+    ["Routine", "Workflow"],
+    ["Use", "Utilize"],
+    ["Invite", "Provision user"],
+    ["You're all set", "Process complete"]
+]
+
+const photographyGuidelines = [
+    "Real families and recognizable everyday moments",
+    "Natural light and warm, lived-in spaces",
+    "Dinner tables, kitchens, cars, backpacks, calendars, and backyards",
+    "Candid interaction rather than staged smiles",
+    "A range of family structures, ages, homes, and life stages"
+]
+
+const photographyAvoid = [
+    "Corporate office imagery",
+    "Perfectly staged homes that feel unreachable",
+    "Overly polished stock photography",
+    "Screens used as the emotional center of the image",
+    "Images that make family life look effortless or unrealistic"
+]
+
+function copyToClipboard(value) {
+    if (!navigator?.clipboard) return
+
+    navigator.clipboard.writeText(value)
+}
+
+export default function Brand() {
+    return (
+        <AppPage>
+            <PageHeader
+                eyebrow="Company"
+                title="Brand"
+                description="The visual, verbal, and emotional system that makes Evergrove feel unmistakably like Evergrove."
+            />
+
+            <div className="brand-page">
+                <section className="brand-hero">
+                    <div className="brand-hero__content">
+                        <div className="brand-hero__mark">
+                            <Leaf size={24} />
+                        </div>
+
+                        <p className="brand-hero__eyebrow">
+                            The Evergrove Brand
+                        </p>
+
+                        <h2>
+                            Every interaction should feel calm, helpful, and
+                            human.
+                        </h2>
+
+                        <p>
+                            Evergrove exists to give families confidence. Every
+                            screen, email, notification, illustration, and
+                            conversation should reinforce that feeling.
+                        </p>
+                    </div>
+                </section>
+
+                <section className="brand-section">
+                    <div className="brand-section-heading">
+                        <span>Who we are</span>
+                        <h2>Brand Personality</h2>
+                        <p>
+                            These traits should be recognizable in the product,
+                            our marketing, and every interaction with a family.
+                        </p>
+                    </div>
+
+                    <div className="brand-personality-grid">
+                        {personalityTraits.map(trait => {
+                            const Icon = trait.icon
+
+                            return (
+                                <article
+                                    key={trait.title}
+                                    className="brand-personality-card"
+                                >
+                                    <div className="brand-card-icon">
+                                        <Icon size={21} />
+                                    </div>
+
+                                    <h3>{trait.title}</h3>
+                                    <p>{trait.description}</p>
+                                </article>
+                            )
+                        })}
+                    </div>
+                </section>
+
+                <SectionCard
+                    title="The Feeling"
+                    icon={Heart}
+                    className="brand-feeling-card"
+                >
+                    <p className="brand-section-intro">
+                        Evergrove is successful when families leave an
+                        interaction feeling:
+                    </p>
+
+                    <div className="brand-feeling-list">
+                        {emotionalOutcomes.map(outcome => (
+                            <span key={outcome}>{outcome}</span>
+                        ))}
+                    </div>
+
+                    <blockquote>
+                        Every interaction with Evergrove should leave a family
+                        feeling a little more confident than they did before.
+                    </blockquote>
+                </SectionCard>
+
+                <section className="brand-section">
+                    <div className="brand-section-heading">
+                        <span>How we speak</span>
+                        <h2>Voice &amp; Tone</h2>
+                        <p>
+                            Evergrove communicates with clarity, warmth, and
+                            respect. We speak like a capable guide, not a
+                            machine.
+                        </p>
+                    </div>
+
+                    <div className="brand-voice-grid">
+                        <div className="brand-voice-column brand-voice-column--say">
+                            <div className="brand-voice-column__header">
+                                <Check size={18} />
+                                <span>Say this</span>
+                            </div>
+
+                            {voiceExamples.map(example => (
+                                <div
+                                    key={example.say}
+                                    className="brand-voice-example"
+                                >
+                                    <strong>{example.say}</strong>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="brand-voice-column brand-voice-column--avoid">
+                            <div className="brand-voice-column__header">
+                                <MessageCircle size={18} />
+                                <span>Instead of this</span>
+                            </div>
+
+                            {voiceExamples.map(example => (
+                                <div
+                                    key={example.avoid}
+                                    className="brand-voice-example"
+                                >
+                                    <span>{example.avoid}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                <section className="brand-section">
+                    <div className="brand-section-heading">
+                        <span>Visual identity</span>
+                        <h2>Color Palette</h2>
+                        <p>
+                            Our colors balance trust, calm, warmth, and growth.
+                            Click a color value to copy it.
+                        </p>
+                    </div>
+
+                    <div className="brand-color-grid">
+                        {colors.map(color => (
+                            <article
+                                key={color.name}
+                                className="brand-color-card"
+                            >
+                                <div
+                                    className={`brand-color-swatch ${color.className}`}
+                                />
+
+                                <div className="brand-color-card__content">
+                                    <h3>{color.name}</h3>
+                                    <p>{color.purpose}</p>
+
+                                    <button
+                                        type="button"
+                                        className="brand-copy-value"
+                                        onClick={() =>
+                                            copyToClipboard(color.value)
+                                        }
+                                    >
+                                        <span>{color.value}</span>
+                                        <Copy size={14} />
+                                    </button>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                </section>
+
+                <SectionCard
+                    title="Typography"
+                    icon={Type}
+                    className="brand-type-card"
+                >
+                    <p className="brand-section-intro">
+                        Typography should feel modern, readable, warm, and
+                        confident. Clear hierarchy matters more than decorative
+                        styling.
+                    </p>
+
+                    <div className="brand-type-examples">
+                        <div className="brand-type-example brand-type-example--display">
+                            <span>Display</span>
+                            <p>Where organized families grow.</p>
+                        </div>
+
+                        <div className="brand-type-example brand-type-example--heading">
+                            <span>Heading</span>
+                            <p>Your family is ready for the week.</p>
+                        </div>
+
+                        <div className="brand-type-example brand-type-example--body">
+                            <span>Body</span>
+                            <p>
+                                Evergrove helps families keep schedules, meals,
+                                tasks, shopping, and important moments in one
+                                calm, connected place.
+                            </p>
+                        </div>
+
+                        <div className="brand-type-example brand-type-example--caption">
+                            <span>Caption</span>
+                            <p>Updated a few moments ago</p>
+                        </div>
+
+                        <div className="brand-type-example brand-type-example--button">
+                            <span>Button</span>
+                            <button type="button">Plan the week</button>
+                        </div>
+                    </div>
+                </SectionCard>
+
+                <section className="brand-section">
+                    <div className="brand-section-heading">
+                        <span>Product design</span>
+                        <h2>UI Philosophy</h2>
+                        <p>
+                            The interface should quietly support family life
+                            instead of becoming another thing families must
+                            manage.
+                        </p>
+                    </div>
+
+                    <div className="brand-ui-grid">
+                        {uiPrinciples.map(principle => {
+                            const Icon = principle.icon
+
+                            return (
+                                <article
+                                    key={principle.title}
+                                    className="brand-ui-card"
+                                >
+                                    <div className="brand-card-icon">
+                                        <Icon size={21} />
+                                    </div>
+
+                                    <h3>{principle.title}</h3>
+                                    <p>{principle.description}</p>
+                                </article>
+                            )
+                        })}
+                    </div>
+                </section>
+
+                <SectionCard
+                    title="Language We Use"
+                    icon={MessageCircle}
+                    className="brand-language-card"
+                >
+                    <p className="brand-section-intro">
+                        Choose familiar, direct language. Families should not
+                        need to understand software terminology to use
+                        Evergrove.
+                    </p>
+
+                    <div className="brand-language-table">
+                        <div className="brand-language-table__header">
+                            <span>Use</span>
+                            <span>Avoid</span>
+                        </div>
+
+                        {languagePairs.map(([use, avoid]) => (
+                            <div
+                                key={`${use}-${avoid}`}
+                                className="brand-language-row"
+                            >
+                                <strong>{use}</strong>
+                                <span>{avoid}</span>
+                            </div>
+                        ))}
+                    </div>
+                </SectionCard>
+
+                <section className="brand-section">
+                    <div className="brand-section-heading">
+                        <span>Photography</span>
+                        <h2>Show Real Family Life</h2>
+                        <p>
+                            Our imagery should feel warm, honest, recognizable,
+                            and grounded in the moments Evergrove helps support.
+                        </p>
+                    </div>
+
+                    <div className="brand-photography-grid">
+                        <article className="brand-photography-card">
+                            <div className="brand-photography-card__icon">
+                                <Image size={22} />
+                            </div>
+
+                            <h3>Use imagery that feels...</h3>
+
+                            <div className="brand-guideline-list">
+                                {photographyGuidelines.map(item => (
+                                    <div key={item}>
+                                        <Check size={15} />
+                                        <span>{item}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </article>
+
+                        <article className="brand-photography-card brand-photography-card--avoid">
+                            <div className="brand-photography-card__icon">
+                                <Image size={22} />
+                            </div>
+
+                            <h3>Avoid imagery that feels...</h3>
+
+                            <div className="brand-guideline-list">
+                                {photographyAvoid.map(item => (
+                                    <div key={item}>
+                                        <span className="brand-guideline-x">
+                                            ×
+                                        </span>
+                                        <span>{item}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <SectionCard
+                    title="Logo Direction"
+                    icon={Palette}
+                    className="brand-logo-card"
+                >
+                    <div className="brand-logo-showcase">
+                        <div className="brand-logo-showcase__mark">
+                            <Leaf size={30} />
+                        </div>
+
+                        <div>
+                            <p className="brand-logo-showcase__name">
+                                Evergrove
+                            </p>
+                            <p className="brand-logo-showcase__tagline">
+                                Where organized families grow.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="brand-logo-rules">
+                        <div>
+                            <Check size={16} />
+                            <span>
+                                Give the logo generous space and clear contrast.
+                            </span>
+                        </div>
+
+                        <div>
+                            <Check size={16} />
+                            <span>
+                                Pair the name with the tagline only when it has
+                                room to breathe.
+                            </span>
+                        </div>
+
+                        <div>
+                            <Check size={16} />
+                            <span>
+                                Use simplified marks for app icons and compact
+                                spaces.
+                            </span>
+                        </div>
+                    </div>
+                </SectionCard>
+
+                <SectionCard
+                    title="Brand Promise"
+                    icon={Sparkles}
+                    className="brand-closing-card"
+                >
+                    <p>
+                        Spend less time managing life and more time living it.
+                    </p>
+
+                    <span>
+                        Every brand decision should make that promise feel more
+                        believable.
+                    </span>
+                </SectionCard>
+            </div>
+        </AppPage>
+    )
+}

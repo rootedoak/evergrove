@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 
 import AdminCard from "../../../components/admin/AdminCard"
 import AdminEmptyState from "../../../components/admin/AdminEmptyState"
@@ -15,6 +15,7 @@ import {
 } from "../../../services/admin/householdAdminService"
 
 export default function Household360() {
+    const navigate = useNavigate()
     const { householdId } = useParams()
     const { data, loading, error, refresh } = useHousehold360(householdId)
 
@@ -154,9 +155,19 @@ export default function Household360() {
                             >
                                 <div className="admin-member-main">
                                     <div>
-                                        <strong className="admin-member-name">
-                                            {member.name}
-                                        </strong>
+                                        {member.userId ? (
+                                            <button
+                                                type="button"
+                                                className="admin-member-link"
+                                                onClick={() => navigate(`/admin/users/${member.userId}`)}
+                                            >
+                                                {member.name}
+                                            </button>
+                                        ) : (
+                                            <strong className="admin-member-name">
+                                                {member.name}
+                                            </strong>
+                                        )}
 
                                         {member.email ? (
                                             <p>{member.email}</p>
@@ -238,23 +249,6 @@ export default function Household360() {
             </AdminCard>
 
             <section className="admin-grid admin-grid-2">
-                <AdminCard title="Product Adoption">
-                    {adoption.length === 0 ? (
-                        <AdminEmptyState>No adopted features yet.</AdminEmptyState>
-                    ) : (
-                        <div className="admin-adoption-grid">
-                            {adoption.map(item => (
-                                <div
-                                    key={item.feature}
-                                    className="admin-adoption-item active"
-                                >
-                                    <span>✓</span>
-                                    <strong>{item.feature}</strong>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </AdminCard>
 
                 <AdminCard title="Recent Support">
                     {supportTickets.length === 0 ? (

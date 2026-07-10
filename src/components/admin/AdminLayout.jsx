@@ -1,11 +1,13 @@
 import { NavLink, Outlet } from "react-router-dom"
 import {
     BarChart3,
+    BookOpen,
     Bug,
     Flag,
     Home,
     House,
     MessageSquare,
+    Palette,
     Rocket,
     Shield,
     TrendingUp,
@@ -33,7 +35,11 @@ const adminNavSections = [
             { to: "/admin/users", label: "Users", icon: Users },
             { to: "/admin/support", label: "Support", icon: MessageSquare },
             { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-            { to: "/admin/sales", label: "Sales & Marketing", icon: TrendingUp }
+            {
+                to: "/admin/sales",
+                label: "Sales & Marketing",
+                icon: TrendingUp
+            }
         ]
     },
     {
@@ -41,6 +47,31 @@ const adminNavSections = [
         items: [
             { to: "/admin/beta", label: "Beta Testing", icon: Shield },
             { to: "/admin/feature-flags", label: "Feature Flags", icon: Flag }
+        ]
+    },
+    {
+        label: "Company",
+        items: [
+            {
+                to: "/admin/foundations",
+                label: "Foundations",
+                icon: BookOpen
+            },
+            {
+                to: "/admin/brand",
+                label: "Brand",
+                icon: Palette
+            },
+            {
+                to: "/admin/go-to-market",
+                label: "Go to Market",
+                icon: Rocket
+            },
+            {
+                to: "/admin/growth",
+                label: "Growth",
+                icon: TrendingUp
+            }
         ]
     },
     {
@@ -68,7 +99,10 @@ export default function AdminLayout() {
 
                 <nav className="admin-nav">
                     {adminNavSections.map((section, index) => (
-                        <div key={section.label || index} className="admin-nav-section">
+                        <div
+                            key={section.label || index}
+                            className="admin-nav-section"
+                        >
                             {section.label && (
                                 <p className="admin-nav-section-label">
                                     {section.label}

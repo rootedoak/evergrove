@@ -12,6 +12,8 @@ import {
 
 import Button from "../components/ui/Button"
 
+import { markReferralHouseholdCreated } from "../services/referralService"
+
 function detectTimezone() {
     try {
         return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Chicago"
@@ -58,6 +60,9 @@ export default function Onboarding() {
     const [memberName, setMemberName] = useState("")
     const [memberType, setMemberType] = useState("child")
 
+    const [createdHouseholdId, setCreatedHouseholdId] =
+        useState(null)
+
     async function handleNameStep() {
         if (!displayName.trim()) return
 
@@ -85,10 +90,28 @@ export default function Onboarding() {
         setLoading(true)
 
         try {
-            if (!householdCreated) {
-                await createHousehold(householdName.trim())
+            let householdId = createdHouseholdId
+
+            if (!householdCreated || !householdId) {
+                const createdHousehold = await createHousehold(
+                    householdName.trim()
+                )
+
+                if (!createdHousehold?.id) {
+                    throw new Error(
+                        "The household was created, but its ID was not returned."
+                    )
+                }
+
+                householdId = createdHousehold.id
+
+                // Store creation immediately so a later referral failure
+                // cannot cause a duplicate household on retry.
+                setCreatedHouseholdId(householdId)
                 setHouseholdCreated(true)
             }
+
+            await markReferralHouseholdCreated(householdId)
 
             await updatePreferences({
                 household_name: householdName.trim(),
@@ -98,7 +121,11 @@ export default function Onboarding() {
             setStep(4)
         } catch (error) {
             console.error(error)
-            alert(error.message || "Could not save household settings.")
+
+            alert(
+                error.message ||
+                "Could not save household settings."
+            )
         } finally {
             setLoading(false)
         }

@@ -13,7 +13,6 @@ import AppPage from "../components/ui/AppPage"
 import PageHeader from "../components/ui/PageHeader"
 import SectionCard from "../components/ui/SectionCard"
 import Button from "../components/ui/Button"
-import InsightCard from "../components/dashboard/InsightCard"
 
 export default function About() {
     const [savingFeedback, setSavingFeedback] = useState(false)
@@ -80,12 +79,58 @@ export default function About() {
     return (
         <AppPage>
             <PageHeader
-                eyebrow="About"
+                eyebrow="About & Feedback"
                 title={`About ${APP_NAME}`}
-                subtitle="Evergrove is a family operating system designed to reduce household chaos."
+                subtitle="Evergrove helps families remember, coordinate, and accomplish the thousands of little things that make everyday life work."
             />
 
             <div className="eg-stack">
+                <SectionCard title="Our Vision">
+                    <p className="eg-muted">
+                        To give families confidence that the important things
+                        will not be forgotten, so they can spend less time managing life and
+                        more time living it.
+                    </p>
+                </SectionCard>
+
+                <SectionCard title='Why "Evergrove"?'>
+                    <p className="eg-muted">
+                        A grove is a place where trees grow stronger together than they do alone.
+                        Families are much the same. Life is made up of thousands of shared
+                        responsibilities, milestones, traditions, and everyday moments that are
+                        easier when everyone is connected.
+                    </p>
+
+                    <p className="eg-muted">
+                        The name <strong>Evergrove</strong> reflects our belief that
+                        families are always growing. Seasons change. Children grow up. New
+                        traditions begin. Through every stage of life, Evergrove is designed to
+                        help your household stay organized, connected, and ready for whatever
+                        comes next.
+                    </p>
+                </SectionCard>
+
+                <SectionCard title="What Makes Evergrove Different">
+                    <p className="eg-muted">
+                        Most tools help families track one thing. Evergrove is designed to
+                        understand the whole household. When plans, responsibilities, meals,
+                        reminders, and communication live together, Evergrove can help your
+                        family see what matters next.
+                    </p>
+                </SectionCard>
+
+                <SectionCard title="Recent Improvements">
+                    <ul className="eg-about-list">
+                        <li>Redesigned mobile-first experience across the app</li>
+                        <li>Guided onboarding and interactive product tour</li>
+                        <li>Personal Inbox and Thought Capture for ideas, reminders, and nudges</li>
+                        <li>Smarter Evergrove Assistant insights and household recommendations</li>
+                        <li>Recurring events, routines, and a more powerful family calendar</li>
+                        <li>Improved meal planning, shopping lists, and grocery workflows</li>
+                        <li>Household activity feed, announcements, notifications, and collaboration improvements</li>
+                        <li>Ongoing beta fixes, performance improvements, and polish</li>
+                    </ul>
+                </SectionCard>
 
                 <SectionCard
                     title="Take the Product Tour"
@@ -101,63 +146,16 @@ export default function About() {
                     </p>
                 </SectionCard>
 
-                <SectionCard title="Current Release" subtitle="Version and release status.">
-                    <div className="eg-info-grid">
-                        <InfoItem label="Version" value={APP_VERSION} />
-                        <InfoItem label="Status" value={APP_STATUS} />
-                    </div>
-                </SectionCard>
-
-                <SectionCard title="What's New in this Beta">
-                    <ul className="eg-about-list">
-                        <li>Complete Evergrove 2.0 UI redesign</li>
-                        <li>Mobile-first experience across major modules</li>
-                        <li>Assistant insights throughout the app</li>
-                        <li>Faster meal planning and shopping workflows</li>
-                        <li>Improved calendar, trips, school, routines, and documents</li>
-                        <li>Reusable design system components</li>
-                        <li>Push notifications and household activity improvements</li>
-                    </ul>
-                </SectionCard>
-
                 <SectionCard title="Help Shape Evergrove">
                     <p className="eg-muted">
-                        Evergrove is in active beta. Your feedback directly influences what gets
-                        improved next. If something feels confusing, broken, or missing, send it in.
-                    </p>
-                </SectionCard>
-
-                <SectionCard title="Getting Started">
-                    <ol className="eg-about-list">
-                        <li>Create your household.</li>
-                        <li>Add family members and pets.</li>
-                        <li>Invite another parent or guardian.</li>
-                        <li>Add birthdays and important family information.</li>
-                        <li>Create To-Dos, routines, school items, trips, meals, and shopping lists.</li>
-                    </ol>
-                </SectionCard>
-
-                <SectionCard title="Core Features">
-                    <div className="eg-feature-grid">
-                        <Feature title="Dashboard" text="A daily command center for your household." />
-                        <Feature title="Calendar" text="Shared events, birthdays, trips, and school dates." />
-                        <Feature title="To-Dos" text="Household and private tasks with ownership." />
-                        <Feature title="Meals & Shopping" text="Plan dinners and build grocery lists." />
-                        <Feature title="Trips" text="Plan travel, ideas, and checklists." />
-                        <Feature title="School" text="Track forms, events, supplies, and reminders." />
-                        <Feature title="Documents" text="Store important household files." />
-                        <Feature title="Settings" text="Manage household and personal preferences." />
-                    </div>
-                </SectionCard>
-
-                <SectionCard title="Why Evergrove Exists">
-                    <p className="eg-muted">
-                        Evergrove exists to reduce household chaos. It gives families one shared
-                        place to manage the people, plans, and responsibilities that matter most.
+                        Evergrove is in active beta. You are part of a small group of families
+                        helping shape what this becomes. If something feels confusing, broken,
+                        missing, or surprisingly useful, we want to hear about it.
                     </p>
 
                     <p className="eg-muted">
-                        The goal is simple: spend less time organizing life and more time living it.
+                        Every piece of feedback is reviewed and helps determine what gets
+                        improved next.
                     </p>
                 </SectionCard>
 
@@ -198,6 +196,13 @@ export default function About() {
                     </form>
                 </SectionCard>
 
+                <SectionCard title="Current Release" subtitle="Version and release status.">
+                    <div className="eg-info-grid">
+                        <InfoItem label="Version" value={APP_VERSION} />
+                        <InfoItem label="Status" value={APP_STATUS} />
+                    </div>
+                </SectionCard>
+
                 <p className="eg-about-footer">
                     Built with care for busy families.
                 </p>
@@ -211,15 +216,6 @@ function InfoItem({ label, value }) {
         <div className="eg-info-item">
             <span>{label}</span>
             <strong>{value}</strong>
-        </div>
-    )
-}
-
-function Feature({ title, text }) {
-    return (
-        <div className="eg-feature-card">
-            <strong>{title}</strong>
-            <p>{text}</p>
         </div>
     )
 }

@@ -14,7 +14,32 @@ export async function getUsers(search = "") {
 
     if (error) throw error
 
-    return data ?? []
+    const users = data ?? []
+    const userIds = users
+        .map(user => user.user_id)
+        .filter(Boolean)
+
+    if (userIds.length === 0) return users
+
+    const { data: preferences, error: preferencesError } = await supabase
+        .from("user_display_preferences")
+        .select("*")
+        .in("user_id", userIds)
+
+    if (preferencesError) throw preferencesError
+
+    const preferencesByUserId = new Map(
+        (preferences ?? []).map(row => [row.user_id, row])
+    )
+
+    return users.map(user => ({
+        ...user,
+        preferences: preferencesByUserId.get(user.user_id) ?? null,
+        has_completed_onboarding:
+            preferencesByUserId.get(user.user_id)?.has_completed_onboarding ?? null,
+        has_completed_guided_walkthrough:
+            preferencesByUserId.get(user.user_id)?.has_completed_guided_walkthrough ?? null
+    }))
 }
 
 export async function getUserDetail(userId) {
@@ -72,8 +97,12 @@ export async function getUserUsageEvents(userId) {
 }
 
 export async function getUserPreferences(userId) {
+    if (!userId) {
+        throw new Error("userId is required")
+    }
+
     const { data, error } = await supabase
-        .from("admin_user_preferences")
+        .from("user_display_preferences")
         .select("*")
         .eq("user_id", userId)
         .maybeSingle()
@@ -85,4 +114,28 @@ export async function getUserPreferences(userId) {
 
 export async function searchUsers(search = "") {
     return getUsers(search)
+}
+
+export async function getUserAdoptionEvents(userId) {
+    if (!userId) {
+        throw new Error("userId is required")
+    }
+
+    const since = new Date()
+    since.setDate(since.getDate() - 60)
+
+    const { data, error } = await supabase
+        .from("usage_events")
+        .select(`
+            id,
+            event_type,
+            created_at
+        `)
+        .eq("user_id", userId)
+        .gte("created_at", since.toISOString())
+        .order("created_at", { ascending: false })
+
+    if (error) throw error
+
+    return data ?? []
 }

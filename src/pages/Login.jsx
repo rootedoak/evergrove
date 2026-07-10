@@ -1,5 +1,21 @@
 import { useEffect, useState } from "react"
+import { Link, useSearchParams } from "react-router-dom"
+import {
+    ArrowLeft,
+    ArrowRight,
+    Check,
+    Eye,
+    EyeOff,
+    Heart,
+    Leaf,
+    LockKeyhole,
+    Mail,
+    Sparkles,
+    Users
+} from "lucide-react"
+
 import { supabase } from "../lib/supabase"
+import { markReferralAccountCreated } from "../services/referralService"
 
 import logo from "../assets/evergrove-logo.svg"
 
@@ -11,29 +27,70 @@ const MODES = {
     VERIFY_EMAIL: "verify-email"
 }
 
+const benefits = [
+    "Keep schedules, meals, to-dos, and shopping together",
+    "Share the mental load across your household",
+    "Feel confident that important things are remembered"
+]
+
 export default function Login({ onLogin }) {
+    const [searchParams, setSearchParams] = useSearchParams()
+
     const [mode, setMode] = useState(MODES.CHOOSE)
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
-    const [inviteCode, setInviteCode] = useState("")
     const [errorMessage, setErrorMessage] = useState("")
     const [loading, setLoading] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
 
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search)
-        const modeParam = params.get("mode")
+        const modeParam = searchParams.get("mode")
 
-        if (modeParam === "create-account") {
+        if (
+            modeParam === "signup" ||
+            modeParam === "create-account"
+        ) {
             setMode(MODES.CREATE_ACCOUNT)
+            return
         }
-    }, [])
 
-    function resetForm(nextMode) {
+        if (
+            modeParam === "signin" ||
+            modeParam === "sign-in"
+        ) {
+            setMode(MODES.SIGN_IN)
+            return
+        }
+
+        if (modeParam === "invite") {
+            setMode(MODES.INVITE)
+            return
+        }
+
+        setMode(MODES.CHOOSE)
+    }, [searchParams])
+
+    function changeMode(nextMode) {
         setMode(nextMode)
-        setEmail("")
         setPassword("")
-        setInviteCode("")
         setErrorMessage("")
+        setShowPassword(false)
+
+        const queryModeMap = {
+            [MODES.CHOOSE]: null,
+            [MODES.SIGN_IN]: "signin",
+            [MODES.CREATE_ACCOUNT]: "signup",
+            [MODES.INVITE]: "invite"
+        }
+
+        const queryMode = queryModeMap[nextMode]
+
+        if (!queryMode) {
+            setSearchParams({})
+            return
+        }
+
+        setSearchParams({ mode: queryMode })
     }
 
     async function handleSignIn(event) {
@@ -48,22 +105,29 @@ export default function Login({ onLogin }) {
             })
 
             if (error) {
-                setErrorMessage(error.message)
+                setErrorMessage(
+                    error.message === "Invalid login credentials"
+                        ? "That email or password does not look right."
+                        : error.message
+                )
                 return
             }
 
-            const storedInviteEmail = localStorage.getItem("evergrove_invite_email")
+            const storedInviteEmail = localStorage.getItem(
+                "evergrove_invite_email"
+            )
 
             if (storedInviteEmail) {
                 window.location.href = "/join-household"
                 return
             }
 
-            onLogin()
-
+            onLogin?.()
         } catch (error) {
             console.error(error)
-            setErrorMessage(error.message || "Could not sign in.")
+            setErrorMessage(
+                error.message || "We could not sign you in."
+            )
         } finally {
             setLoading(false)
         }
@@ -75,20 +139,26 @@ export default function Login({ onLogin }) {
         setLoading(true)
 
         const normalizedEmail = email.trim().toLowerCase()
+        const inviteToken = localStorage.getItem(
+            "evergrove_invite_token"
+        )
 
         try {
             const { data, error } = await supabase.auth.signUp({
                 email: normalizedEmail,
                 password,
                 options: {
-                    emailRedirectTo: localStorage.getItem("evergrove_invite_token")
-                        ? `${window.location.origin}/invite/${localStorage.getItem("evergrove_invite_token")}`
+                    emailRedirectTo: inviteToken
+                        ? `${window.location.origin}/invite/${inviteToken}`
                         : `${window.location.origin}`
                 }
             })
 
             if (error) {
-                if (error.status === 429 || error.message?.toLowerCase().includes("rate")) {
+                if (
+                    error.status === 429 ||
+                    error.message?.toLowerCase().includes("rate")
+                ) {
                     setErrorMessage(
                         "Too many signup attempts. Wait a few minutes, then try again."
                     )
@@ -99,6 +169,14 @@ export default function Login({ onLogin }) {
                 return
             }
 
+            const createdUserId =
+                data.user?.id ??
+                data.session?.user?.id
+
+            if (createdUserId) {
+                await markReferralAccountCreated(createdUserId)
+            }
+
             setEmail(normalizedEmail)
 
             if (!data.session) {
@@ -106,17 +184,17 @@ export default function Login({ onLogin }) {
                 return
             }
 
-            const inviteToken = localStorage.getItem("evergrove_invite_token")
-
             if (inviteToken) {
                 window.location.href = "/join-household"
                 return
             }
 
-            onLogin()
+            onLogin?.()
         } catch (error) {
             console.error(error)
-            setErrorMessage(error.message || "Could not create account.")
+            setErrorMessage(
+                error.message || "We could not create your account."
+            )
         } finally {
             setLoading(false)
         }
@@ -128,18 +206,15 @@ export default function Login({ onLogin }) {
         setLoading(true)
 
         const normalizedEmail = email.trim().toLowerCase()
+        const inviteToken = localStorage.getItem(
+            "evergrove_invite_token"
+        )
 
         try {
-            localStorage.setItem("evergrove_invite_email", normalizedEmail)
-
-            if (inviteCode.trim()) {
-                localStorage.setItem(
-                    "evergrove_invite_code",
-                    inviteCode.trim()
-                )
-            }
-
-            const inviteToken = localStorage.getItem("evergrove_invite_token")
+            localStorage.setItem(
+                "evergrove_invite_email",
+                normalizedEmail
+            )
 
             const { data, error } = await supabase.auth.signUp({
                 email: normalizedEmail,
@@ -152,21 +227,15 @@ export default function Login({ onLogin }) {
             })
 
             if (error) {
-                if (error.status === 429 || error.message?.toLowerCase().includes("rate")) {
-                    setErrorMessage(
-                        "Too many signup attempts. Wait a few minutes, then try again."
-                    )
-                    return
-                }
-
-                const signInResult = await supabase.auth.signInWithPassword({
-                    email: normalizedEmail,
-                    password
-                })
+                const signInResult =
+                    await supabase.auth.signInWithPassword({
+                        email: normalizedEmail,
+                        password
+                    })
 
                 if (signInResult.error) {
                     setErrorMessage(
-                        "We could not create or sign into that account. If you already created an account, use your existing password."
+                        "We could not create or sign in to that account. If you already have an account, use your existing password."
                     )
                     return
                 }
@@ -175,210 +244,500 @@ export default function Login({ onLogin }) {
                 return
             }
 
-            localStorage.setItem("evergrove_invite_email", normalizedEmail)
-
             if (!data.session) {
-                setMode("verify-email")
+                setMode(MODES.VERIFY_EMAIL)
                 return
             }
 
             window.location.href = "/join-household"
         } catch (error) {
             console.error(error)
-            setErrorMessage(error.message || "Could not continue with invite.")
+            setErrorMessage(
+                error.message ||
+                "We could not continue your invitation."
+            )
         } finally {
             setLoading(false)
         }
     }
 
-    return (
-        <div className="login-page">
-            <div className="login-card">
-                <div className="brand-mark login-mark">E</div>
+    const isFormMode =
+        mode === MODES.SIGN_IN ||
+        mode === MODES.CREATE_ACCOUNT ||
+        mode === MODES.INVITE
 
-                <img
-                    src={logo}
-                    alt="Evergrove"
-                    className="login-logo"
+    return (
+        <div className="auth-page">
+            <header className="auth-header">
+                <Link to="/" className="auth-brand">
+                    <img src={logo} alt="Evergrove" />
+
+                    <div>
+                        <strong>Evergrove</strong>
+                        <span>Where organized families grow.</span>
+                    </div>
+                </Link>
+
+                <Link to="/" className="auth-home-link">
+                    <ArrowLeft size={16} />
+                    Back to Evergrove
+                </Link>
+            </header>
+
+            <main className="auth-layout">
+                <section className="auth-story-panel">
+                    <div className="auth-story-panel__content">
+                        <div className="auth-eyebrow">
+                            <Leaf size={16} />
+                            <span>Welcome home</span>
+                        </div>
+
+                        <h1>
+                            Give your family one less thing to remember.
+                        </h1>
+
+                        <p>
+                            Evergrove brings schedules, meals, to-dos,
+                            shopping, school, and everyday family life into
+                            one calm, connected place.
+                        </p>
+
+                        <div className="auth-benefit-list">
+                            {benefits.map(benefit => (
+                                <div key={benefit}>
+                                    <span>
+                                        <Check
+                                            size={15}
+                                            strokeWidth={3}
+                                        />
+                                    </span>
+
+                                    <p>{benefit}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <blockquote>
+                            “Spend less time managing life and more time
+                            living it.”
+                        </blockquote>
+                    </div>
+                </section>
+
+                <section className="auth-form-panel">
+                    <div className="auth-card">
+                        {mode === MODES.CHOOSE && (
+                            <div className="auth-choice">
+                                <div className="auth-card-icon">
+                                    <Heart size={23} />
+                                </div>
+
+                                <span className="auth-card-eyebrow">
+                                    Get started
+                                </span>
+
+                                <h2>Bring your family home.</h2>
+
+                                <p>
+                                    Create your household, invite your family,
+                                    and start organizing life together.
+                                </p>
+
+                                <button
+                                    type="button"
+                                    className="auth-primary-button"
+                                    onClick={() =>
+                                        changeMode(
+                                            MODES.CREATE_ACCOUNT
+                                        )
+                                    }
+                                >
+                                    Get Started Free
+                                    <ArrowRight size={18} />
+                                </button>
+
+                                <div className="auth-divider">
+                                    <span>Already use Evergrove?</span>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    className="auth-secondary-button"
+                                    onClick={() =>
+                                        changeMode(MODES.SIGN_IN)
+                                    }
+                                >
+                                    Sign In
+                                </button>
+
+                                <button
+                                    type="button"
+                                    className="auth-text-button"
+                                    onClick={() =>
+                                        changeMode(MODES.INVITE)
+                                    }
+                                >
+                                    I was invited to a household
+                                    <ArrowRight size={15} />
+                                </button>
+                            </div>
+                        )}
+
+                        {isFormMode && (
+                            <button
+                                type="button"
+                                className="auth-back-button"
+                                onClick={() =>
+                                    changeMode(MODES.CHOOSE)
+                                }
+                            >
+                                <ArrowLeft size={16} />
+                                Back
+                            </button>
+                        )}
+
+                        {mode === MODES.SIGN_IN && (
+                            <form
+                                className="auth-form"
+                                onSubmit={handleSignIn}
+                            >
+                                <div className="auth-card-icon">
+                                    <LockKeyhole size={23} />
+                                </div>
+
+                                <span className="auth-card-eyebrow">
+                                    Welcome back
+                                </span>
+
+                                <h2>Sign in to your household.</h2>
+
+                                <p>
+                                    Pick up where your family left off.
+                                </p>
+
+                                {errorMessage && (
+                                    <div
+                                        className="auth-error"
+                                        role="alert"
+                                    >
+                                        {errorMessage}
+                                    </div>
+                                )}
+
+                                <label className="auth-field">
+                                    <span>Email</span>
+
+                                    <div className="auth-input-wrap">
+                                        <Mail size={18} />
+
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={event =>
+                                                setEmail(
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder="you@example.com"
+                                            autoComplete="email"
+                                            required
+                                        />
+                                    </div>
+                                </label>
+
+                                <PasswordField
+                                    password={password}
+                                    setPassword={setPassword}
+                                    showPassword={showPassword}
+                                    setShowPassword={setShowPassword}
+                                    autoComplete="current-password"
+                                />
+
+                                <button
+                                    type="submit"
+                                    className="auth-primary-button"
+                                    disabled={loading}
+                                >
+                                    {loading
+                                        ? "Signing In..."
+                                        : "Sign In"}
+
+                                    {!loading && (
+                                        <ArrowRight size={18} />
+                                    )}
+                                </button>
+
+                                <p className="auth-switch-copy">
+                                    New to Evergrove?{" "}
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            changeMode(
+                                                MODES.CREATE_ACCOUNT
+                                            )
+                                        }
+                                    >
+                                        Create your household
+                                    </button>
+                                </p>
+                            </form>
+                        )}
+
+                        {mode === MODES.CREATE_ACCOUNT && (
+                            <form
+                                className="auth-form"
+                                onSubmit={handleCreateAccount}
+                            >
+                                <div className="auth-card-icon">
+                                    <Users size={23} />
+                                </div>
+
+                                <span className="auth-card-eyebrow">
+                                    Start your household
+                                </span>
+
+                                <h2>Let&apos;s get your family started.</h2>
+
+                                <p>
+                                    Your account will become the first member
+                                    of your new Evergrove household.
+                                </p>
+
+                                {errorMessage && (
+                                    <div
+                                        className="auth-error"
+                                        role="alert"
+                                    >
+                                        {errorMessage}
+                                    </div>
+                                )}
+
+                                <label className="auth-field">
+                                    <span>Email</span>
+
+                                    <div className="auth-input-wrap">
+                                        <Mail size={18} />
+
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={event =>
+                                                setEmail(
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder="you@example.com"
+                                            autoComplete="email"
+                                            required
+                                        />
+                                    </div>
+                                </label>
+
+                                <PasswordField
+                                    password={password}
+                                    setPassword={setPassword}
+                                    showPassword={showPassword}
+                                    setShowPassword={setShowPassword}
+                                    autoComplete="new-password"
+                                />
+
+                                <p className="auth-password-help">
+                                    Use at least 8 characters.
+                                </p>
+
+                                <button
+                                    type="submit"
+                                    className="auth-primary-button"
+                                    disabled={loading}
+                                >
+                                    {loading
+                                        ? "Creating Your Account..."
+                                        : "Create My Household"}
+
+                                    {!loading && (
+                                        <ArrowRight size={18} />
+                                    )}
+                                </button>
+
+                                <p className="auth-switch-copy">
+                                    Already have an account?{" "}
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            changeMode(MODES.SIGN_IN)
+                                        }
+                                    >
+                                        Sign in
+                                    </button>
+                                </p>
+                            </form>
+                        )}
+
+                        {mode === MODES.INVITE && (
+                            <form
+                                className="auth-form"
+                                onSubmit={handleInvite}
+                            >
+                                <div className="auth-card-icon">
+                                    <Sparkles size={23} />
+                                </div>
+
+                                <span className="auth-card-eyebrow">
+                                    Join your family
+                                </span>
+
+                                <h2>Continue your invitation.</h2>
+
+                                <p>
+                                    Enter the email address that was invited.
+                                    Use your existing password, or create one
+                                    if this is your first time.
+                                </p>
+
+                                {errorMessage && (
+                                    <div
+                                        className="auth-error"
+                                        role="alert"
+                                    >
+                                        {errorMessage}
+                                    </div>
+                                )}
+
+                                <label className="auth-field">
+                                    <span>Invited email</span>
+
+                                    <div className="auth-input-wrap">
+                                        <Mail size={18} />
+
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={event =>
+                                                setEmail(
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder="you@example.com"
+                                            autoComplete="email"
+                                            required
+                                        />
+                                    </div>
+                                </label>
+
+                                <PasswordField
+                                    password={password}
+                                    setPassword={setPassword}
+                                    showPassword={showPassword}
+                                    setShowPassword={setShowPassword}
+                                    autoComplete="current-password"
+                                    label="Password"
+                                />
+
+                                <button
+                                    type="submit"
+                                    className="auth-primary-button"
+                                    disabled={loading}
+                                >
+                                    {loading
+                                        ? "Continuing..."
+                                        : "Continue Invitation"}
+
+                                    {!loading && (
+                                        <ArrowRight size={18} />
+                                    )}
+                                </button>
+                            </form>
+                        )}
+
+                        {mode === MODES.VERIFY_EMAIL && (
+                            <div className="auth-verify">
+                                <div className="auth-card-icon">
+                                    <Mail size={23} />
+                                </div>
+
+                                <span className="auth-card-eyebrow">
+                                    Almost home
+                                </span>
+
+                                <h2>Check your email.</h2>
+
+                                <p>
+                                    We sent a verification link to:
+                                </p>
+
+                                <strong>{email}</strong>
+
+                                <p>
+                                    After verifying your email, return to
+                                    Evergrove and sign in to finish setting
+                                    up your household.
+                                </p>
+
+                                <button
+                                    type="button"
+                                    className="auth-primary-button"
+                                    onClick={() =>
+                                        changeMode(MODES.SIGN_IN)
+                                    }
+                                >
+                                    Back to Sign In
+                                    <ArrowRight size={18} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            </main>
+        </div>
+    )
+}
+
+function PasswordField({
+    password,
+    setPassword,
+    showPassword,
+    setShowPassword,
+    autoComplete,
+    label = "Password"
+}) {
+    return (
+        <label className="auth-field">
+            <span>{label}</span>
+
+            <div className="auth-input-wrap">
+                <LockKeyhole size={18} />
+
+                <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={event =>
+                        setPassword(event.target.value)
+                    }
+                    placeholder="Enter your password"
+                    autoComplete={autoComplete}
+                    minLength={8}
+                    required
                 />
 
-                <h1>Evergrove</h1>
-
-                {mode === MODES.CHOOSE && (
-                    <>
-                        <p>Organize your family in one place.</p>
-
-                        <div className="login-choice-stack">
-                            <button
-                                type="button"
-                                onClick={() => resetForm(MODES.SIGN_IN)}
-                            >
-                                Sign In
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => resetForm(MODES.CREATE_ACCOUNT)}
-                            >
-                                Create Account
-                            </button>
-
-                            <button
-                                type="button"
-                                className="login-secondary-action"
-                                onClick={() => resetForm(MODES.INVITE)}
-                            >
-                                I Have an Invite
-                            </button>
-                        </div>
-                    </>
-                )}
-
-                {mode === MODES.SIGN_IN && (
-                    <form onSubmit={handleSignIn}>
-                        <p>Sign in to your family planner.</p>
-
-                        {errorMessage && (
-                            <div className="error-box">{errorMessage}</div>
-                        )}
-
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={event => setEmail(event.target.value)}
-                            required
-                        />
-
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={event => setPassword(event.target.value)}
-                            required
-                        />
-
-                        <button type="submit" disabled={loading}>
-                            {loading ? "Signing In..." : "Sign In"}
-                        </button>
-
-                        <button
-                            type="button"
-                            className="login-link-button"
-                            onClick={() => resetForm(MODES.CHOOSE)}
-                        >
-                            Back
-                        </button>
-                    </form>
-                )}
-
-                {mode === MODES.CREATE_ACCOUNT && (
-                    <form onSubmit={handleCreateAccount}>
-                        <p>Create your Evergrove account.</p>
-
-                        {errorMessage && (
-                            <div className="error-box">{errorMessage}</div>
-                        )}
-
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={event => setEmail(event.target.value)}
-                            required
-                        />
-
-                        <input
-                            type="password"
-                            placeholder="Create Password"
-                            value={password}
-                            onChange={event => setPassword(event.target.value)}
-                            required
-                        />
-
-                        <button type="submit" disabled={loading}>
-                            {loading ? "Creating Account..." : "Create Account"}
-                        </button>
-
-                        <button
-                            type="button"
-                            className="login-link-button"
-                            onClick={() => resetForm(MODES.CHOOSE)}
-                        >
-                            Back
-                        </button>
-                    </form>
-                )}
-
-                {mode === MODES.INVITE && (
-                    <form onSubmit={handleInvite}>
-                        <p>
-                            Enter the email that was invited. Create a password
-                            if this is your first time.
-                        </p>
-
-                        {errorMessage && (
-                            <div className="error-box">{errorMessage}</div>
-                        )}
-
-                        <input
-                            type="email"
-                            placeholder="Invited Email"
-                            value={email}
-                            onChange={event => setEmail(event.target.value)}
-                            required
-                        />
-
-                        <input
-                            type="password"
-                            placeholder="Create or Enter Password"
-                            value={password}
-                            onChange={event => setPassword(event.target.value)}
-                            required
-                        />
-
-                        <input
-                            type="text"
-                            placeholder="Invite Code optional for now"
-                            value={inviteCode}
-                            onChange={event => setInviteCode(event.target.value)}
-                        />
-
-                        <button type="submit" disabled={loading}>
-                            {loading ? "Continuing..." : "Continue with Invite"}
-                        </button>
-
-                        <button
-                            type="button"
-                            className="login-link-button"
-                            onClick={() => resetForm(MODES.CHOOSE)}
-                        >
-                            Back
-                        </button>
-                    </form>
-                )}
-                {mode === MODES.VERIFY_EMAIL && (
-                    <>
-                        <h2>Almost there!</h2>
-
-                        <p>
-                            We sent a verification email to <strong>{email}</strong>.
-                        </p>
-
-                        <p>
-                            After you verify your email, sign in and we’ll finish connecting
-                            you to your household.
-                        </p>
-
-                        <button
-                            type="button"
-                            onClick={() => resetForm(MODES.SIGN_IN)}
-                        >
-                            Back to Sign In
-                        </button>
-                    </>
-                )}
+                <button
+                    type="button"
+                    className="auth-password-toggle"
+                    onClick={() =>
+                        setShowPassword(current => !current)
+                    }
+                    aria-label={
+                        showPassword
+                            ? "Hide password"
+                            : "Show password"
+                    }
+                >
+                    {showPassword ? (
+                        <EyeOff size={18} />
+                    ) : (
+                        <Eye size={18} />
+                    )}
+                </button>
             </div>
-        </div>
+        </label>
     )
 }

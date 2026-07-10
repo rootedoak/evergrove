@@ -82,6 +82,14 @@ import SalesMarketing from "./pages/admin/sales/SalesMarketing"
 
 import FirstWeekSetup from "./pages/FirstWeekSetup"
 
+import Foundations from "./pages/admin/company/Foundations"
+import Brand from "./pages/admin/company/Brand"
+import GoToMarket from "./pages/admin/company/GoToMarket"
+import Growth from "./pages/admin/company/Growth"
+
+import PublicHome from "./pages/public/PublicHome"
+import ReferralLanding from "./pages/public/ReferralLanding"
+
 import UIKit from "./pages/UIKit"
 
 const navItems = [
@@ -260,6 +268,7 @@ function AppRoutes() {
       <Route path="/invite/:token" element={<AuthenticatedInviteRedirect />} />
       <Route path="/uikit" element={<UIKit />} />
       <Route path="/first-week" element={<FirstWeekSetup />} />
+      <Route path="/r/:code" element={<ReferralLanding />} />
       <Route path="*" element={<Navigate to="/" replace />} />
       <Route
         path="/admin"
@@ -270,6 +279,13 @@ function AppRoutes() {
         }
       >
         <Route index element={<AdminDashboard />} />
+        <Route
+          path="foundations"
+          element={<Foundations />}
+        />
+        <Route path="brand" element={<Brand />} />
+        <Route path="go-to-market" element={<GoToMarket />} />
+        <Route path="growth" element={<Growth />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="households" element={<Households />} />
         <Route path="households/:householdId" element={<Household360 />} />
@@ -290,9 +306,11 @@ function AppRoutes() {
 function PublicRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<PublicHome />} />
+      <Route path="/r/:code" element={<ReferralLanding />} />
       <Route path="/invite/:token" element={<InvitePage />} />
       <Route path="/login" element={<Login onLogin={() => { }} />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
