@@ -18,9 +18,7 @@ import {
     getPublishedLegalDocument
 } from "../../services/legalDocumentService"
 
-import {
-    getTrustDocumentBySlug
-} from "./TrustDocuments"
+import { getTrustDocumentBySlug } from "./trustDocuments"
 
 function renderInlineFormatting(text) {
     const parts = text.split(/(\*\*[^*]+\*\*)/g)
