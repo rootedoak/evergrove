@@ -95,6 +95,7 @@ import TrustCenter from "./pages/trust/TrustCenter"
 import TrustDocumentPage from "./pages/trust/TrustDocumentPage"
 import LegalAcceptanceGate from "./components/trust/LegalAcceptanceGate"
 import AdminTrustCenter from "./pages/admin/trust/AdminTrustCenter"
+import Roadmap from "./pages/admin/Roadmap"
 
 import UIKit from "./pages/UIKit"
 
@@ -310,6 +311,7 @@ function AppRoutes() {
         <Route path="beta" element={<BetaHealth />} />
         <Route path="/admin/feature-flags" element={<FeatureFlags />} />
         <Route path="sales" element={<SalesMarketing />} />
+        <Route path="roadmap" element={<Roadmap />} />
       </Route>
     </Routes>
   )

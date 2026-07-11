@@ -6,6 +6,7 @@ import {
     Flag,
     Home,
     House,
+    Map,
     MessageSquare,
     Palette,
     Rocket,
@@ -47,7 +48,6 @@ const adminNavSections = [
         label: "Beta",
         items: [
             { to: "/admin/beta", label: "Beta Testing", icon: Shield },
-            { to: "/admin/feature-flags", label: "Feature Flags", icon: Flag }
         ]
     },
     {
@@ -77,6 +77,21 @@ const adminNavSections = [
                 to: "/admin/trust",
                 label: "Trust Center",
                 icon: ShieldCheck
+            }
+        ]
+    },
+    {
+        label: "Product",
+        items: [
+            {
+                to: "/admin/roadmap",
+                label: "Roadmap",
+                icon: Map
+            },
+            {
+                to: "/admin/feature-flags",
+                label: "Feature Flags",
+                icon: Flag
             }
         ]
     },

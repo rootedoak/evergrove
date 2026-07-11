@@ -97,7 +97,7 @@ export async function buildMorningBrief({
 
         supabase
             .from("trips")
-            .select("name, title, destination, start_date")
+            .select("name, name, destination, start_date")
             .eq("household_id", householdId)
             .eq("start_date", today)
             .limit(1),
@@ -145,7 +145,7 @@ export async function buildMorningBrief({
     }
 
     for (const trip of trips || []) {
-        const tripName = trip.name || trip.title || "Trip"
+        const tripName = trip.name || trip.name || "Trip"
         const destination = trip.destination ? ` to ${trip.destination}` : ""
         highlights.push(`✈️ ${tripName}${destination} starts today`)
     }
