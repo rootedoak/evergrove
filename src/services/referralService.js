@@ -268,3 +268,91 @@ export async function markReferralHouseholdCreated(
 
     return conversion
 }
+
+export async function markReferralActivated() {
+    const conversionId = window.localStorage.getItem(
+        "evergrove_referral_conversion_id"
+    )
+
+    if (!conversionId) {
+        return null
+    }
+
+    const { data, error } = await supabase.rpc(
+        "advance_referral_conversion",
+        {
+            p_conversion_id: conversionId,
+            p_new_status: "activated",
+            p_referred_user_id: null,
+            p_referred_household_id: null
+        }
+    )
+
+    if (error) throw error
+
+    const conversion = data?.[0]
+
+    if (!conversion?.conversion_id) {
+        throw new Error(
+            "The referral activation was not recorded."
+        )
+    }
+
+    return conversion
+}
+
+export async function getReferralDashboard() {
+    const referral = await getOrCreateHouseholdReferral()
+
+    const { data: conversions, error } = await supabase
+        .from("referral_conversions")
+        .select(`
+            id,
+            status,
+            created_at,
+            converted_at,
+            referred_household_id
+        `)
+        .eq("referral_id", referral.id)
+        .order("created_at", {
+            ascending: false
+        })
+
+    if (error) throw error
+
+    const totals = {
+        started: 0,
+        accountCreated: 0,
+        householdCreated: 0,
+        activated: 0
+    }
+
+    for (const conversion of conversions ?? []) {
+        switch (conversion.status) {
+            case "started":
+                totals.started++
+                break
+
+            case "account_created":
+                totals.accountCreated++
+                break
+
+            case "household_created":
+                totals.householdCreated++
+                break
+
+            case "activated":
+                totals.activated++
+                break
+
+            default:
+                break
+        }
+    }
+
+    return {
+        referral,
+        conversions: conversions ?? [],
+        totals
+    }
+}

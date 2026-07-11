@@ -12,7 +12,11 @@ import {
 
 import Button from "../components/ui/Button"
 
-import { markReferralHouseholdCreated } from "../services/referralService"
+import {
+    clearReferralAttribution,
+    markReferralActivated,
+    markReferralHouseholdCreated
+} from "../services/referralService"
 
 function detectTimezone() {
     try {
@@ -180,14 +184,27 @@ export default function Onboarding() {
 
             await completeOnboarding()
 
-            sessionStorage.setItem("evergrove_skip_walkthrough_once", "true")
+            const activatedReferral =
+                await markReferralActivated()
+
+            if (activatedReferral) {
+                clearReferralAttribution()
+            }
+
+            sessionStorage.setItem(
+                "evergrove_skip_walkthrough_once",
+                "true"
+            )
 
             setTimeout(() => {
                 window.location.href = "/first-week"
             }, 2200)
         } catch (error) {
             console.error(error)
-            alert(error.message || "Could not finish onboarding.")
+            alert(
+                error.message ||
+                "Could not finish onboarding."
+            )
             setSetupComplete(false)
         } finally {
             setLoading(false)

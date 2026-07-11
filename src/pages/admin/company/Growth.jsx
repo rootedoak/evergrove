@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
     Check,
     Copy,
@@ -6,7 +6,10 @@ import {
     Link2,
     LoaderCircle,
     RefreshCw,
-    TrendingUp
+    TrendingUp,
+    UserCheck,
+    UserPlus,
+    Users
 } from "lucide-react"
 
 import AppPage from "../../../components/ui/AppPage"
@@ -16,35 +19,91 @@ import Button from "../../../components/ui/Button"
 
 import {
     buildReferralUrl,
-    getOrCreateHouseholdReferral
+    getReferralDashboard
 } from "../../../services/referralService"
 
+const funnelStages = [
+    {
+        key: "started",
+        label: "Started",
+        description: "Opened the referral flow",
+        icon: Link2
+    },
+    {
+        key: "accountCreated",
+        label: "Accounts Created",
+        description: "Created an Evergrove account",
+        icon: UserPlus
+    },
+    {
+        key: "householdCreated",
+        label: "Households Created",
+        description: "Created a new household",
+        icon: Users
+    },
+    {
+        key: "activated",
+        label: "Activated",
+        description: "Completed onboarding",
+        icon: UserCheck
+    }
+]
+
 export default function Growth() {
-    const [referralLink, setReferralLink] = useState("")
-    const [loadingReferral, setLoadingReferral] = useState(false)
-    const [referralError, setReferralError] = useState("")
+    const [dashboard, setDashboard] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const [refreshing, setRefreshing] = useState(false)
+    const [error, setError] = useState("")
     const [copied, setCopied] = useState(false)
 
-    async function handleGenerateReferral() {
-        try {
-            setLoadingReferral(true)
-            setReferralError("")
-            setCopied(false)
+    const referralLink = useMemo(() => {
+        const referralCode = dashboard?.referral?.referral_code
 
-            const referral = await getOrCreateHouseholdReferral()
+        if (!referralCode) return ""
 
-            setReferralLink(
-                buildReferralUrl(referral.referral_code)
+        return buildReferralUrl(referralCode)
+    }, [dashboard])
+
+    const totalConversions =
+        dashboard?.conversions?.length ?? 0
+
+    const activatedCount =
+        dashboard?.totals?.activated ?? 0
+
+    const activationRate =
+        totalConversions > 0
+            ? Math.round(
+                (activatedCount / totalConversions) * 100
             )
-        } catch (error) {
-            console.error(error)
+            : 0
 
-            setReferralError(
-                error.message ||
-                "We could not create a referral link."
+    useEffect(() => {
+        loadDashboard()
+    }, [])
+
+    async function loadDashboard({ silent = false } = {}) {
+        try {
+            if (silent) {
+                setRefreshing(true)
+            } else {
+                setLoading(true)
+            }
+
+            setError("")
+
+            const data = await getReferralDashboard()
+
+            setDashboard(data)
+        } catch (loadError) {
+            console.error(loadError)
+
+            setError(
+                loadError.message ||
+                "We could not load referral activity."
             )
         } finally {
-            setLoadingReferral(false)
+            setLoading(false)
+            setRefreshing(false)
         }
     }
 
@@ -58,10 +117,10 @@ export default function Growth() {
             window.setTimeout(() => {
                 setCopied(false)
             }, 2000)
-        } catch (error) {
-            console.error(error)
+        } catch (copyError) {
+            console.error(copyError)
 
-            setReferralError(
+            setError(
                 "We could not copy the referral link."
             )
         }
@@ -82,7 +141,7 @@ export default function Growth() {
             <PageHeader
                 eyebrow="Company"
                 title="Growth"
-                description="The systems, experiments, and metrics that help more families discover and adopt Evergrove."
+                description="The systems and metrics that help more families discover, adopt, and trust Evergrove."
             />
 
             <div className="growth-page">
@@ -94,103 +153,272 @@ export default function Growth() {
                     <span>Growth at Evergrove</span>
 
                     <h2>
-                        Grow through trust, usefulness, and families
-                        sharing something that helps.
+                        Grow through trust, usefulness, and
+                        families sharing something that helps.
                     </h2>
 
                     <p>
-                        Evergrove should earn growth through a product
-                        families value, a message they understand, and
-                        an experience they feel comfortable recommending.
+                        Evergrove should earn growth through a
+                        product families value, a message they
+                        understand, and an experience they feel
+                        comfortable recommending.
                     </p>
                 </section>
 
-                <SectionCard
-                    title="Referral Testing"
-                    icon={Link2}
-                    className="growth-referral-card"
-                >
-                    <p className="growth-referral-card__intro">
-                        Generate the referral link for your current
-                        household, then open it in an incognito window
-                        to test the public referral experience.
-                    </p>
+                {loading && (
+                    <section className="growth-loading-card">
+                        <LoaderCircle
+                            size={28}
+                            className="growth-spinner"
+                        />
 
-                    {!referralLink && (
+                        <div>
+                            <strong>
+                                Loading referral activity…
+                            </strong>
+
+                            <p>
+                                We&apos;re gathering the latest
+                                referral program data.
+                            </p>
+                        </div>
+                    </section>
+                )}
+
+                {!loading && error && (
+                    <section
+                        className="growth-error-card"
+                        role="alert"
+                    >
+                        <div>
+                            <strong>
+                                Referral data could not be loaded.
+                            </strong>
+
+                            <p>{error}</p>
+                        </div>
+
                         <Button
-                            onClick={handleGenerateReferral}
-                            disabled={loadingReferral}
+                            variant="secondary"
+                            onClick={() => loadDashboard()}
                         >
-                            {loadingReferral ? (
-                                <>
-                                    <LoaderCircle
-                                        size={17}
-                                        className="growth-spinner"
-                                    />
-                                    Generating Link...
-                                </>
-                            ) : (
-                                <>
-                                    <Link2 size={17} />
-                                    Generate Referral Link
-                                </>
-                            )}
+                            <RefreshCw size={17} />
+                            Try Again
                         </Button>
-                    )}
+                    </section>
+                )}
 
-                    {referralLink && (
-                        <div className="growth-referral-result">
-                            <div className="growth-referral-link">
-                                <span>Current household referral</span>
-                                <strong>{referralLink}</strong>
-                            </div>
-
-                            <div className="growth-referral-actions">
-                                <Button
-                                    onClick={handleCopyReferral}
-                                >
-                                    {copied ? (
-                                        <>
-                                            <Check size={17} />
-                                            Copied
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Copy size={17} />
-                                            Copy Link
-                                        </>
-                                    )}
-                                </Button>
-
-                                <Button
-                                    variant="secondary"
-                                    onClick={handleOpenReferral}
-                                >
-                                    <ExternalLink size={17} />
-                                    Open Link
-                                </Button>
-
-                                <Button
-                                    variant="secondary"
-                                    onClick={handleGenerateReferral}
-                                    disabled={loadingReferral}
-                                >
-                                    <RefreshCw size={17} />
-                                    Refresh
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-
-                    {referralError && (
-                        <div
-                            className="growth-referral-error"
-                            role="alert"
+                {!loading && !error && dashboard && (
+                    <>
+                        <SectionCard
+                            title="Referral Program"
+                            icon={Link2}
+                            className="growth-referral-card"
                         >
-                            {referralError}
-                        </div>
-                    )}
-                </SectionCard>
+                            <div className="growth-referral-layout">
+                                <div>
+                                    <p className="growth-referral-card__intro">
+                                        Every household has one
+                                        permanent referral link it
+                                        can share with another
+                                        family.
+                                    </p>
+
+                                    <div className="growth-referral-link">
+                                        <span>
+                                            Current household
+                                            referral
+                                        </span>
+
+                                        <strong>
+                                            {referralLink}
+                                        </strong>
+                                    </div>
+
+                                    <div className="growth-referral-actions">
+                                        <Button
+                                            onClick={
+                                                handleCopyReferral
+                                            }
+                                        >
+                                            {copied ? (
+                                                <>
+                                                    <Check
+                                                        size={17}
+                                                    />
+                                                    Copied
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy
+                                                        size={17}
+                                                    />
+                                                    Copy Link
+                                                </>
+                                            )}
+                                        </Button>
+
+                                        <Button
+                                            variant="secondary"
+                                            onClick={
+                                                handleOpenReferral
+                                            }
+                                        >
+                                            <ExternalLink
+                                                size={17}
+                                            />
+                                            Open Landing Page
+                                        </Button>
+
+                                        <Button
+                                            variant="secondary"
+                                            onClick={() =>
+                                                loadDashboard({
+                                                    silent: true
+                                                })
+                                            }
+                                            disabled={refreshing}
+                                        >
+                                            <RefreshCw
+                                                size={17}
+                                                className={
+                                                    refreshing
+                                                        ? "growth-spinner"
+                                                        : ""
+                                                }
+                                            />
+
+                                            {refreshing
+                                                ? "Refreshing..."
+                                                : "Refresh"}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="growth-referral-summary">
+                                    <span>Activation rate</span>
+
+                                    <strong>
+                                        {activationRate}%
+                                    </strong>
+
+                                    <p>
+                                        {activatedCount} of{" "}
+                                        {totalConversions} referral
+                                        starts completed onboarding.
+                                    </p>
+                                </div>
+                            </div>
+                        </SectionCard>
+
+                        <section className="growth-section">
+                            <div className="growth-section-heading">
+                                <span>
+                                    Referral performance
+                                </span>
+
+                                <h2>Referral Funnel</h2>
+
+                                <p>
+                                    Follow referred families from
+                                    the first landing-page visit
+                                    through completed onboarding.
+                                </p>
+                            </div>
+
+                            <div className="growth-funnel">
+                                {funnelStages.map(
+                                    (stage, index) => {
+                                        const Icon = stage.icon
+                                        const value =
+                                            dashboard.totals?.[
+                                            stage.key
+                                            ] ?? 0
+
+                                        return (
+                                            <div
+                                                key={stage.key}
+                                                className="growth-funnel-stage-wrap"
+                                            >
+                                                <article className="growth-funnel-stage">
+                                                    <div className="growth-funnel-stage__icon">
+                                                        <Icon
+                                                            size={
+                                                                21
+                                                            }
+                                                        />
+                                                    </div>
+
+                                                    <span>
+                                                        {
+                                                            stage.label
+                                                        }
+                                                    </span>
+
+                                                    <strong>
+                                                        {value}
+                                                    </strong>
+
+                                                    <p>
+                                                        {
+                                                            stage.description
+                                                        }
+                                                    </p>
+                                                </article>
+
+                                                {index <
+                                                    funnelStages.length -
+                                                    1 && (
+                                                        <div
+                                                            className="growth-funnel-arrow"
+                                                            aria-hidden="true"
+                                                        >
+                                                            →
+                                                        </div>
+                                                    )}
+                                            </div>
+                                        )
+                                    }
+                                )}
+                            </div>
+                        </section>
+
+                        <section className="growth-metrics-grid">
+                            <article className="growth-metric-card">
+                                <span>Total Referral Starts</span>
+                                <strong>
+                                    {totalConversions}
+                                </strong>
+                                <p>
+                                    All referral conversions
+                                    created from this household.
+                                </p>
+                            </article>
+
+                            <article className="growth-metric-card">
+                                <span>Activated Families</span>
+                                <strong>
+                                    {activatedCount}
+                                </strong>
+                                <p>
+                                    Referred households that
+                                    completed onboarding.
+                                </p>
+                            </article>
+
+                            <article className="growth-metric-card">
+                                <span>Activation Rate</span>
+                                <strong>
+                                    {activationRate}%
+                                </strong>
+                                <p>
+                                    The share of referral starts
+                                    that became active households.
+                                </p>
+                            </article>
+                        </section>
+                    </>
+                )}
             </div>
         </AppPage>
     )

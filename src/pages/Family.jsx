@@ -25,6 +25,8 @@ import {
     updatePreferences
 } from "../services/preferenceService"
 
+import ShareEvergroveCard from "../components/referrals/ShareEvergroveCard"
+
 const initialForm = {
     name: "",
     role: "",
@@ -934,6 +936,8 @@ export default function Family() {
                         </div>
                     )}
                 </SectionCard>
+
+                <ShareEvergroveCard />
             </div>
         </AppPage>
     )

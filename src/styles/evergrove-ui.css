@@ -8610,6 +8610,9 @@ button.eg-attention-metric {
 /* =========================================================
    Evergrove Growth
    ========================================================= */
+/* =========================================================
+   Evergrove Growth
+   ========================================================= */
 
 .growth-page {
     display: grid;
@@ -8634,7 +8637,20 @@ button.eg-attention-metric {
     box-shadow: 0 22px 55px rgba(15, 35, 55, 0.18);
 }
 
+.growth-hero::after {
+    content: "";
+    position: absolute;
+    right: -130px;
+    bottom: -190px;
+    width: 430px;
+    height: 430px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+}
+
 .growth-hero__icon {
+    position: relative;
+    z-index: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -8645,6 +8661,13 @@ button.eg-attention-metric {
     border-radius: 17px;
     background: rgba(255, 255, 255, 0.08);
     color: #d6e9d8;
+}
+
+.growth-hero>span,
+.growth-hero h2,
+.growth-hero p {
+    position: relative;
+    z-index: 1;
 }
 
 .growth-hero>span {
@@ -8673,6 +8696,48 @@ button.eg-attention-metric {
     line-height: 1.75;
 }
 
+.growth-loading-card,
+.growth-error-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 1px solid var(--border-color, #dbe3ea);
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(25, 45, 65, 0.05);
+}
+
+.growth-loading-card {
+    color: #4e795c;
+}
+
+.growth-loading-card strong,
+.growth-error-card strong {
+    display: block;
+    color: var(--text-primary, #1b2b3b);
+}
+
+.growth-loading-card p,
+.growth-error-card p {
+    margin: 0.3rem 0 0;
+    color: var(--text-secondary, #667586);
+    line-height: 1.55;
+}
+
+.growth-error-card {
+    justify-content: space-between;
+    border-color: rgba(164, 69, 77, 0.2);
+    background: rgba(164, 69, 77, 0.05);
+}
+
+.growth-referral-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 1.5rem;
+    align-items: stretch;
+}
+
 .growth-referral-card__intro {
     max-width: 760px;
     margin: 0 0 1.25rem;
@@ -8680,14 +8745,9 @@ button.eg-attention-metric {
     line-height: 1.65;
 }
 
-.growth-referral-result {
-    display: grid;
-    gap: 1rem;
-}
-
 .growth-referral-link {
     display: grid;
-    gap: 0.4rem;
+    gap: 0.45rem;
     padding: 1rem;
     border: 1px solid rgba(78, 121, 92, 0.18);
     border-radius: 15px;
@@ -8712,17 +8772,73 @@ button.eg-attention-metric {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
+    margin-top: 1rem;
 }
 
-.growth-referral-error {
-    margin-top: 1rem;
-    padding: 0.85rem 1rem;
-    border: 1px solid rgba(164, 69, 77, 0.2);
-    border-radius: 13px;
-    background: rgba(164, 69, 77, 0.07);
-    color: #8d3f47;
-    font-size: 0.84rem;
-    line-height: 1.5;
+.growth-referral-summary {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1.25rem;
+    border: 1px solid rgba(78, 121, 92, 0.18);
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at top right,
+            rgba(78, 121, 92, 0.13),
+            transparent 42%),
+        rgba(78, 121, 92, 0.055);
+}
+
+.growth-referral-summary>span {
+    color: #4e795c;
+    font-size: 0.7rem;
+    font-weight: 850;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.growth-referral-summary strong {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--text-primary, #1b2b3b);
+    font-size: 2.5rem;
+    letter-spacing: -0.055em;
+}
+
+.growth-referral-summary p {
+    margin: 0.55rem 0 0;
+    color: var(--text-secondary, #667586);
+    font-size: 0.82rem;
+    line-height: 1.55;
+}
+
+.growth-section {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.growth-section-heading>span {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: #4e795c;
+    font-size: 0.74rem;
+    font-weight: 850;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.growth-section-heading h2 {
+    margin: 0;
+    color: var(--text-primary, #1b2b3b);
+    font-size: clamp(1.65rem, 3vw, 2.35rem);
+    letter-spacing: -0.04em;
+}
+
+.growth-section-heading p {
+    max-width: 760px;
+    margin: 0.65rem 0 0;
+    color: var(--text-secondary, #667586);
+    line-height: 1.7;
 }
 
 .growth-spinner {
@@ -8735,7 +8851,13 @@ button.eg-attention-metric {
     }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 1120px) {
+    .growth-referral-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 720px) {
     .growth-page {
         gap: 1.5rem;
     }
@@ -8745,12 +8867,682 @@ button.eg-attention-metric {
         border-radius: 22px;
     }
 
+    .growth-error-card {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
     .growth-referral-actions {
         display: grid;
     }
 
     .growth-referral-actions button {
         width: 100%;
+    }
+}
+
+/* =========================================================
+   Growth Funnel
+   ========================================================= */
+
+.growth-section {
+    width: 100%;
+    display: grid;
+    gap: 1.25rem;
+}
+
+.growth-section-heading {
+    max-width: 760px;
+}
+
+.growth-funnel {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    gap: 1rem;
+    width: 100%;
+}
+
+.growth-funnel-stage-wrap {
+    position: relative;
+    display: block;
+    min-width: 0;
+}
+
+.growth-funnel-stage {
+    height: 100%;
+    min-height: 230px;
+    padding: 1.4rem;
+    border: 1px solid var(--border-color, #dbe3ea);
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(25, 45, 65, 0.05);
+    text-align: left;
+}
+
+.growth-funnel-stage__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(78, 121, 92, 0.11);
+    color: #426c50;
+}
+
+.growth-funnel-stage>span {
+    display: block;
+    margin-top: 1.15rem;
+    color: #4e795c;
+    font-size: 0.7rem;
+    font-weight: 850;
+    letter-spacing: 0.09em;
+    line-height: 1.45;
+    text-transform: uppercase;
+}
+
+.growth-funnel-stage strong {
+    display: block;
+    margin-top: 0.45rem;
+    color: var(--text-primary, #1b2b3b);
+    font-size: 2.4rem;
+    line-height: 1;
+    letter-spacing: -0.05em;
+}
+
+.growth-funnel-stage p {
+    margin: 0.65rem 0 0;
+    color: var(--text-secondary, #667586);
+    font-size: 0.84rem;
+    line-height: 1.6;
+}
+
+/*
+   The arrow is positioned between cards instead of taking
+   up its own grid column.
+*/
+.growth-funnel-arrow {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    right: -1.55rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--page-background, #f7f9fb);
+    color: rgba(78, 121, 92, 0.62);
+    font-size: 1.35rem;
+    font-weight: 800;
+    transform: translateY(-50%);
+}
+
+.growth-page {
+    display: grid;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    gap: 2rem;
+    padding-bottom: 3rem;
+}
+
+.growth-hero {
+    position: relative;
+    overflow: hidden;
+    padding: clamp(3rem, 7vw, 6rem) 2rem;
+    border-radius: 28px;
+    background:
+        radial-gradient(circle at 88% 12%,
+            rgba(126, 180, 143, 0.25),
+            transparent 34%),
+        linear-gradient(145deg,
+            #10263d 0%,
+            #173a52 58%,
+            #24565b 100%);
+    color: #ffffff;
+    box-shadow: 0 22px 55px rgba(15, 35, 55, 0.18);
+}
+
+.growth-hero::after {
+    content: "";
+    position: absolute;
+    right: -130px;
+    bottom: -190px;
+    width: 430px;
+    height: 430px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+}
+
+.growth-hero__icon {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    margin-bottom: 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 17px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #d6e9d8;
+}
+
+.growth-hero>span,
+.growth-hero h2,
+.growth-hero p {
+    position: relative;
+    z-index: 1;
+}
+
+.growth-hero>span {
+    display: block;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.76rem;
+    font-weight: 850;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.growth-hero h2 {
+    max-width: 900px;
+    margin: 0.7rem 0 0;
+    color: #ffffff;
+    font-size: clamp(2.4rem, 5vw, 4.8rem);
+    line-height: 1;
+    letter-spacing: -0.055em;
+}
+
+.growth-hero p {
+    max-width: 720px;
+    margin: 1.4rem 0 0;
+    color: rgba(255, 255, 255, 0.76);
+    font-size: 1.05rem;
+    line-height: 1.75;
+}
+
+.growth-loading-card,
+.growth-error-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 1px solid var(--border-color, #dbe3ea);
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(25, 45, 65, 0.05);
+}
+
+.growth-loading-card {
+    color: #4e795c;
+}
+
+.growth-loading-card strong,
+.growth-error-card strong {
+    display: block;
+    color: var(--text-primary, #1b2b3b);
+}
+
+.growth-loading-card p,
+.growth-error-card p {
+    margin: 0.3rem 0 0;
+    color: var(--text-secondary, #667586);
+    line-height: 1.55;
+}
+
+.growth-error-card {
+    justify-content: space-between;
+    border-color: rgba(164, 69, 77, 0.2);
+    background: rgba(164, 69, 77, 0.05);
+}
+
+.growth-referral-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 1.5rem;
+    align-items: stretch;
+}
+
+.growth-referral-card__intro {
+    max-width: 760px;
+    margin: 0 0 1.25rem;
+    color: var(--text-secondary, #667586);
+    line-height: 1.65;
+}
+
+.growth-referral-link {
+    display: grid;
+    gap: 0.45rem;
+    padding: 1rem;
+    border: 1px solid rgba(78, 121, 92, 0.18);
+    border-radius: 15px;
+    background: rgba(78, 121, 92, 0.055);
+}
+
+.growth-referral-link span {
+    color: #4e795c;
+    font-size: 0.7rem;
+    font-weight: 850;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.growth-referral-link strong {
+    color: var(--text-primary, #1b2b3b);
+    font-size: 0.92rem;
+    overflow-wrap: anywhere;
+}
+
+.growth-referral-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.growth-referral-summary {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1.25rem;
+    border: 1px solid rgba(78, 121, 92, 0.18);
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at top right,
+            rgba(78, 121, 92, 0.13),
+            transparent 42%),
+        rgba(78, 121, 92, 0.055);
+}
+
+.growth-referral-summary>span {
+    color: #4e795c;
+    font-size: 0.7rem;
+    font-weight: 850;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.growth-referral-summary strong {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--text-primary, #1b2b3b);
+    font-size: 2.5rem;
+    letter-spacing: -0.055em;
+}
+
+.growth-referral-summary p {
+    margin: 0.55rem 0 0;
+    color: var(--text-secondary, #667586);
+    font-size: 0.82rem;
+    line-height: 1.55;
+}
+
+.growth-section {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.growth-section-heading>span {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: #4e795c;
+    font-size: 0.74rem;
+    font-weight: 850;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.growth-section-heading h2 {
+    margin: 0;
+    color: var(--text-primary, #1b2b3b);
+    font-size: clamp(1.65rem, 3vw, 2.35rem);
+    letter-spacing: -0.04em;
+}
+
+.growth-section-heading p {
+    max-width: 760px;
+    margin: 0.65rem 0 0;
+    color: var(--text-secondary, #667586);
+    line-height: 1.7;
+}
+
+.growth-spinner {
+    animation: growth-spin 0.9s linear infinite;
+}
+
+@keyframes growth-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 1120px) {
+    .growth-referral-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 720px) {
+    .growth-page {
+        gap: 1.5rem;
+    }
+
+    .growth-hero {
+        padding: 3rem 1.25rem;
+        border-radius: 22px;
+    }
+
+    .growth-error-card {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .growth-referral-actions {
+        display: grid;
+    }
+
+    .growth-referral-actions button {
+        width: 100%;
+    }
+}
+
+/* =========================================================
+   Growth Funnel
+   ========================================================= */
+
+.growth-section {
+    width: 100%;
+    display: grid;
+    gap: 1.25rem;
+}
+
+.growth-section-heading {
+    max-width: 760px;
+}
+
+/* =========================================================
+   Growth Funnel
+   ========================================================= */
+
+.growth-section {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    gap: 1.25rem;
+    margin: 0;
+}
+
+.growth-section-heading {
+    width: 100%;
+    max-width: 760px;
+    margin: 0;
+}
+
+.growth-funnel {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+}
+
+.growth-funnel-stage-wrap {
+    position: relative;
+    display: block;
+    min-width: 0;
+}
+
+.growth-funnel-stage {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 230px;
+    padding: 1.25rem;
+    border: 1px solid var(--border-color, #dbe3ea);
+    border-radius: 20px;
+    background: #ffffff;
+    box-sizing: border-box;
+    box-shadow: 0 8px 24px rgba(25, 45, 65, 0.05);
+    text-align: left;
+}
+
+.growth-funnel-stage__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(78, 121, 92, 0.11);
+    color: #426c50;
+}
+
+.growth-funnel-stage>span {
+    display: block;
+    margin-top: 1.15rem;
+    color: #4e795c;
+    font-size: 0.7rem;
+    font-weight: 850;
+    letter-spacing: 0.09em;
+    line-height: 1.45;
+    text-transform: uppercase;
+}
+
+.growth-funnel-stage strong {
+    display: block;
+    margin-top: 0.45rem;
+    color: var(--text-primary, #1b2b3b);
+    font-size: 2.4rem;
+    line-height: 1;
+    letter-spacing: -0.05em;
+}
+
+.growth-funnel-stage p {
+    margin: 0.65rem 0 0;
+    color: var(--text-secondary, #667586);
+    font-size: 0.84rem;
+    line-height: 1.6;
+}
+
+.growth-funnel-arrow {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    right: -1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: #f7f9fb;
+    color: rgba(78, 121, 92, 0.62);
+    font-size: 1.35rem;
+    font-weight: 800;
+    transform: translateY(-50%);
+}
+
+/* =========================================================
+   Growth Summary Metrics
+   ========================================================= */
+
+.growth-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+}
+
+.growth-metric-card {
+    width: 100%;
+    min-width: 0;
+    min-height: 180px;
+    padding: 1.4rem;
+    border: 1px solid var(--border-color, #dbe3ea);
+    border-radius: 19px;
+    background: #ffffff;
+    box-sizing: border-box;
+    box-shadow: 0 8px 24px rgba(25, 45, 65, 0.05);
+    text-align: left;
+}
+
+.growth-metric-card>span {
+    display: block;
+    color: #4e795c;
+    font-size: 0.7rem;
+    font-weight: 850;
+    letter-spacing: 0.1em;
+    line-height: 1.5;
+    text-transform: uppercase;
+}
+
+.growth-metric-card strong {
+    display: block;
+    margin-top: 0.7rem;
+    color: var(--text-primary, #1b2b3b);
+    font-size: 2.25rem;
+    line-height: 1;
+    letter-spacing: -0.04em;
+}
+
+.growth-metric-card p {
+    max-width: 260px;
+    margin: 0.6rem 0 0;
+    color: var(--text-secondary, #667586);
+    font-size: 0.84rem;
+    line-height: 1.6;
+}
+
+@media (max-width: 1180px) {
+    .growth-funnel {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .growth-funnel-arrow {
+        display: none;
+    }
+}
+
+@media (max-width: 800px) {
+
+    .growth-funnel,
+    .growth-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .growth-funnel-stage,
+    .growth-metric-card {
+        min-height: auto;
+    }
+}
+
+.growth-funnel-arrow {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    right: -1.55rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--page-background, #f7f9fb);
+    color: rgba(78, 121, 92, 0.62);
+    font-size: 1.35rem;
+    font-weight: 800;
+    transform: translateY(-50%);
+}
+
+.growth-hero,
+.growth-referral-card,
+.growth-section,
+.growth-metrics-grid {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+}
+
+/* =========================================================
+   Growth Summary Metrics
+   ========================================================= */
+
+.growth-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+    gap: 1.25rem;
+    width: 100%;
+}
+
+.growth-metric-card {
+    min-height: 180px;
+    padding: 1.4rem;
+    border: 1px solid var(--border-color, #dbe3ea);
+    border-radius: 19px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(25, 45, 65, 0.05);
+    text-align: left;
+}
+
+.growth-metric-card>span {
+    display: block;
+    color: #4e795c;
+    font-size: 0.7rem;
+    font-weight: 850;
+    letter-spacing: 0.1em;
+    line-height: 1.5;
+    text-transform: uppercase;
+}
+
+.growth-metric-card strong {
+    display: block;
+    margin-top: 0.7rem;
+    color: var(--text-primary, #1b2b3b);
+    font-size: 2.25rem;
+    line-height: 1;
+    letter-spacing: -0.04em;
+}
+
+.growth-metric-card p {
+    max-width: 260px;
+    margin: 0.6rem 0 0;
+    color: var(--text-secondary, #667586);
+    font-size: 0.84rem;
+    line-height: 1.6;
+}
+
+@media (max-width: 1180px) {
+    .growth-funnel {
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+    }
+
+    .growth-funnel-arrow {
+        display: none;
+    }
+}
+
+@media (max-width: 800px) {
+
+    .growth-funnel,
+    .growth-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .growth-funnel-stage {
+        min-height: auto;
+    }
+
+    .growth-metric-card {
+        min-height: auto;
     }
 }
 
@@ -9948,4 +10740,151 @@ button.eg-attention-metric {
     min-width: max-content;
     flex: 0 0 auto;
     margin: 0;
+}
+
+/* =========================================================
+   Growth Layout Corrections
+   ========================================================= */
+
+.admin-content .app-page,
+.admin-content .eg-page,
+.admin-content .growth-page {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin-right: 0;
+    margin-left: 0;
+    justify-self: stretch;
+}
+
+.growth-page {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+}
+
+.growth-page>*,
+.growth-hero,
+.growth-referral-card,
+.growth-section,
+.growth-funnel,
+.growth-metrics-grid {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+}
+
+.growth-hero,
+.growth-referral-card,
+.growth-section,
+.growth-section-heading,
+.growth-referral-layout,
+.growth-metrics-grid {
+    text-align: left;
+}
+
+/* =========================================================
+   Share Evergrove
+   ========================================================= */
+
+.share-evergrove-card {
+    border-color: rgba(78, 121, 92, 0.22);
+    background:
+        radial-gradient(circle at top right,
+            rgba(78, 121, 92, 0.1),
+            transparent 38%),
+        #ffffff;
+}
+
+.share-evergrove-content {
+    display: grid;
+    gap: 1rem;
+}
+
+.share-evergrove-intro {
+    margin: 0;
+    color: var(--text-primary, #1b2b3b);
+    font-size: 1.05rem;
+    font-weight: 750;
+    line-height: 1.5;
+}
+
+.share-evergrove-description {
+    max-width: 720px;
+    margin: 0.4rem 0 0;
+    color: var(--text-secondary, #667586);
+    line-height: 1.65;
+}
+
+.share-evergrove-link {
+    display: grid;
+    gap: 0.4rem;
+    padding: 1rem;
+    border: 1px solid rgba(78, 121, 92, 0.18);
+    border-radius: 15px;
+    background: rgba(78, 121, 92, 0.055);
+}
+
+.share-evergrove-link span {
+    color: #4e795c;
+    font-size: 0.7rem;
+    font-weight: 850;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.share-evergrove-link strong {
+    color: var(--text-primary, #1b2b3b);
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.share-evergrove-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.share-evergrove-note {
+    margin: 0;
+    color: var(--text-secondary, #667586);
+    font-size: 0.78rem;
+    line-height: 1.55;
+}
+
+.share-evergrove-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    color: var(--text-secondary, #667586);
+}
+
+.share-evergrove-error {
+    padding: 0.85rem 1rem;
+    border: 1px solid rgba(164, 69, 77, 0.2);
+    border-radius: 13px;
+    background: rgba(164, 69, 77, 0.07);
+    color: #8d3f47;
+    font-size: 0.84rem;
+}
+
+.share-evergrove-spinner {
+    color: #4e795c;
+    animation: share-evergrove-spin 0.9s linear infinite;
+}
+
+@keyframes share-evergrove-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 680px) {
+    .share-evergrove-actions {
+        display: grid;
+    }
+
+    .share-evergrove-actions button {
+        width: 100%;
+    }
 }
