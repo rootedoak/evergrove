@@ -138,6 +138,8 @@ export default function AdminTrustCenter() {
     const documents = data?.documents ?? []
     const pendingUsers =
         data?.pendingUsers ?? []
+    const users =
+        data?.users ?? []
 
     return (
         <div className="admin-page admin-trust-page">
@@ -198,6 +200,78 @@ export default function AdminTrustCenter() {
                     }
                 />
             </div>
+
+            <SectionCard
+                title="User Acceptance Status"
+                description="Whether each Evergrove user has accepted every current required policy."
+            >
+                {users.length === 0 ? (
+                    <div className="admin-empty-state">
+                        <Users size={24} />
+
+                        <div>
+                            <strong>No users found</strong>
+
+                            <p>
+                                User acceptance status will appear
+                                here after accounts are created.
+                            </p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="admin-trust-user-status-list">
+                        {users.map(user => (
+                            <article
+                                key={user.userId}
+                                className="admin-trust-user-status-row"
+                            >
+                                <div className="admin-trust-user-status-row__identity">
+                                    <strong>
+                                        {user.email ?? "Unknown user"}
+                                    </strong>
+
+                                    <span>
+                                        Accepted{" "}
+                                        {user.acceptedRequiredCount} of{" "}
+                                        {user.requiredCount} required policies
+                                    </span>
+                                </div>
+
+                                <div className="admin-trust-user-status-row__details">
+                                    {user.fullyAccepted ? (
+                                        <span className="admin-legal-status current">
+                                            <CheckCircle2 size={15} />
+                                            Current
+                                        </span>
+                                    ) : (
+                                        <span className="admin-legal-status pending">
+                                            <Clock3 size={15} />
+                                            Action Required
+                                        </span>
+                                    )}
+                                </div>
+
+                                {!user.fullyAccepted &&
+                                    user.missingDocuments?.length > 0 && (
+                                        <div className="admin-trust-user-status-row__missing">
+                                            {user.missingDocuments.map(
+                                                document => (
+                                                    <span
+                                                        key={document.id}
+                                                    >
+                                                        Missing{" "}
+                                                        {document.title} v
+                                                        {document.version}
+                                                    </span>
+                                                )
+                                            )}
+                                        </div>
+                                    )}
+                            </article>
+                        ))}
+                    </div>
+                )}
+            </SectionCard>
 
             <SectionCard
                 title="Published Policies"

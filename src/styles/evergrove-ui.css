@@ -8331,6 +8331,43 @@ button.eg-attention-metric {
     text-decoration: none;
 }
 
+.auth-legal {
+    display: grid;
+    gap: 14px;
+    margin: 22px 0;
+    padding: 18px;
+    border: 1px solid rgba(69, 103, 84, 0.12);
+    border-radius: 16px;
+    background: #f8faf8;
+}
+
+.auth-checkbox {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: #44564d;
+}
+
+.auth-checkbox input {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: #456754;
+}
+
+.auth-checkbox a {
+    color: #456754;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.auth-checkbox a:hover {
+    text-decoration: underline;
+}
+
 .referral-public-main {
     display: grid;
     grid-template-columns:
@@ -9379,4 +9416,536 @@ button.eg-attention-metric {
     .admin-trust-user-row__missing {
         justify-content: flex-start;
     }
+}
+
+.admin-trust-user-status-list {
+    display: grid;
+    gap: 10px;
+}
+
+.admin-trust-user-status-row {
+    display: grid;
+    grid-template-columns:
+        minmax(220px, 1fr) auto;
+    align-items: center;
+    gap: 12px 18px;
+    padding: 15px 16px;
+    border: 1px solid rgba(42, 73, 58, 0.1);
+    border-radius: 16px;
+    background: #f9faf9;
+}
+
+.admin-trust-user-status-row__identity strong,
+.admin-trust-user-status-row__identity span {
+    display: block;
+}
+
+.admin-trust-user-status-row__identity strong {
+    color: #20352d;
+}
+
+.admin-trust-user-status-row__identity span {
+    margin-top: 4px;
+    color: #78847d;
+    font-size: 0.8rem;
+}
+
+.admin-trust-user-status-row__details {
+    justify-self: end;
+}
+
+.admin-legal-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 800;
+}
+
+.admin-legal-status.current {
+    color: #2f684a;
+    background: #e6f5eb;
+}
+
+.admin-legal-status.pending {
+    color: #855f24;
+    background: #fff2d4;
+}
+
+.admin-trust-user-status-row__missing {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(42, 73, 58, 0.08);
+}
+
+.admin-trust-user-status-row__missing span {
+    padding: 5px 9px;
+    border-radius: 999px;
+    color: #7a5924;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: #fff3d7;
+}
+
+@media (max-width: 700px) {
+    .admin-trust-user-status-row {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-trust-user-status-row__details {
+        justify-self: start;
+    }
+}
+
+.admin-metric-value {
+    display: block;
+    color: #20352d;
+    font-size: 2rem;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+}
+
+.admin-metric-value.compact {
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+}
+
+.admin-health-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(42, 73, 58, 0.1);
+}
+
+.admin-health-score {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.admin-health-score strong {
+    color: #20352d;
+    font-size: 2.4rem;
+    line-height: 1;
+}
+
+.admin-health-score span {
+    color: #7c8982;
+    font-size: 0.9rem;
+}
+
+.admin-health-signals {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    margin-top: 16px;
+}
+
+.admin-health-signal {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 10px 11px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.admin-health-signal span {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 999px;
+}
+
+.admin-health-signal.active {
+    color: #35624a;
+    background: #edf7f0;
+}
+
+.admin-health-signal.active span {
+    color: #ffffff;
+    background: #56816a;
+}
+
+.admin-health-signal.inactive {
+    color: #7a817d;
+    background: #f2f3f2;
+}
+
+.admin-health-signal.inactive span {
+    background: #e1e4e2;
+}
+
+.admin-account-grid {
+    align-items: stretch;
+}
+
+.admin-experience-grid,
+.admin-notification-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.admin-experience-item,
+.admin-notification-item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid rgba(42, 73, 58, 0.1);
+    border-radius: 14px;
+    background: #f8faf8;
+}
+
+.admin-experience-item__icon,
+.admin-notification-item__icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    color: #557462;
+    background: #eaf1eb;
+}
+
+.admin-experience-item strong,
+.admin-experience-item span,
+.admin-notification-item strong,
+.admin-notification-item span {
+    display: block;
+}
+
+.admin-experience-item strong,
+.admin-notification-item strong {
+    color: #263c32;
+    font-size: 0.84rem;
+}
+
+.admin-experience-item>div>span,
+.admin-notification-item>div>span {
+    margin-top: 3px;
+    color: #79857e;
+    font-size: 0.75rem;
+}
+
+.admin-experience-item.complete {
+    border-color: rgba(67, 125, 89, 0.18);
+    background: #f1f8f3;
+}
+
+.admin-experience-item.attention {
+    border-color: rgba(165, 116, 34, 0.18);
+    background: #fff9ec;
+}
+
+.admin-experience-item.attention .admin-experience-item__icon {
+    color: #8b682c;
+    background: #fff0ca;
+}
+
+.admin-card-footnote {
+    margin-top: 14px;
+    padding-top: 13px;
+    border-top: 1px solid rgba(42, 73, 58, 0.09);
+    color: #78847d;
+    font-size: 0.8rem;
+}
+
+.admin-notification-item {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.admin-notification-item.disabled {
+    opacity: 0.62;
+    background: #f4f5f4;
+}
+
+.admin-notification-item__indicator {
+    display: grid !important;
+    place-items: center;
+    width: 23px;
+    height: 23px;
+    border-radius: 999px;
+    color: white;
+    background: #5c806b;
+}
+
+.admin-notification-item.disabled .admin-notification-item__indicator {
+    color: #89918d;
+    background: #e4e7e5;
+}
+
+.admin-morning-brief-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 15px;
+    background: #f4f7f4;
+}
+
+.admin-morning-brief-panel>div {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.admin-morning-brief-panel p {
+    margin: 3px 0 0;
+    font-size: 0.78rem;
+}
+
+.admin-morning-brief-panel__icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    color: #4b6d59;
+    background: #e4eee6;
+}
+
+.admin-morning-brief-panel button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+}
+
+.admin-action-result {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-top: 12px;
+    padding: 11px 13px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.admin-action-result p {
+    margin: 0;
+}
+
+.admin-action-result.success {
+    color: #35634a;
+    background: #edf7f0;
+}
+
+.admin-action-result.error {
+    color: #934143;
+    background: #fff0f0;
+}
+
+.admin-legal-panel {
+    display: grid;
+    gap: 16px;
+}
+
+.admin-legal-hero {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+    padding: 16px;
+    border-radius: 16px;
+}
+
+.admin-legal-hero.current {
+    color: #315f46;
+    background: #edf7f0;
+}
+
+.admin-legal-hero.pending {
+    color: #805f25;
+    background: #fff5dc;
+}
+
+.admin-legal-hero__icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.75);
+}
+
+.admin-legal-hero__eyebrow {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 0.69rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.75;
+}
+
+.admin-legal-hero strong {
+    display: block;
+    font-size: 1.05rem;
+}
+
+.admin-legal-hero p {
+    margin: 4px 0 0;
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.admin-legal-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.admin-legal-fact {
+    padding: 11px 12px;
+    border: 1px solid rgba(42, 73, 58, 0.09);
+    border-radius: 12px;
+    background: #f9faf9;
+}
+
+.admin-legal-fact span,
+.admin-legal-fact strong {
+    display: block;
+}
+
+.admin-legal-fact span {
+    color: #7c8781;
+    font-size: 0.7rem;
+}
+
+.admin-legal-fact strong {
+    margin-top: 4px;
+    color: #2b4036;
+    font-size: 0.82rem;
+}
+
+.admin-card-section-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #75827a;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.admin-legal-documents {
+    display: grid;
+    gap: 8px;
+}
+
+.admin-legal-document-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 10px 11px;
+    border-radius: 12px;
+    color: #37634a;
+    background: #f0f7f2;
+}
+
+.admin-legal-document-row strong,
+.admin-legal-document-row span {
+    display: block;
+}
+
+.admin-legal-document-row strong {
+    font-size: 0.81rem;
+}
+
+.admin-legal-document-row span {
+    margin-top: 2px;
+    color: #718078;
+    font-size: 0.7rem;
+}
+
+.admin-legal-missing {
+    display: grid;
+    gap: 7px;
+}
+
+.admin-legal-missing article {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 11px;
+    border-radius: 11px;
+    color: #7c5922;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: #fff2d3;
+}
+
+@media (max-width: 760px) {
+
+    .admin-health-signals,
+    .admin-experience-grid,
+    .admin-notification-grid,
+    .admin-legal-facts {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-morning-brief-panel {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .admin-morning-brief-panel button {
+        justify-content: center;
+        width: 100%;
+    }
+}
+
+.admin-morning-brief-panel .secondary-button {
+    width: auto;
+    min-width: max-content;
+    max-width: 100%;
+    flex: 0 0 auto;
+    margin: 0;
+    align-self: center;
+}
+
+.admin-morning-brief-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 15px;
+    background: #f4f7f4;
+}
+
+.admin-morning-brief-panel>div {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+    flex: 1;
+}
+
+.admin-morning-brief-panel .secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: auto;
+    min-width: max-content;
+    flex: 0 0 auto;
+    margin: 0;
 }

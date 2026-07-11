@@ -8,7 +8,7 @@ import {
     acceptLegalDocuments,
     getRequiredLegalAcceptances,
     recordLegalAttestations
-} from "../../services/legalDocumentService"
+} from "../../services/legalAcceptanceService"
 
 const DOCUMENT_ROUTES = {
     privacy: "/trust/privacy",

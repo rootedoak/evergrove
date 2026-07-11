@@ -19,6 +19,12 @@ import { markReferralAccountCreated } from "../services/referralService"
 
 import logo from "../assets/evergrove-logo.svg"
 
+import {
+    acceptLegalDocuments,
+    getRequiredLegalAcceptances,
+    recordLegalAttestations
+} from "../services/legalAcceptanceService"
+
 const MODES = {
     CHOOSE: "choose",
     SIGN_IN: "sign-in",
@@ -42,6 +48,9 @@ export default function Login({ onLogin }) {
     const [errorMessage, setErrorMessage] = useState("")
     const [loading, setLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+
+    const [confirmedAdult, setConfirmedAdult] = useState(false)
+    const [acceptedLegal, setAcceptedLegal] = useState(false)
 
     useEffect(() => {
         const modeParam = searchParams.get("mode")
@@ -75,6 +84,9 @@ export default function Login({ onLogin }) {
         setPassword("")
         setErrorMessage("")
         setShowPassword(false)
+
+        setConfirmedAdult(false)
+        setAcceptedLegal(false)
 
         const queryModeMap = {
             [MODES.CHOOSE]: null,
@@ -138,6 +150,22 @@ export default function Login({ onLogin }) {
         setErrorMessage("")
         setLoading(true)
 
+        if (!confirmedAdult) {
+            setErrorMessage(
+                "You must confirm that you are at least 18 years old."
+            )
+            setLoading(false)
+            return
+        }
+
+        if (!acceptedLegal) {
+            setErrorMessage(
+                "Please review and accept Evergrove's policies."
+            )
+            setLoading(false)
+            return
+        }
+
         const normalizedEmail = email.trim().toLowerCase()
         const inviteToken = localStorage.getItem(
             "evergrove_invite_token"
@@ -175,6 +203,24 @@ export default function Login({ onLogin }) {
 
             if (createdUserId) {
                 await markReferralAccountCreated(createdUserId)
+            }
+
+            if (data.session) {
+                const requiredDocuments =
+                    await getRequiredLegalAcceptances()
+
+                await acceptLegalDocuments({
+                    documents: requiredDocuments,
+                    acceptanceMethod: "signup",
+                    adultEligibilityConfirmed: true
+                })
+
+                await recordLegalAttestations([
+                    {
+                        type: "adult_account_eligibility",
+                        version: "1.0"
+                    }
+                ])
             }
 
             setEmail(normalizedEmail)
@@ -544,6 +590,58 @@ export default function Login({ onLogin }) {
                                 <p className="auth-password-help">
                                     Use at least 8 characters.
                                 </p>
+
+                                <div className="auth-legal">
+                                    <label className="auth-checkbox">
+                                        <input
+                                            type="checkbox"
+                                            checked={confirmedAdult}
+                                            onChange={event =>
+                                                setConfirmedAdult(event.target.checked)
+                                            }
+                                        />
+
+                                        <span>
+                                            I confirm that I am at least 18 years old
+                                            and am creating an account for myself.
+                                        </span>
+                                    </label>
+
+                                    <label className="auth-checkbox">
+                                        <input
+                                            type="checkbox"
+                                            checked={acceptedLegal}
+                                            onChange={event =>
+                                                setAcceptedLegal(event.target.checked)
+                                            }
+                                        />
+
+                                        <span>
+                                            I agree to the{" "}
+                                            <Link
+                                                to="/trust/terms"
+                                                target="_blank"
+                                            >
+                                                Terms of Service
+                                            </Link>
+                                            , acknowledge the{" "}
+                                            <Link
+                                                to="/trust/privacy"
+                                                target="_blank"
+                                            >
+                                                Privacy Policy
+                                            </Link>
+                                            , and agree to the{" "}
+                                            <Link
+                                                to="/trust/beta"
+                                                target="_blank"
+                                            >
+                                                Beta Program Agreement
+                                            </Link>
+                                            .
+                                        </span>
+                                    </label>
+                                </div>
 
                                 <button
                                     type="submit"

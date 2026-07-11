@@ -139,3 +139,146 @@ export async function getUserAdoptionEvents(userId) {
 
     return data ?? []
 }
+
+export async function getUserLegalStatus(userId) {
+    if (!userId) {
+        throw new Error("userId is required")
+    }
+
+    const {
+        data: requiredDocuments,
+        error: documentsError
+    } = await supabase
+        .from("legal_document_versions")
+        .select(`
+            id,
+            document_type,
+            title,
+            version,
+            effective_date
+        `)
+        .eq("is_published", true)
+        .eq("requires_acceptance", true)
+        .order("document_type")
+
+    if (documentsError) throw documentsError
+
+    const {
+        data: acceptances,
+        error: acceptancesError
+    } = await supabase
+        .from("user_legal_acceptances")
+        .select(`
+            id,
+            legal_document_version_id,
+            document_type,
+            version,
+            acceptance_method,
+            adult_eligibility_confirmed,
+            household_authority_confirmed,
+            accepted_at
+        `)
+        .eq("user_id", userId)
+        .order("accepted_at", {
+            ascending: false
+        })
+
+    if (acceptancesError) throw acceptancesError
+
+    const {
+        data: attestations,
+        error: attestationsError
+    } = await supabase
+        .from("user_legal_attestations")
+        .select(`
+            id,
+            attestation_type,
+            attestation_version,
+            attested_at
+        `)
+        .eq("user_id", userId)
+        .order("attested_at", {
+            ascending: false
+        })
+
+    if (attestationsError) throw attestationsError
+
+    const required = requiredDocuments ?? []
+    const accepted = acceptances ?? []
+
+    const acceptanceByDocumentId = new Map(
+        accepted.map(acceptance => [
+            acceptance.legal_document_version_id,
+            acceptance
+        ])
+    )
+
+    const acceptedDocuments = required
+        .filter(document =>
+            acceptanceByDocumentId.has(document.id)
+        )
+        .map(document => ({
+            ...document,
+            acceptance:
+                acceptanceByDocumentId.get(document.id)
+        }))
+
+    const missingDocuments = required.filter(
+        document =>
+            !acceptanceByDocumentId.has(document.id)
+    )
+
+    const latestAcceptance =
+        accepted.length > 0
+            ? accepted[0]
+            : null
+
+    const adultEligibilityConfirmed =
+        accepted.some(
+            acceptance =>
+                acceptance.adult_eligibility_confirmed
+        ) ||
+        (attestations ?? []).some(
+            attestation =>
+                attestation.attestation_type ===
+                "adult_account_eligibility"
+        )
+
+    return {
+        isCurrent:
+            required.length > 0 &&
+            missingDocuments.length === 0,
+
+        acceptedCount:
+            acceptedDocuments.length,
+
+        requiredCount:
+            required.length,
+
+        adultEligibilityConfirmed,
+
+        acceptedDocuments,
+        missingDocuments,
+        attestations: attestations ?? [],
+
+        latestAcceptanceAt:
+            latestAcceptance?.accepted_at ?? null,
+
+        latestAcceptanceMethod:
+            latestAcceptance?.acceptance_method ?? null
+    }
+}
+
+const LEGAL_DOCUMENT_LABELS = {
+    privacy: "Privacy Policy",
+    terms: "Terms of Service",
+    beta: "Beta Program Agreement",
+    ai_automation: "AI & Automation",
+    acceptable_use: "Acceptable Use Policy"
+}
+
+const ACCEPTANCE_METHOD_LABELS = {
+    signup: "Account Creation",
+    in_app_gate: "In-App Confirmation",
+    admin: "Recorded by Admin"
+}

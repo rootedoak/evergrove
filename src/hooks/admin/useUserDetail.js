@@ -6,6 +6,7 @@ import {
     getUserSupportTickets,
     getUserUsageEvents,
     getUserAdoptionEvents,
+    getUserLegalStatus
 } from "../../services/admin/userAdminService"
 
 export default function useUserDetail(userId) {
@@ -17,6 +18,8 @@ export default function useUserDetail(userId) {
     const [preferences, setPreferences] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+
+    const [legal, setLegal] = useState(null)
 
     useEffect(() => {
         let cancelled = false
@@ -33,13 +36,15 @@ export default function useUserDetail(userId) {
                     userPreferences,
                     supportTickets,
                     usageEvents,
-                    userAdoptionEvents
+                    userAdoptionEvents,
+                    userLegalStatus
                 ] = await Promise.all([
                     getUserDetail(userId),
                     getUserPreferences(userId),
                     getUserSupportTickets(userId),
                     getUserUsageEvents(userId),
-                    getUserAdoptionEvents(userId)
+                    getUserAdoptionEvents(userId),
+                    getUserLegalStatus(userId)
                 ])
 
                 if (!cancelled) {
@@ -48,6 +53,7 @@ export default function useUserDetail(userId) {
                     setTickets(supportTickets)
                     setEvents(usageEvents)
                     setAdoptionEvents(userAdoptionEvents)
+                    setLegal(userLegalStatus)
                 }
             } catch (err) {
                 console.error("Failed to load user detail:", err)
@@ -59,6 +65,7 @@ export default function useUserDetail(userId) {
                     setTickets([])
                     setEvents([])
                     setAdoptionEvents([])
+                    setLegal(null)
                 }
             } finally {
                 if (!cancelled) {
@@ -79,6 +86,7 @@ export default function useUserDetail(userId) {
         preferences,
         tickets,
         events,
+        legal,
         loading,
         adoptionEvents,
         error
