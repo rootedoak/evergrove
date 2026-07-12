@@ -2,16 +2,40 @@ import {
     addDays,
     getLocalDateString,
     isDateInCurrentWeek,
-    isTodayOrPast,
+    isTodayOrPast
 } from "./dateUtils"
 
-export function getTaskAssigneeType(task, currentMemberId, childMemberIds = []) {
-    if (!task.family_member_id) return "family"
+export function getTaskAssigneeType(
+    task,
+    currentMemberId,
+    currentUserId,
+    childMemberIds = []
+) {
+    // Assigned to the signed-in family member
+    if (task.family_member_id === currentMemberId) {
+        return "mine"
+    }
 
-    if (task.family_member_id === currentMemberId) return "mine"
+    // My private task with no assignee
+    if (
+        !task.family_member_id &&
+        task.visibility === "private" &&
+        task.user_id === currentUserId
+    ) {
+        return "mine"
+    }
 
-    if (childMemberIds.includes(task.family_member_id)) return "kids"
+    // Household task with no assignee
+    if (!task.family_member_id) {
+        return "family"
+    }
 
+    // Assigned to one of the kids
+    if (childMemberIds.includes(task.family_member_id)) {
+        return "kids"
+    }
+
+    // Assigned to another adult
     return "other"
 }
 
@@ -19,12 +43,14 @@ export function filterTasksByScope(
     tasks,
     scope = "mine_family",
     currentMemberId,
+    currentUserId,
     childMemberIds = []
 ) {
-    return tasks.filter((task) => {
+    return tasks.filter(task => {
         const assigneeType = getTaskAssigneeType(
             task,
             currentMemberId,
+            currentUserId,
             childMemberIds
         )
 
@@ -33,7 +59,10 @@ export function filterTasksByScope(
         }
 
         if (scope === "mine_family") {
-            return assigneeType === "mine" || assigneeType === "family"
+            return (
+                assigneeType === "mine" ||
+                assigneeType === "family"
+            )
         }
 
         if (scope === "family") {
@@ -48,25 +77,41 @@ export function filterTasksByScope(
     })
 }
 
-export function filterDashboardTasks(tasks, window = "this_week", weekStartsOn = "sunday") {
-    const openTasks = tasks.filter((task) => task.status !== "complete")
+export function filterDashboardTasks(
+    tasks,
+    window = "this_week",
+    weekStartsOn = "sunday"
+) {
+    const openTasks = tasks.filter(
+        task => task.status !== "complete"
+    )
 
     if (window === "today") {
-        return openTasks.filter((task) => isTodayOrPast(task.due_date))
+        return openTasks.filter(task =>
+            isTodayOrPast(task.due_date)
+        )
     }
 
     if (window === "next_7_days") {
         const todayKey = getLocalDateString()
-        const limitKey = getLocalDateString(addDays(new Date(), 7))
+        const limitKey = getLocalDateString(
+            addDays(new Date(), 7)
+        )
 
-        return openTasks.filter((task) => {
+        return openTasks.filter(task => {
             if (!task.due_date) return false
 
-            return task.due_date >= todayKey && task.due_date <= limitKey
+            return (
+                task.due_date >= todayKey &&
+                task.due_date <= limitKey
+            )
         })
     }
 
-    return openTasks.filter((task) =>
-        isDateInCurrentWeek(task.due_date, weekStartsOn)
+    return openTasks.filter(task =>
+        isDateInCurrentWeek(
+            task.due_date,
+            weekStartsOn
+        )
     )
 }

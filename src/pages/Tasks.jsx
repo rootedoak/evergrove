@@ -387,9 +387,10 @@ export default function Tasks() {
             tripTasks,
             taskScope,
             currentMember?.id,
+            currentUserId,
             childMemberIds
         )
-    }, [tasks, tripId, taskScope, currentMember?.id, childMemberIds])
+    }, [tasks, tripId, taskScope, currentMember?.id, currentUserId, childMemberIds])
 
     const selectedTrip = visibleTasks.find(task => task.trips)?.trips
     const groupedTasks = groupTasks(sortTasks(visibleTasks))
@@ -414,6 +415,7 @@ export default function Tasks() {
                 getFamilyMembers()
             ])
 
+            setCurrentUserId(user?.id || null)
             setTasks(taskData)
             setFamilyMembers(memberData)
         } catch (error) {
