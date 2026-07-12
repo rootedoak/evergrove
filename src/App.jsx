@@ -18,8 +18,6 @@ import {
   X
 } from "lucide-react"
 
-import logo from "./assets/evergrove-logo.svg"
-
 import "./App.css"
 
 import {
@@ -98,18 +96,6 @@ import AdminTrustCenter from "./pages/admin/trust/AdminTrustCenter"
 import Roadmap from "./pages/admin/Roadmap"
 
 import UIKit from "./pages/UIKit"
-
-const navItems = [
-  { to: "/", icon: Home, label: "Home", end: true },
-  { to: "/personal-inbox", icon: Mail, label: "Inbox" },
-  { to: "/calendar", icon: CalendarDays, label: "Calendar" },
-  { to: "/tasks", icon: ClipboardList, label: "To-Do" },
-  { to: "/meals", icon: UtensilsCrossed, label: "Meals" },
-  { to: "/shopping", icon: ShoppingCart, label: "Shopping" },
-  { to: "/documents", icon: FolderOpen, label: "Documents" },
-  { to: "/profile", icon: Settings, label: "Settings" },
-  { to: "/about", icon: Info, label: "About" }
-]
 
 const mobileNavItems = [
   { to: "/", icon: Home, label: "Home", end: true },
@@ -200,7 +186,7 @@ function MobileMoreSheet({ open, onClose }) {
         <div className="eg-sheet-header">
           <div>
             <h3>More</h3>
-            <p>Everything else in Evergrove</p>
+            <p>Everything your household needs.</p>
           </div>
 
           <button type="button" className="eg-icon-button" onClick={onClose}>
@@ -423,49 +409,6 @@ function AppLayout() {
 
   return (
     <div className="app-shell">
-
-      <aside className="sidebar">
-        <div className="sidebar-top">
-          <div className="brand sidebar-household-brand">
-            <img
-              src={logo}
-              alt="Evergrove"
-              className="sidebar-logo"
-            />
-
-            <div>
-              <h1>{householdName}</h1>
-              <p>Family Command Center</p>
-            </div>
-          </div>
-        </div>
-
-        <nav className="nav" aria-label="Primary navigation">
-          {navItems.map(item => (
-            <NavItem
-              key={item.to}
-              to={item.to}
-              icon={item.icon}
-              label={item.label}
-              badge={
-                item.to === "/personal-inbox"
-                  ? unreadInboxCount
-                  : 0
-              }
-              end={item.end}
-              onClick={() => setMobileNavOpen(false)}
-            />
-          ))}
-        </nav>
-
-        <div className="sidebar-footer">
-          <p>{APP_NAME}</p>
-          <p>
-            v{APP_VERSION} {APP_STATUS}
-          </p>
-        </div>
-      </aside>
-
       <PWAInstallBanner />
 
       <main className="main-content">

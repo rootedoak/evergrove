@@ -40,7 +40,6 @@ import {
     updateTask
 } from "../services/taskService"
 
-import { getActivities } from "../services/activityService"
 import { getFamilyMembers } from "../services/familyService"
 
 import usePreferences from "../hooks/usePreferences"
@@ -362,7 +361,6 @@ export default function Tasks() {
 
     const [tasks, setTasks] = useState([])
     const [familyMembers, setFamilyMembers] = useState([])
-    const [activities, setActivities] = useState([])
     const [currentUserId, setCurrentUserId] = useState(null)
     const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
@@ -411,16 +409,13 @@ export default function Tasks() {
 
             if (error) throw error
 
-            const [taskData, memberData, activityData] = await Promise.all([
+            const [taskData, memberData] = await Promise.all([
                 getTasks(),
-                getFamilyMembers(),
-                getActivities()
+                getFamilyMembers()
             ])
 
-            setCurrentUserId(user?.id || null)
             setTasks(taskData)
             setFamilyMembers(memberData)
-            setActivities(activityData)
         } catch (error) {
             console.error(error)
         } finally {
@@ -675,28 +670,17 @@ export default function Tasks() {
                                     ]}
                                 />
 
-                                <SelectField
-                                    label="Activity"
-                                    value={form.activity_id}
-                                    onChange={value => updateForm("activity_id", value)}
-                                    options={[
-                                        { value: "", label: "No activity selected" },
-                                        ...activities.map(activity => ({
-                                            value: activity.id,
-                                            label: activity.name
-                                        }))
-                                    ]}
-                                />
-
-                                <SelectField
-                                    label="Status"
-                                    value={form.status}
-                                    onChange={value => updateForm("status", value)}
-                                    options={[
-                                        { value: "open", label: "Open" },
-                                        { value: "complete", label: "Complete" }
-                                    ]}
-                                />
+                                {editingId && (
+                                    <SelectField
+                                        label="Status"
+                                        value={form.status}
+                                        onChange={value => updateForm("status", value)}
+                                        options={[
+                                            { value: "open", label: "Open" },
+                                            { value: "complete", label: "Complete" }
+                                        ]}
+                                    />
+                                )}
 
                                 <SelectField
                                     label="Visibility"
