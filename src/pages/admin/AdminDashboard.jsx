@@ -1,4 +1,7 @@
 import { useState } from "react"
+
+import "../../styles/hq-ui.css"
+
 import usePlatformSummary from "../../hooks/admin/usePlatformSummary"
 import usePlatformSearch from "../../hooks/admin/usePlatformSearch"
 

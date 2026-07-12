@@ -781,22 +781,20 @@ function RoadmapForm({
                         <label className="admin-field">
                             <span>Product area</span>
 
-                            <input
-                                type="text"
+                            <select
                                 name="product_area"
                                 value={form.product_area}
                                 onChange={onChange}
-                                list="roadmap-product-areas"
-                            />
-
-                            <datalist id="roadmap-product-areas">
+                            >
                                 {productAreas.map(area => (
                                     <option
                                         key={area}
                                         value={area}
-                                    />
+                                    >
+                                        {area}
+                                    </option>
                                 ))}
-                            </datalist>
+                            </select>
                         </label>
 
                         <label className="admin-field">

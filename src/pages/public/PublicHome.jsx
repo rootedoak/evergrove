@@ -3,9 +3,11 @@ import {
     ArrowRight,
     CalendarDays,
     Check,
-    ClipboardList,
+    ChevronDown,
+    ClipboardCheck,
     Heart,
     Leaf,
+    LockKeyhole,
     MessageCircle,
     ShieldCheck,
     ShoppingCart,
@@ -15,67 +17,93 @@ import {
 
 import logo from "../../assets/evergrove-logo.svg"
 
-const features = [
+import dashboardScreenshot from "../../assets/public/dashboard-mobile.png"
+import calendarScreenshot from "../../assets/public/calendar-mobile.png"
+import mealsScreenshot from "../../assets/public/meals-mobile.png"
+
+import "../../styles/public.css"
+
+const connectedFeatures = [
     {
         title: "Family Calendar",
         description:
-            "Keep appointments, practices, school events, birthdays, and family plans together.",
+            "Appointments, school, activities, birthdays, trips, and important dates.",
         icon: CalendarDays
     },
     {
-        title: "To-Dos & Routines",
+        title: "Shared To-Dos",
         description:
-            "Share responsibilities, build helpful routines, and know what needs attention.",
-        icon: ClipboardList
+            "Keep responsibilities visible and make it easier to share the work.",
+        icon: ClipboardCheck
     },
     {
-        title: "Meals & Shopping",
+        title: "Meals & Groceries",
         description:
-            "Plan dinner, save meals, and keep grocery lists connected to real family life.",
+            "Plan dinner, save favorites, and build grocery lists in one place.",
         icon: UtensilsCrossed
-    },
-    {
-        title: "Household Communication",
-        description:
-            "Announcements, reminders, and important updates stay visible without getting lost in a group text.",
-        icon: MessageCircle
     },
     {
         title: "Shopping Lists",
         description:
-            "Create shared lists, organize items, and make shopping easier for everyone.",
+            "Shared lists that stay organized whether you are planning or shopping.",
         icon: ShoppingCart
+    },
+    {
+        title: "Family Communication",
+        description:
+            "Announcements, updates, and important information without another group text.",
+        icon: MessageCircle
     },
     {
         title: "Quiet Confidence",
         description:
-            "Evergrove helps families know that the important things are remembered and cared for.",
+            "Know the important things are remembered, organized, and cared for.",
         icon: ShieldCheck
     }
 ]
 
-const benefits = [
-    "One calm home for family life",
-    "Designed mobile-first for busy households",
-    "Built to reduce mental load, not add to it",
-    "Simple enough to start using in minutes"
+const trustPoints = [
+    {
+        title: "No advertising",
+        description:
+            "Evergrove is built to serve families, not advertisers.",
+        icon: Heart
+    },
+    {
+        title: "We do not sell family data",
+        description:
+            "Your household information is not a product to be packaged or sold.",
+        icon: LockKeyhole
+    },
+    {
+        title: "Household-first privacy",
+        description:
+            "Family information is protected through authenticated, household-scoped access.",
+        icon: ShieldCheck
+    },
+    {
+        title: "Designed to feel calm",
+        description:
+            "Evergrove should reduce stress—not become another source of noise.",
+        icon: Leaf
+    }
 ]
 
 const testimonials = [
     {
         quote:
             "Evergrove gives our family one place to see what is happening and what still needs to be done.",
-        attribution: "Beta household"
+        attribution: "Evergrove beta family"
     },
     {
         quote:
             "I do not have to carry every detail in my head anymore. That alone makes the week feel lighter.",
-        attribution: "Beta household"
+        attribution: "Evergrove beta family"
     },
     {
         quote:
             "Meals, schedules, and to-dos finally feel connected instead of scattered across different apps.",
-        attribution: "Beta household"
+        attribution: "Evergrove beta family"
     }
 ]
 
@@ -83,35 +111,40 @@ const faqs = [
     {
         question: "What is Evergrove?",
         answer:
-            "Evergrove is a family operating system that brings calendars, to-dos, meals, shopping, communication, and everyday planning into one connected place."
+            "Evergrove is a family operating system that brings calendars, to-dos, meals, shopping, school, trips, communication, and everyday planning into one connected place."
+    },
+    {
+        question: "Who is Evergrove for?",
+        answer:
+            "Evergrove is designed for busy households that want a calmer, more reliable way to coordinate family life without depending on one person to remember everything."
     },
     {
         question: "Is Evergrove free?",
         answer:
-            "Evergrove is currently available free during beta while we work closely with early households and continue improving the experience."
+            "Evergrove is currently free during beta while we continue improving the experience alongside early households."
     },
     {
         question: "Can my whole family use it?",
         answer:
-            "Yes. Evergrove is designed for shared household use so adults and family members can stay informed and contribute together."
+            "Yes. Evergrove is built around the household, so family members can share information, responsibilities, schedules, and plans."
     },
     {
         question: "Does Evergrove work on a phone?",
         answer:
-            "Yes. Evergrove is designed mobile-first and can be installed as a web app on supported devices."
+            "Yes. Evergrove is designed mobile-first and can be installed as a web app on supported phones and devices."
     },
     {
-        question: "Is my family's information private?",
+        question: "How does Evergrove protect family information?",
         answer:
-            "Family data is scoped to the household and protected through authenticated access and household-level permissions."
+            "Evergrove uses authenticated access and household-scoped permissions. We do not sell household information or use it to power advertising."
     }
 ]
 
 export default function PublicHome() {
     return (
-        <div className="public-home">
-            <header className="public-header">
-                <Link to="/" className="public-brand">
+        <div className="public-site">
+            <header className="public-site-header">
+                <Link to="/" className="public-site-brand">
                     <img src={logo} alt="Evergrove" />
 
                     <div>
@@ -120,61 +153,71 @@ export default function PublicHome() {
                     </div>
                 </Link>
 
-                <nav className="public-nav" aria-label="Public navigation">
-                    <a href="#why-evergrove">Why Evergrove</a>
-                    <a href="#features">Features</a>
-                    <a href="#families">For Families</a>
+                <nav
+                    className="public-site-nav"
+                    aria-label="Public navigation"
+                >
+                    <a href="#why">Why Evergrove</a>
+                    <a href="#product">How It Helps</a>
+                    <a href="#trust">Trust</a>
                     <a href="#faq">FAQ</a>
                 </nav>
 
-                <div className="public-header-actions">
-                    <Link to="/login" className="public-link-button">
+                <div className="public-site-header-actions">
+                    <Link
+                        to="/login?mode=signin"
+                        className="public-site-sign-in"
+                    >
                         Sign In
                     </Link>
 
-                    <Link to="/login?mode=signup" className="public-button public-button--small">
+                    <Link
+                        to="/login?mode=signup"
+                        className="public-site-button public-site-button--small"
+                    >
                         Get Started
                     </Link>
                 </div>
             </header>
 
             <main>
-                <section className="public-hero">
-                    <div className="public-hero__content">
-                        <div className="public-eyebrow">
+                <section className="public-site-hero">
+                    <div className="public-site-hero-copy">
+                        <div className="public-site-eyebrow">
                             <Leaf size={16} />
                             <span>A calmer way to run family life</span>
                         </div>
 
                         <h1>
-                            Remember what matters.
-                            <span>Enjoy more of what does.</span>
+                            Where organized
+                            <span>families grow.</span>
                         </h1>
 
                         <p>
-                            Evergrove helps busy families organize schedules,
-                            meals, to-dos, shopping, school, and everything in
-                            between—all in one calm, connected place.
+                            Evergrove keeps your family calendar,
+                            meals, to-dos, shopping, school, and
+                            everyday life connected in one calm
+                            place.
                         </p>
 
-                        <div className="public-hero__actions">
+                        <div className="public-site-hero-actions">
                             <Link
                                 to="/login?mode=signup"
-                                className="public-button public-button--primary"
+                                className="public-site-button public-site-button--primary"
                             >
-                                Get Started Free
+                                Start Your Household
                                 <ArrowRight size={18} />
                             </Link>
 
                             <a
-                                href="#why-evergrove"
-                                className="public-button public-button--secondary"
+                                href="#product"
+                                className="public-site-button public-site-button--secondary"
                             >
-                                See How It Works
+                                See Evergrove
                             </a>
                         </div>
 
-                        <div className="public-hero__trust">
+                        <div className="public-site-hero-details">
                             <span>
                                 <Check size={15} />
                                 Free during beta
@@ -192,130 +235,303 @@ export default function PublicHome() {
                         </div>
                     </div>
 
-                    <div className="public-hero__visual">
-                        <div className="public-app-preview">
-                            <div className="public-app-preview__topbar">
-                                <span />
-                                <span />
-                                <span />
-                            </div>
+                    <div className="public-site-hero-product">
+                        <div className="public-phone-frame public-phone-frame--hero">
+                            <div className="public-phone-speaker" />
 
-                            <div className="public-app-preview__body">
-                                <div className="public-preview-greeting">
-                                    <span>Good morning</span>
-                                    <strong>Your family is ready for today.</strong>
-                                </div>
+                            <img
+                                src={dashboardScreenshot}
+                                alt="Evergrove family dashboard showing today's schedule, tasks, and meal plan"
+                            />
+                        </div>
 
-                                <div className="public-preview-grid">
-                                    <article className="public-preview-card public-preview-card--wide">
-                                        <span>Today</span>
-                                        <strong>Soccer practice at 5:30 PM</strong>
-                                        <p>Ella · South Field</p>
-                                    </article>
+                        <div className="public-site-hero-note public-site-hero-note--top">
+                            <Sparkles size={17} />
+                            <span>Today is under control.</span>
+                        </div>
 
-                                    <article className="public-preview-card">
-                                        <CalendarDays size={20} />
-                                        <span>3 events</span>
-                                        <strong>Coming up</strong>
-                                    </article>
-
-                                    <article className="public-preview-card">
-                                        <ClipboardList size={20} />
-                                        <span>4 to-dos</span>
-                                        <strong>Under control</strong>
-                                    </article>
-
-                                    <article className="public-preview-card public-preview-card--meal">
-                                        <UtensilsCrossed size={20} />
-                                        <span>Dinner tonight</span>
-                                        <strong>Chicken tacos</strong>
-                                    </article>
-
-                                    <article className="public-preview-card public-preview-card--soft">
-                                        <Sparkles size={20} />
-                                        <span>Evergrove Assistant</span>
-                                        <strong>
-                                            You have everything you need for the
-                                            week ahead.
-                                        </strong>
-                                    </article>
-                                </div>
-                            </div>
+                        <div className="public-site-hero-note public-site-hero-note--bottom">
+                            <Heart size={17} />
+                            <span>Less mental load.</span>
                         </div>
                     </div>
                 </section>
 
                 <section
-                    id="why-evergrove"
-                    className="public-section public-problem-section"
+                    id="why"
+                    className="public-site-section public-site-problem"
                 >
-                    <div className="public-section-heading public-section-heading--centered">
+                    <div className="public-site-section-heading public-site-section-heading--centered">
                         <span>Why Evergrove</span>
-                        <h2>Your family already has enough to remember.</h2>
+
+                        <h2>
+                            Your family already has enough to remember.
+                        </h2>
+
                         <p>
-                            Calendars, texts, sticky notes, school emails,
-                            shopping lists, meal plans, and mental reminders
-                            should not live in seven different places.
+                            School emails, text messages, calendars,
+                            notes, grocery lists, meal plans, and mental
+                            reminders should not live in seven different
+                            places.
                         </p>
                     </div>
 
-                    <div className="public-problem-grid">
-                        <article className="public-problem-card">
-                            <span className="public-problem-card__label">
-                                Without Evergrove
-                            </span>
+                    <div className="public-site-problem-grid">
+                        <article className="public-site-problem-card">
+                            <span>Without Evergrove</span>
 
                             <h3>Family life depends on memory.</h3>
 
-                            <div className="public-problem-list">
-                                <p>Important details live in different apps.</p>
-                                <p>One person carries most of the mental load.</p>
-                                <p>Tasks are remembered only when they become urgent.</p>
-                                <p>Everyone asks the same questions repeatedly.</p>
+                            <div>
+                                <p>
+                                    Important details are scattered
+                                    across different apps and conversations.
+                                </p>
+
+                                <p>
+                                    One person often carries most of the
+                                    household&apos;s mental load.
+                                </p>
+
+                                <p>
+                                    Responsibilities become visible only
+                                    when they become urgent.
+                                </p>
+
+                                <p>
+                                    Family members repeatedly ask the same
+                                    questions.
+                                </p>
                             </div>
                         </article>
 
-                        <article className="public-problem-card public-problem-card--solution">
-                            <span className="public-problem-card__label">
-                                With Evergrove
-                            </span>
+                        <article className="public-site-problem-card public-site-problem-card--solution">
+                            <span>With Evergrove</span>
 
                             <h3>Everyone knows what matters next.</h3>
 
-                            <div className="public-problem-list">
-                                <p>Schedules and responsibilities stay connected.</p>
-                                <p>The household shares the work of family life.</p>
-                                <p>Important things are visible before they become urgent.</p>
-                                <p>Families feel prepared instead of reactive.</p>
+                            <div>
+                                <p>
+                                    Schedules, responsibilities, meals, and
+                                    plans stay connected.
+                                </p>
+
+                                <p>
+                                    Household information is visible to the
+                                    people who need it.
+                                </p>
+
+                                <p>
+                                    Important things are handled before
+                                    they become emergencies.
+                                </p>
+
+                                <p>
+                                    Families feel more prepared and less
+                                    reactive.
+                                </p>
                             </div>
                         </article>
                     </div>
                 </section>
 
                 <section
-                    id="features"
-                    className="public-section public-features-section"
+                    id="product"
+                    className="public-site-product-section"
                 >
-                    <div className="public-section-heading">
-                        <span>Everything together</span>
-                        <h2>One home for your family's life.</h2>
+                    <div className="public-site-section-heading public-site-section-heading--centered">
+                        <span>See Evergrove in action</span>
+
+                        <h2>
+                            One home for your family&apos;s life.
+                        </h2>
+
                         <p>
-                            Evergrove connects the everyday systems families
-                            already use, so information does not have to be
-                            recreated, remembered, or hunted down.
+                            Evergrove does not just collect features. It
+                            connects the parts of family life that already
+                            depend on one another.
                         </p>
                     </div>
 
-                    <div className="public-feature-grid">
-                        {features.map(feature => {
+                    <div className="public-site-showcase-list">
+                        <article className="public-site-showcase">
+                            <div className="public-site-showcase-copy">
+                                <span className="public-site-showcase-number">
+                                    01
+                                </span>
+
+                                <p className="public-site-showcase-eyebrow">
+                                    Your family dashboard
+                                </p>
+
+                                <h3>
+                                    Know what matters in seconds.
+                                </h3>
+
+                                <p>
+                                    See today&apos;s schedule, overdue
+                                    to-dos, inbox updates, dinner, and
+                                    household activity without hunting
+                                    through multiple apps.
+                                </p>
+
+                                <ul>
+                                    <li>
+                                        <Check size={16} />
+                                        See what needs attention
+                                    </li>
+
+                                    <li>
+                                        <Check size={16} />
+                                        Know what is happening today
+                                    </li>
+
+                                    <li>
+                                        <Check size={16} />
+                                        Keep dinner visible
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div className="public-site-showcase-visual">
+                                <div className="public-phone-frame">
+                                    <div className="public-phone-speaker" />
+
+                                    <img
+                                        src={dashboardScreenshot}
+                                        alt="Evergrove dashboard on a mobile phone"
+                                    />
+                                </div>
+                            </div>
+                        </article>
+
+                        <article className="public-site-showcase public-site-showcase--reverse">
+                            <div className="public-site-showcase-copy">
+                                <span className="public-site-showcase-number">
+                                    02
+                                </span>
+
+                                <p className="public-site-showcase-eyebrow">
+                                    Family Calendar
+                                </p>
+
+                                <h3>
+                                    One calendar for the entire household.
+                                </h3>
+
+                                <p>
+                                    Keep school events, birthdays, sports,
+                                    appointments, trips, activities, and
+                                    important dates in one shared view.
+                                </p>
+
+                                <ul>
+                                    <li>
+                                        <Check size={16} />
+                                        Timeline and month views
+                                    </li>
+
+                                    <li>
+                                        <Check size={16} />
+                                        Trips and school planning
+                                    </li>
+
+                                    <li>
+                                        <Check size={16} />
+                                        Shared household visibility
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div className="public-site-showcase-visual">
+                                <div className="public-phone-frame">
+                                    <div className="public-phone-speaker" />
+
+                                    <img
+                                        src={calendarScreenshot}
+                                        alt="Evergrove family calendar displayed on a mobile phone"
+                                    />
+                                </div>
+                            </div>
+                        </article>
+
+                        <article className="public-site-showcase">
+                            <div className="public-site-showcase-copy">
+                                <span className="public-site-showcase-number">
+                                    03
+                                </span>
+
+                                <p className="public-site-showcase-eyebrow">
+                                    Meals &amp; Groceries
+                                </p>
+
+                                <h3>
+                                    Stop asking what&apos;s for dinner.
+                                </h3>
+
+                                <p>
+                                    Plan meals for the week, save family
+                                    favorites, and build grocery lists that
+                                    stay connected to the plan.
+                                </p>
+
+                                <ul>
+                                    <li>
+                                        <Check size={16} />
+                                        Weekly dinner planning
+                                    </li>
+
+                                    <li>
+                                        <Check size={16} />
+                                        Saved meals and favorites
+                                    </li>
+
+                                    <li>
+                                        <Check size={16} />
+                                        Connected grocery lists
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div className="public-site-showcase-visual">
+                                <div className="public-phone-frame">
+                                    <div className="public-phone-speaker" />
+
+                                    <img
+                                        src={mealsScreenshot}
+                                        alt="Evergrove meal planning displayed on a mobile phone"
+                                    />
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <section className="public-site-section public-site-connected">
+                    <div className="public-site-section-heading">
+                        <span>Everything works together</span>
+
+                        <h2>
+                            The everyday systems your family already needs.
+                        </h2>
+
+                        <p>
+                            Evergrove connects the pieces of family life so
+                            information does not need to be recreated,
+                            remembered, or tracked down.
+                        </p>
+                    </div>
+
+                    <div className="public-site-feature-grid">
+                        {connectedFeatures.map(feature => {
                             const Icon = feature.icon
 
                             return (
                                 <article
                                     key={feature.title}
-                                    className="public-feature-card"
+                                    className="public-site-feature-card"
                                 >
-                                    <div className="public-feature-card__icon">
+                                    <div>
                                         <Icon size={22} />
                                     </div>
 
@@ -327,60 +543,111 @@ export default function PublicHome() {
                     </div>
                 </section>
 
-                <section id="families" className="public-story-section">
-                    <div className="public-story-section__content">
-                        <span>Built for real families</span>
+                <section className="public-site-story">
+                    <div className="public-site-story-copy">
+                        <span>Family life is busy</span>
 
                         <h2>
-                            Family life is messy.
-                            <br />
-                            Evergrove does not expect perfection.
+                            Evergrove was not built to help you do more.
                         </h2>
 
-                        <p>
-                            Plans change. Dinner gets moved. Permission slips
-                            disappear into backpacks. Evergrove is designed to
-                            support progress, shared responsibility, and calmer
-                            weeks—not to make families feel behind.
+                        <p className="public-site-story-highlight">
+                            It was built so you do not have to remember
+                            everything.
                         </p>
 
-                        <div className="public-benefit-list">
-                            {benefits.map(benefit => (
-                                <div key={benefit}>
-                                    <Check size={16} strokeWidth={3} />
-                                    <span>{benefit}</span>
-                                </div>
-                            ))}
+                        <p>
+                            Families do not need another productivity
+                            system demanding attention. They need quiet,
+                            dependable support that helps everyone feel
+                            prepared.
+                        </p>
+
+                        <div className="public-site-story-outcomes">
+                            <strong>Less mental load.</strong>
+                            <strong>More confidence.</strong>
+                            <strong>More family.</strong>
                         </div>
                     </div>
 
-                    <div className="public-story-quote">
-                        <Heart size={28} />
+                    <div className="public-site-story-quote">
+                        <Leaf size={28} />
 
                         <blockquote>
-                            To give every family confidence that the important
-                            things are remembered, organized, and cared for.
+                            To give every family confidence that the
+                            important things are remembered, organized,
+                            and cared for.
                         </blockquote>
 
-                        <span>Our vision</span>
+                        <span>Evergrove&apos;s vision</span>
                     </div>
                 </section>
 
-                <section className="public-section">
-                    <div className="public-section-heading public-section-heading--centered">
-                        <span>From early families</span>
-                        <h2>Built alongside the people who use it.</h2>
+                <section
+                    id="trust"
+                    className="public-site-section public-site-trust"
+                >
+                    <div className="public-site-section-heading public-site-section-heading--centered">
+                        <span>Built for families</span>
+
+                        <h2>
+                            A household app should be worthy of trust.
+                        </h2>
+
                         <p>
-                            Evergrove is being shaped through real household
-                            feedback, real routines, and real family life.
+                            Evergrove is being built around a simple
+                            belief: technology should support family life
+                            without exploiting it.
                         </p>
                     </div>
 
-                    <div className="public-testimonial-grid">
+                    <div className="public-site-trust-grid">
+                        {trustPoints.map(point => {
+                            const Icon = point.icon
+
+                            return (
+                                <article
+                                    key={point.title}
+                                    className="public-site-trust-card"
+                                >
+                                    <div>
+                                        <Icon size={22} />
+                                    </div>
+
+                                    <h3>{point.title}</h3>
+                                    <p>{point.description}</p>
+                                </article>
+                            )
+                        })}
+                    </div>
+
+                    <div className="public-site-trust-link">
+                        <Link to="/trust">
+                            Visit the Evergrove Trust Center
+                            <ArrowRight size={16} />
+                        </Link>
+                    </div>
+                </section>
+
+                <section className="public-site-section public-site-testimonials">
+                    <div className="public-site-section-heading public-site-section-heading--centered">
+                        <span>Built alongside real families</span>
+
+                        <h2>
+                            Shaped by the households who use it.
+                        </h2>
+
+                        <p>
+                            Evergrove is being improved through real
+                            routines, real feedback, and real family life.
+                        </p>
+                    </div>
+
+                    <div className="public-site-testimonial-grid">
                         {testimonials.map(testimonial => (
                             <article
                                 key={testimonial.quote}
-                                className="public-testimonial-card"
+                                className="public-site-testimonial-card"
                             >
                                 <Sparkles size={20} />
 
@@ -394,48 +661,67 @@ export default function PublicHome() {
                     </div>
                 </section>
 
-                <section id="faq" className="public-section public-faq-section">
-                    <div className="public-section-heading">
-                        <span>Questions</span>
-                        <h2>Frequently asked questions.</h2>
-                    </div>
+                <section
+                    id="faq"
+                    className="public-site-section public-site-faq"
+                >
+                    <div className="public-site-faq-layout">
+                        <div className="public-site-section-heading">
+                            <span>Questions</span>
 
-                    <div className="public-faq-list">
-                        {faqs.map(item => (
-                            <details key={item.question}>
-                                <summary>{item.question}</summary>
-                                <p>{item.answer}</p>
-                            </details>
-                        ))}
+                            <h2>
+                                A few things families usually ask.
+                            </h2>
+
+                            <p>
+                                Evergrove is still growing. These answers
+                                reflect the current beta experience.
+                            </p>
+                        </div>
+
+                        <div className="public-site-faq-list">
+                            {faqs.map(item => (
+                                <details key={item.question}>
+                                    <summary>
+                                        <span>{item.question}</span>
+                                        <ChevronDown size={19} />
+                                    </summary>
+
+                                    <p>{item.answer}</p>
+                                </details>
+                            ))}
+                        </div>
                     </div>
                 </section>
 
-                <section className="public-final-cta">
-                    <div className="public-final-cta__icon">
-                        <Leaf size={26} />
+                <section className="public-site-final-cta">
+                    <div>
+                        <Leaf size={27} />
                     </div>
 
                     <span>Welcome home</span>
 
-                    <h2>Give your family one less thing to remember.</h2>
+                    <h2>
+                        Give your family one less thing to remember.
+                    </h2>
 
                     <p>
-                        Start building a calmer, more connected home with
-                        Evergrove.
+                        Create your household and start building a
+                        calmer, more connected home with Evergrove.
                     </p>
 
                     <Link
                         to="/login?mode=signup"
-                        className="public-button public-button--primary"
+                        className="public-site-button public-site-button--primary"
                     >
-                        Get Started Free
+                        Start Your Household
                         <ArrowRight size={18} />
                     </Link>
                 </section>
             </main>
 
-            <footer className="public-footer">
-                <div className="public-footer__brand">
+            <footer className="public-site-footer">
+                <div className="public-site-footer-brand">
                     <img src={logo} alt="" />
 
                     <div>
@@ -444,15 +730,17 @@ export default function PublicHome() {
                     </div>
                 </div>
 
-                <div className="public-footer__links">
-                    <Link to="/login">Sign In</Link>
-                    <a href="#features">Features</a>
+                <div className="public-site-footer-links">
+                    <a href="#why">Why Evergrove</a>
+                    <a href="#product">How It Helps</a>
+                    <Link to="/trust">Trust Center</Link>
                     <a href="#faq">FAQ</a>
+                    <Link to="/login?mode=signin">Sign In</Link>
                 </div>
 
                 <p>
-                    © {new Date().getFullYear()} Evergrove. Built for family
-                    life.
+                    © {new Date().getFullYear()} Evergrove. Built for
+                    family life.
                 </p>
             </footer>
         </div>

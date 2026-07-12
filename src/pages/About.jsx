@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { submitProductFeedback } from "../services/productFeedbackService"
 
 import {
@@ -20,6 +20,51 @@ export default function About() {
     const [feedbackError, setFeedbackError] = useState("")
     const [feedbackType, setFeedbackType] = useState("feature")
     const [feedbackMessage, setFeedbackMessage] = useState("")
+
+    const [feedbackAttachment, setFeedbackAttachment] =
+        useState(null)
+
+    const feedbackAttachmentInputRef = useRef(null)
+
+    function handleAttachmentChange(event) {
+        const file = event.target.files?.[0] ?? null
+
+        if (!file) {
+            setFeedbackAttachment(null)
+            return
+        }
+
+        const allowedTypes = [
+            "image/png",
+            "image/jpeg",
+            "image/webp"
+        ]
+
+        if (!allowedTypes.includes(file.type)) {
+            setFeedbackError(
+                "Attachments must be a PNG, JPG, or WEBP image."
+            )
+
+            setFeedbackAttachment(null)
+            event.target.value = ""
+            return
+        }
+
+        const maxFileSize = 5 * 1024 * 1024
+
+        if (file.size > maxFileSize) {
+            setFeedbackError(
+                "Attachments must be smaller than 5 MB."
+            )
+
+            setFeedbackAttachment(null)
+            event.target.value = ""
+            return
+        }
+
+        setFeedbackError("")
+        setFeedbackAttachment(file)
+    }
 
     async function handleSubmitFeedback(event) {
         event.preventDefault()
@@ -46,11 +91,19 @@ export default function About() {
                 message: feedbackMessage.trim(),
                 appVersion: APP_VERSION,
                 pagePath: window.location.pathname,
-                source: "about"
+                source: "about",
+                attachment: feedbackAttachment
             })
 
             setFeedbackMessage("")
             setFeedbackType("feature")
+
+            setFeedbackAttachment(null)
+
+            if (feedbackAttachmentInputRef.current) {
+                feedbackAttachmentInputRef.current.value = ""
+            }
+
             setFeedbackSuccess("Thanks! Feedback submitted. Have another idea? We'd love to hear it while it's fresh.")
         } catch (error) {
             console.error(error)
@@ -181,6 +234,44 @@ export default function About() {
                                 onChange={event => setFeedbackMessage(event.target.value)}
                             />
                         </label>
+
+                        <label className="full-width">
+                            Optional screenshot
+
+                            <input
+                                ref={feedbackAttachmentInputRef}
+                                className="feedback-file-input"
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp"
+                                onChange={handleAttachmentChange}
+                            />
+
+                            <span className="eg-field-help">
+                                PNG, JPG, or WEBP up to 5 MB.
+                            </span>
+                        </label>
+
+                        {feedbackAttachment && (
+                            <div className="feedback-attachment-selected full-width">
+                                <span>
+                                    Selected: {feedbackAttachment.name}
+                                </span>
+
+                                <button
+                                    type="button"
+                                    className="feedback-attachment-remove"
+                                    onClick={() => {
+                                        setFeedbackAttachment(null)
+
+                                        if (feedbackAttachmentInputRef.current) {
+                                            feedbackAttachmentInputRef.current.value = ""
+                                        }
+                                    }}
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        )}
 
                         <Button type="submit" disabled={savingFeedback}>
                             {savingFeedback ? "Submitting..." : "Submit Feedback"}

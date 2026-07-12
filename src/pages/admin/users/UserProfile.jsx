@@ -66,6 +66,7 @@ export default function UserProfile() {
         events,
         adoptionEvents,
         legal,
+        pushStatus,
         loading,
         error
     } = useUserDetail(userId)
@@ -419,6 +420,57 @@ export default function UserProfile() {
                                 })}
                             </div>
                         )}
+
+                        <div
+                            className={
+                                pushStatus?.hasSubscription
+                                    ? "admin-push-status enabled"
+                                    : "admin-push-status disabled"
+                            }
+                        >
+                            <span
+                                className="admin-notification-item__icon"
+                                aria-hidden="true"
+                            >
+                                <Bell size={18} />
+                            </span>
+
+                            <div>
+                                <strong>Push Notifications</strong>
+
+                                <span>
+                                    {pushStatus?.hasSubscription
+                                        ? "Active subscription"
+                                        : "No active subscription"}
+                                </span>
+                            </div>
+
+                            <span
+                                className="admin-notification-item__indicator"
+                                aria-label={
+                                    pushStatus?.hasSubscription
+                                        ? "Enabled"
+                                        : "Disabled"
+                                }
+                            >
+                                {pushStatus?.hasSubscription ? (
+                                    <Check size={14} />
+                                ) : (
+                                    "—"
+                                )}
+                            </span>
+                            <span>
+                                {pushStatus?.subscriptionCount > 0 && (
+                                    <p className="admin-push-device-count">
+                                        {pushStatus.subscriptionCount}
+                                        {" "}
+                                        {pushStatus.subscriptionCount === 1
+                                            ? "registered device"
+                                            : "registered devices"}
+                                    </p>
+                                )}
+                            </span>
+                        </div>
 
                         <div className="admin-morning-brief-panel">
                             <div>

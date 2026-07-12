@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react"
 
 import {
-    getUserDetail,
-    getUserPreferences,
-    getUserSupportTickets,
-    getUserUsageEvents,
     getUserAdoptionEvents,
-    getUserLegalStatus
+    getUserDetail,
+    getUserLegalStatus,
+    getUserPreferences,
+    getUserPushStatus,
+    getUserSupportTickets,
+    getUserUsageEvents
 } from "../../services/admin/userAdminService"
 
 export default function useUserDetail(userId) {
@@ -16,6 +17,7 @@ export default function useUserDetail(userId) {
     const [tickets, setTickets] = useState([])
     const [events, setEvents] = useState([])
     const [preferences, setPreferences] = useState(null)
+    const [pushStatus, setPushStatus] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
@@ -32,28 +34,31 @@ export default function useUserDetail(userId) {
 
             try {
                 const [
-                    userDetail,
-                    userPreferences,
-                    supportTickets,
-                    usageEvents,
-                    userAdoptionEvents,
-                    userLegalStatus
+                    userData,
+                    preferenceData,
+                    ticketData,
+                    eventData,
+                    adoptionData,
+                    legalData,
+                    pushData
                 ] = await Promise.all([
                     getUserDetail(userId),
                     getUserPreferences(userId),
                     getUserSupportTickets(userId),
                     getUserUsageEvents(userId),
                     getUserAdoptionEvents(userId),
-                    getUserLegalStatus(userId)
+                    getUserLegalStatus(userId),
+                    getUserPushStatus(userId)
                 ])
 
                 if (!cancelled) {
-                    setUser(userDetail)
-                    setPreferences(userPreferences)
-                    setTickets(supportTickets)
-                    setEvents(usageEvents)
-                    setAdoptionEvents(userAdoptionEvents)
-                    setLegal(userLegalStatus)
+                    setUser(userData)
+                    setPreferences(preferenceData)
+                    setTickets(ticketData)
+                    setEvents(eventData)
+                    setAdoptionEvents(adoptionData)
+                    setLegal(legalData)
+                    setPushStatus(pushData)
                 }
             } catch (err) {
                 console.error("Failed to load user detail:", err)
@@ -66,6 +71,7 @@ export default function useUserDetail(userId) {
                     setEvents([])
                     setAdoptionEvents([])
                     setLegal(null)
+                    setPushStatus(null)
                 }
             } finally {
                 if (!cancelled) {
@@ -86,9 +92,10 @@ export default function useUserDetail(userId) {
         preferences,
         tickets,
         events,
-        legal,
-        loading,
         adoptionEvents,
+        legal,
+        pushStatus,
+        loading,
         error
     }
 }

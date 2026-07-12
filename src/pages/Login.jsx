@@ -18,6 +18,7 @@ import { supabase } from "../lib/supabase"
 import { markReferralAccountCreated } from "../services/referralService"
 
 import logo from "../assets/evergrove-logo.svg"
+import "../styles/public.css"
 
 import {
     acceptLegalDocuments,

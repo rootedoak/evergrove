@@ -4,6 +4,7 @@ import {
     Copy,
     Heart,
     Image,
+    Layers3,
     Leaf,
     MessageCircle,
     Palette,
@@ -57,6 +58,39 @@ const personalityTraits = [
     }
 ]
 
+const brandPillars = [
+    {
+        title: "Trust",
+        description:
+            "Families rely on Evergrove to remember important details, protect their information, and work consistently.",
+        icon: ShieldCheck
+    },
+    {
+        title: "Calm",
+        description:
+            "Evergrove should reduce mental load rather than becoming another system families have to manage.",
+        icon: Leaf
+    },
+    {
+        title: "Preparedness",
+        description:
+            "We help families see what matters next so they can feel ready instead of reactive.",
+        icon: Check
+    },
+    {
+        title: "Connection",
+        description:
+            "Technology should strengthen the household and make coordination easier without replacing real family interaction.",
+        icon: Heart
+    },
+    {
+        title: "Confidence",
+        description:
+            "Every useful interaction should leave a family feeling more capable and in control.",
+        icon: Sparkles
+    }
+]
+
 const voiceExamples = [
     {
         say: "Welcome Home",
@@ -94,52 +128,73 @@ const emotionalOutcomes = [
 
 const colors = [
     {
-        name: "Deep Navy",
+        name: "Evergrove Navy",
         value: "#10263D",
-        purpose: "Trust, stability, leadership, and primary brand moments",
-        className: "brand-color-swatch--deep-navy"
-    },
-    {
-        name: "Evergreen",
-        value: "#4E795C",
-        purpose: "Growth, reassurance, progress, and positive action",
-        className: "brand-color-swatch--evergreen"
+        purpose:
+            "Primary brand anchor, navigation, hero sections, and high-trust moments"
     },
     {
         name: "Grove Blue",
         value: "#173A52",
-        purpose: "Depth, calm, supporting surfaces, and gradients",
-        className: "brand-color-swatch--grove-blue"
+        purpose:
+            "Primary buttons, links, interactive controls, and supporting brand surfaces"
+    },
+    {
+        name: "Horizon Blue",
+        value: "#2F6F9F",
+        purpose:
+            "Active states, charts, highlights, focus states, and secondary actions"
     },
     {
         name: "Morning Sky",
         value: "#D9EAF3",
-        purpose: "Optimism, light accents, and soft informational states",
-        className: "brand-color-swatch--morning-sky"
-    },
-    {
-        name: "Warm Sand",
-        value: "#F3EFE6",
-        purpose: "Comfort, warmth, family storytelling, and soft contrast",
-        className: "brand-color-swatch--warm-sand"
-    },
-    {
-        name: "Stone",
-        value: "#667586",
-        purpose: "Secondary text, balance, and understated support",
-        className: "brand-color-swatch--stone"
+        purpose:
+            "Soft informational backgrounds, highlights, and calm accent surfaces"
     },
     {
         name: "Cloud",
         value: "#F7F9FB",
-        purpose: "Primary background and calm page structure",
-        className: "brand-color-swatch--cloud"
+        purpose:
+            "Primary application and website background"
     },
     {
         name: "White",
         value: "#FFFFFF",
-        purpose: "Cards, clarity, space, and clean content surfaces",
-        className: "brand-color-swatch--white"
+        purpose:
+            "Cards, sheets, modals, and clean content surfaces"
+    },
+    {
+        name: "Stone",
+        value: "#667586",
+        purpose:
+            "Secondary text, captions, metadata, and understated supporting content"
+    },
+    {
+        name: "Border",
+        value: "#DBE3EA",
+        purpose:
+            "Dividers, form controls, card borders, and quiet structural separation"
+    }
+]
+
+const semanticColors = [
+    {
+        name: "Success",
+        value: "#4E795C",
+        description:
+            "Completed work, healthy states, enabled settings, and positive outcomes"
+    },
+    {
+        name: "Warning",
+        value: "#B7791F",
+        description:
+            "Items that need attention, incomplete setup, or time-sensitive risks"
+    },
+    {
+        name: "Error",
+        value: "#B54747",
+        description:
+            "Failures, destructive actions, blocked workflows, and critical issues"
     }
 ]
 
@@ -178,6 +233,57 @@ const uiPrinciples = [
         title: "Design mobile first",
         description:
             "The primary experience should be excellent on a phone before desktop polish is considered finished.",
+        icon: Smartphone
+    },
+    {
+        title: "Stay calm by default",
+        description:
+            "Information should appear when it is useful, not all at once. The interface should never feel overwhelming.",
+        icon: Heart
+    },
+    {
+        title: "One household, one system",
+        description:
+            "Calendar, Tasks, Meals, Shopping, Inbox, Family, and Assistant should feel like connected parts of one operating system.",
+        icon: Layers3
+    }
+]
+
+const designLanguage = [
+    {
+        title: "Rounded",
+        description:
+            "Soft corners make the product feel approachable, modern, and family-friendly.",
+        icon: Heart
+    },
+    {
+        title: "Spacious",
+        description:
+            "Whitespace reduces cognitive load and helps important information stand out.",
+        icon: Sparkles
+    },
+    {
+        title: "Layered",
+        description:
+            "Cards, sheets, and sections create clear visual hierarchy without making the interface feel heavy.",
+        icon: Layers3
+    },
+    {
+        title: "Consistent",
+        description:
+            "The same actions, statuses, and controls should look and behave the same everywhere.",
+        icon: Check
+    },
+    {
+        title: "Intentional",
+        description:
+            "Every color, icon, animation, and interaction should communicate meaning rather than decorate.",
+        icon: ShieldCheck
+    },
+    {
+        title: "Responsive",
+        description:
+            "Evergrove should feel natural across phones, tablets, desktop browsers, and installed experiences.",
         icon: Smartphone
     }
 ]
@@ -237,17 +343,37 @@ export default function Brand() {
                         </p>
 
                         <h2>
-                            Every interaction should feel calm, helpful, and
-                            human.
+                            The calm operating system for modern family life.
                         </h2>
 
                         <p>
-                            Evergrove exists to give families confidence. Every
+                            Evergrove exists to give families confidence that
+                            the important things will not be forgotten. Every
                             screen, email, notification, illustration, and
-                            conversation should reinforce that feeling.
+                            conversation should reinforce trust, calm, and
+                            preparedness.
                         </p>
                     </div>
                 </section>
+
+                <SectionCard
+                    title="Brand in One Sentence"
+                    icon={Sparkles}
+                    className="brand-feeling-card"
+                >
+                    <blockquote>
+                        Evergrove is the calm operating system for modern family
+                        life.
+                    </blockquote>
+
+                    <p className="brand-section-intro">
+                        This statement should guide product decisions,
+                        marketing, support, design, and communication. If
+                        something feels noisy, complicated, technical, or
+                        disconnected, it is not yet aligned with the Evergrove
+                        brand.
+                    </p>
+                </SectionCard>
 
                 <section className="brand-section">
                     <div className="brand-section-heading">
@@ -304,6 +430,37 @@ export default function Brand() {
 
                 <section className="brand-section">
                     <div className="brand-section-heading">
+                        <span>What we stand for</span>
+                        <h2>Brand Pillars</h2>
+                        <p>
+                            These principles explain the deeper value Evergrove
+                            should deliver to every household.
+                        </p>
+                    </div>
+
+                    <div className="brand-ui-grid">
+                        {brandPillars.map(pillar => {
+                            const Icon = pillar.icon
+
+                            return (
+                                <article
+                                    key={pillar.title}
+                                    className="brand-ui-card"
+                                >
+                                    <div className="brand-card-icon">
+                                        <Icon size={21} />
+                                    </div>
+
+                                    <h3>{pillar.title}</h3>
+                                    <p>{pillar.description}</p>
+                                </article>
+                            )
+                        })}
+                    </div>
+                </section>
+
+                <section className="brand-section">
+                    <div className="brand-section-heading">
                         <span>How we speak</span>
                         <h2>Voice &amp; Tone</h2>
                         <p>
@@ -351,12 +508,24 @@ export default function Brand() {
                 <section className="brand-section">
                     <div className="brand-section-heading">
                         <span>Visual identity</span>
-                        <h2>Color Palette</h2>
+                        <h2>Color Philosophy</h2>
                         <p>
-                            Our colors balance trust, calm, warmth, and growth.
-                            Click a color value to copy it.
+                            Evergrove is a blue-first brand. Blue communicates
+                            trust, calm, confidence, and reliability—the
+                            qualities families should feel when depending on
+                            Evergrove.
                         </p>
                     </div>
+
+                    <SectionCard>
+                        <p className="brand-section-intro">
+                            Green is no longer used as a primary brand color.
+                            It is reserved for successful outcomes, completed
+                            work, healthy states, and positive progress. This
+                            gives every color a clear and consistent meaning
+                            across the app, public website, and Evergrove HQ.
+                        </p>
+                    </SectionCard>
 
                     <div className="brand-color-grid">
                         {colors.map(color => (
@@ -365,7 +534,10 @@ export default function Brand() {
                                 className="brand-color-card"
                             >
                                 <div
-                                    className={`brand-color-swatch ${color.className}`}
+                                    className="brand-color-swatch"
+                                    style={{
+                                        background: color.value
+                                    }}
                                 />
 
                                 <div className="brand-color-card__content">
@@ -383,6 +555,51 @@ export default function Brand() {
                                         <Copy size={14} />
                                     </button>
                                 </div>
+                            </article>
+                        ))}
+                    </div>
+                </section>
+
+                <section className="brand-section">
+                    <div className="brand-section-heading">
+                        <span>Meaning, not branding</span>
+                        <h2>Semantic Colors</h2>
+                        <p>
+                            These colors communicate status and meaning. They
+                            should not be used as primary navigation, branding,
+                            or decorative accents.
+                        </p>
+                    </div>
+
+                    <div className="brand-personality-grid">
+                        {semanticColors.map(color => (
+                            <article
+                                key={color.name}
+                                className="brand-personality-card"
+                            >
+                                <div
+                                    className="brand-card-icon"
+                                    style={{
+                                        color: color.value,
+                                        background: `${color.value}18`
+                                    }}
+                                >
+                                    <Check size={21} />
+                                </div>
+
+                                <h3>{color.name}</h3>
+                                <p>{color.description}</p>
+
+                                <button
+                                    type="button"
+                                    className="brand-copy-value"
+                                    onClick={() =>
+                                        copyToClipboard(color.value)
+                                    }
+                                >
+                                    <span>{color.value}</span>
+                                    <Copy size={14} />
+                                </button>
                             </article>
                         ))}
                     </div>
@@ -426,7 +643,9 @@ export default function Brand() {
 
                         <div className="brand-type-example brand-type-example--button">
                             <span>Button</span>
-                            <button type="button">Plan the week</button>
+                            <button type="button">
+                                Plan the week
+                            </button>
                         </div>
                     </div>
                 </SectionCard>
@@ -457,6 +676,37 @@ export default function Brand() {
 
                                     <h3>{principle.title}</h3>
                                     <p>{principle.description}</p>
+                                </article>
+                            )
+                        })}
+                    </div>
+                </section>
+
+                <section className="brand-section">
+                    <div className="brand-section-heading">
+                        <span>How the product feels</span>
+                        <h2>Design Language</h2>
+                        <p>
+                            The same visual language should connect the app,
+                            public website, emails, and Evergrove HQ.
+                        </p>
+                    </div>
+
+                    <div className="brand-ui-grid">
+                        {designLanguage.map(item => {
+                            const Icon = item.icon
+
+                            return (
+                                <article
+                                    key={item.title}
+                                    className="brand-ui-card"
+                                >
+                                    <div className="brand-card-icon">
+                                        <Icon size={21} />
+                                    </div>
+
+                                    <h3>{item.title}</h3>
+                                    <p>{item.description}</p>
                                 </article>
                             )
                         })}
@@ -542,6 +792,26 @@ export default function Brand() {
                 </section>
 
                 <SectionCard
+                    title="Why Evergrove?"
+                    icon={Leaf}
+                    className="brand-logo-card"
+                >
+                    <p className="brand-section-intro">
+                        A grove is a place where individual trees grow stronger
+                        together than they would alone. Families are much the
+                        same.
+                    </p>
+
+                    <p className="brand-section-intro">
+                        The name Evergrove reflects our belief that families are
+                        always growing. Seasons change. Children grow up. New
+                        traditions begin. Through every stage of life,
+                        Evergrove helps the household stay organized,
+                        connected, and prepared.
+                    </p>
+                </SectionCard>
+
+                <SectionCard
                     title="Logo Direction"
                     icon={Palette}
                     className="brand-logo-card"
@@ -555,6 +825,7 @@ export default function Brand() {
                             <p className="brand-logo-showcase__name">
                                 Evergrove
                             </p>
+
                             <p className="brand-logo-showcase__tagline">
                                 Where organized families grow.
                             </p>
@@ -566,6 +837,14 @@ export default function Brand() {
                             <Check size={16} />
                             <span>
                                 Give the logo generous space and clear contrast.
+                            </span>
+                        </div>
+
+                        <div>
+                            <Check size={16} />
+                            <span>
+                                Use navy, blue, or white as the primary logo
+                                treatments.
                             </span>
                         </div>
 
@@ -584,6 +863,15 @@ export default function Brand() {
                                 spaces.
                             </span>
                         </div>
+
+                        <div>
+                            <Check size={16} />
+                            <span>
+                                Let the grove story appear through the symbol,
+                                language, and imagery rather than relying on
+                                green as the primary brand color.
+                            </span>
+                        </div>
                     </div>
                 </SectionCard>
 
@@ -593,12 +881,14 @@ export default function Brand() {
                     className="brand-closing-card"
                 >
                     <p>
-                        Spend less time managing life and more time living it.
+                        Give families confidence that the important things will
+                        not be forgotten.
                     </p>
 
                     <span>
-                        Every brand decision should make that promise feel more
-                        believable.
+                        When families feel prepared, they can spend less time
+                        managing life and more time enjoying the moments that
+                        matter most.
                     </span>
                 </SectionCard>
             </div>

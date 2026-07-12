@@ -16,6 +16,10 @@ export async function getProductFeedback() {
             page_path,
             source,
             created_at,
+            attachment_path,
+            attachment_name,
+            attachment_type,
+            attachment_size,
             households (
                 id,
                 name
@@ -26,6 +30,67 @@ export async function getProductFeedback() {
     if (error) throw error
 
     return data ?? []
+}
+
+export async function getProductFeedbackDetail(id) {
+    if (!id) {
+        throw new Error("Feedback id is required")
+    }
+
+    const { data, error } = await supabase
+        .from("product_feedback")
+        .select(`
+            id,
+            ticket_number,
+            household_id,
+            user_id,
+            feedback_type,
+            status,
+            priority,
+            assigned_to,
+            category,
+            subject,
+            message,
+            app_version,
+            page_path,
+            source,
+            attachment_path,
+            attachment_name,
+            attachment_type,
+            attachment_size,
+            created_at,
+            updated_at,
+            households (
+                id,
+                name
+            ),
+            release_feedback (
+                app_releases (
+                    id,
+                    version,
+                    channel,
+                    status
+                )
+            )
+        `)
+        .eq("id", id)
+        .single()
+
+    if (error) throw error
+
+    return data
+}
+
+export async function getFeedbackAttachmentUrl(path) {
+    if (!path) return null
+
+    const { data, error } = await supabase.storage
+        .from("feedback-attachments")
+        .createSignedUrl(path, 60 * 10)
+
+    if (error) throw error
+
+    return data?.signedUrl ?? null
 }
 
 export function formatTicketNumber(ticketNumber) {

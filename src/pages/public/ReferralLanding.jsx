@@ -12,6 +12,8 @@ import {
 
 import logo from "../../assets/evergrove-logo.svg"
 
+import "../../styles/public.css"
+
 import {
     getReferralByCode,
     saveReferralAttribution,

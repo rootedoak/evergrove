@@ -208,6 +208,60 @@ export default function SupportTicket() {
                 </p>
             </AdminCard>
 
+            {ticket.attachment_path && (
+                <AdminCard title="Attachment">
+                    {!ticket.attachment_url ? (
+                        <AdminEmptyState>
+                            Attachment could not be loaded.
+                        </AdminEmptyState>
+                    ) : (
+                        <div className="admin-ticket-attachment">
+                            {ticket.attachment_type?.startsWith("image/") && (
+                                <a
+                                    href={ticket.attachment_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="admin-ticket-attachment__preview-link"
+                                >
+                                    <img
+                                        src={ticket.attachment_url}
+                                        alt={
+                                            ticket.attachment_name ||
+                                            "Feedback attachment"
+                                        }
+                                        className="admin-ticket-attachment__preview"
+                                    />
+                                </a>
+                            )}
+
+                            <div className="admin-ticket-attachment__details">
+                                <div>
+                                    <strong>
+                                        {ticket.attachment_name ||
+                                            "Feedback attachment"}
+                                    </strong>
+
+                                    <span className="admin-muted">
+                                        {formatFileSize(
+                                            ticket.attachment_size
+                                        )}
+                                    </span>
+                                </div>
+
+                                <a
+                                    href={ticket.attachment_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="admin-secondary-button"
+                                >
+                                    Open Attachment
+                                </a>
+                            </div>
+                        </div>
+                    )}
+                </AdminCard>
+            )}
+
             <AdminCard title="Conversation">
                 <TicketConversation
                     feedbackId={feedbackId}
@@ -270,4 +324,21 @@ function priorityStatus(priority) {
     if (priority === "urgent" || priority === "high") return "error"
     if (priority === "low") return "neutral"
     return "warning"
+}
+
+function formatFileSize(value) {
+    if (!value && value !== 0) return "—"
+
+    if (value < 1024) {
+        return `${value} B`
+    }
+
+    if (value < 1024 * 1024) {
+        return `${Math.round(value / 1024)} KB`
+    }
+
+    return `${(
+        value /
+        (1024 * 1024)
+    ).toFixed(1)} MB`
 }

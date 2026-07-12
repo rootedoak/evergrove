@@ -282,3 +282,25 @@ const ACCEPTANCE_METHOD_LABELS = {
     in_app_gate: "In-App Confirmation",
     admin: "Recorded by Admin"
 }
+
+export async function getUserPushStatus(userId) {
+    if (!userId) {
+        throw new Error("userId is required")
+    }
+
+    const { data, error } = await supabase
+        .from("push_subscriptions")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+
+    if (error) throw error
+
+    const subscriptions = data ?? []
+
+    return {
+        hasSubscription: subscriptions.length > 0,
+        subscriptionCount: subscriptions.length,
+        latestSubscription: subscriptions[0] ?? null
+    }
+}

@@ -81,6 +81,54 @@ function formatDateLabel(date) {
     return date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
 }
 
+function createTemporaryId(prefix) {
+    return `${prefix}-${crypto.randomUUID()}`
+}
+
+function buildOptimisticMeal(form, id) {
+    return {
+        id,
+        name: form.name.trim(),
+        description: form.description || "",
+        category: form.category || "Dinner",
+        recipe_url: form.recipe_url || "",
+        is_favorite: Boolean(form.is_favorite),
+        meal_ingredients: form.ingredients
+            .filter(ingredient => ingredient.name.trim())
+            .map((ingredient, index) => ({
+                id: `${id}-ingredient-${index}`,
+                name: ingredient.name.trim(),
+                quantity: ingredient.quantity || "",
+                category: ingredient.category || ""
+            }))
+    }
+}
+
+function buildOptimisticPlan({
+    id,
+    meal,
+    plannedDate,
+    notes,
+    planType,
+    restaurantName
+}) {
+    return {
+        id,
+        meal_id: meal?.id ?? null,
+        meal_name:
+            planType === "restaurant"
+                ? restaurantName.trim()
+                : planType === "leftovers"
+                    ? "Leftovers"
+                    : meal?.name ?? "",
+        planned_date: plannedDate,
+        notes: notes || "",
+        plan_type: planType,
+        restaurant_name: restaurantName || "",
+        meals: meal ?? null
+    }
+}
+
 export default function Meals() {
     const navigate = useNavigate()
     const location = useLocation()
@@ -423,6 +471,27 @@ export default function Meals() {
         })
     }
 
+    function resetMealForm() {
+        setEditingMealId(null)
+
+        setMealForm({
+            name: "",
+            description: "",
+            category: "Dinner",
+            recipe_url: "",
+            is_favorite: false,
+            ingredients: [
+                {
+                    name: "",
+                    quantity: "",
+                    category: ""
+                }
+            ]
+        })
+
+        setShowMealForm(false)
+    }
+
     function startQuickAdd(meal) {
         setQuickAddMealId(meal.id)
         setQuickAddDate(getTodayDate())
@@ -456,42 +525,150 @@ export default function Meals() {
     }
 
     async function handleDayQuickAdd() {
-        const isRestaurant = dayQuickAdd.planType === "restaurant"
-        const isLeftovers = dayQuickAdd.planType === "leftovers"
+        const isRestaurant =
+            dayQuickAdd.planType === "restaurant"
+
+        const isLeftovers =
+            dayQuickAdd.planType === "leftovers"
 
         const selectedMeal = meals.find(
             meal => meal.id === dayQuickAdd.mealId
         )
 
         if (!dayQuickAdd.dateValue) return
-        if (!isRestaurant && !isLeftovers && !selectedMeal) return
-        if (isRestaurant && !dayQuickAdd.restaurantName.trim()) return
+        if (
+            !isRestaurant &&
+            !isLeftovers &&
+            !selectedMeal
+        ) {
+            return
+        }
 
-        await createMealPlan({
-            meal: selectedMeal,
-            plannedDate: dayQuickAdd.dateValue,
-            notes: dayQuickAdd.notes,
-            planType: dayQuickAdd.planType,
-            restaurantName: dayQuickAdd.restaurantName
-        })
+        if (
+            isRestaurant &&
+            !dayQuickAdd.restaurantName.trim()
+        ) {
+            return
+        }
+
+        const formSnapshot = { ...dayQuickAdd }
+
+        const temporaryId =
+            createTemporaryId("optimistic-plan")
+
+        const optimisticPlan =
+            buildOptimisticPlan({
+                id: temporaryId,
+                meal: selectedMeal,
+                plannedDate: formSnapshot.dateValue,
+                notes: formSnapshot.notes,
+                planType: formSnapshot.planType,
+                restaurantName:
+                    formSnapshot.restaurantName
+            })
+
+        setError("")
+        setMealPlans(current => [
+            ...current,
+            optimisticPlan
+        ])
 
         cancelDayQuickAdd()
-        await loadData()
+
+        try {
+            const savedPlan =
+                await createMealPlan({
+                    meal: selectedMeal,
+                    plannedDate:
+                        formSnapshot.dateValue,
+                    notes: formSnapshot.notes,
+                    planType:
+                        formSnapshot.planType,
+                    restaurantName:
+                        formSnapshot.restaurantName
+                })
+
+            if (savedPlan) {
+                setMealPlans(current =>
+                    current.map(plan =>
+                        plan.id === temporaryId
+                            ? savedPlan
+                            : plan
+                    )
+                )
+            }
+        } catch (err) {
+            console.error(err)
+
+            setMealPlans(current =>
+                current.filter(
+                    plan => plan.id !== temporaryId
+                )
+            )
+
+            setError("Could not add the meal plan.")
+        }
     }
 
     async function handleQuickAdd(meal) {
         if (!meal || !quickAddDate) return
 
-        await createMealPlan({
-            meal,
-            plannedDate: quickAddDate,
-            notes: quickAddNotes,
-            planType: "home",
-            restaurantName: ""
-        })
+        const formSnapshot = {
+            date: quickAddDate,
+            notes: quickAddNotes
+        }
+
+        const temporaryId =
+            createTemporaryId("optimistic-plan")
+
+        const optimisticPlan =
+            buildOptimisticPlan({
+                id: temporaryId,
+                meal,
+                plannedDate: formSnapshot.date,
+                notes: formSnapshot.notes,
+                planType: "home",
+                restaurantName: ""
+            })
+
+        setError("")
+        setMealPlans(current => [
+            ...current,
+            optimisticPlan
+        ])
 
         cancelQuickAdd()
-        await loadData()
+
+        try {
+            const savedPlan =
+                await createMealPlan({
+                    meal,
+                    plannedDate: formSnapshot.date,
+                    notes: formSnapshot.notes,
+                    planType: "home",
+                    restaurantName: ""
+                })
+
+            if (savedPlan) {
+                setMealPlans(current =>
+                    current.map(plan =>
+                        plan.id === temporaryId
+                            ? savedPlan
+                            : plan
+                    )
+                )
+            }
+        } catch (err) {
+            console.error(err)
+
+            setMealPlans(current =>
+                current.filter(
+                    plan => plan.id !== temporaryId
+                )
+            )
+
+            setError("Could not add the meal plan.")
+        }
     }
 
     async function handleGenerateWeek() {
@@ -579,51 +756,162 @@ export default function Meals() {
 
     async function handleCreateMeal(event) {
         event.preventDefault()
+
         if (!mealForm.name.trim()) return
 
-        if (editingMealId) {
-            await updateMeal(editingMealId, mealForm)
-        } else {
-            await createMeal(mealForm)
+        const previousMeals = meals
+        const formSnapshot = {
+            ...mealForm,
+            ingredients: mealForm.ingredients.map(
+                ingredient => ({ ...ingredient })
+            )
         }
 
-        setEditingMealId(null)
+        setError("")
 
-        setMealForm({
-            name: "",
-            description: "",
-            category: "Dinner",
-            recipe_url: "",
-            is_favorite: false,
-            ingredients: [{ name: "", quantity: "", category: "" }]
-        })
+        if (editingMealId) {
+            const existingMeal = meals.find(
+                meal => meal.id === editingMealId
+            )
 
-        setShowMealForm(false)
+            if (!existingMeal) return
 
-        await loadData()
+            const optimisticMeal = {
+                ...existingMeal,
+                ...buildOptimisticMeal(
+                    formSnapshot,
+                    editingMealId
+                )
+            }
+
+            setMeals(current =>
+                current.map(meal =>
+                    meal.id === editingMealId
+                        ? optimisticMeal
+                        : meal
+                )
+            )
+
+            resetMealForm()
+
+            try {
+                const savedMeal = await updateMeal(
+                    editingMealId,
+                    formSnapshot
+                )
+
+                if (savedMeal) {
+                    setMeals(current =>
+                        current.map(meal =>
+                            meal.id === editingMealId
+                                ? savedMeal
+                                : meal
+                        )
+                    )
+                }
+            } catch (err) {
+                console.error(err)
+                setMeals(previousMeals)
+                setError("Could not update the meal.")
+            }
+
+            return
+        }
+
+        const temporaryId =
+            createTemporaryId("optimistic-meal")
+
+        const optimisticMeal =
+            buildOptimisticMeal(
+                formSnapshot,
+                temporaryId
+            )
+
+        setMeals(current => [
+            ...current,
+            optimisticMeal
+        ])
+
+        resetMealForm()
+
+        try {
+            const savedMeal =
+                await createMeal(formSnapshot)
+
+            if (savedMeal) {
+                setMeals(current =>
+                    current.map(meal =>
+                        meal.id === temporaryId
+                            ? savedMeal
+                            : meal
+                    )
+                )
+            }
+        } catch (err) {
+            console.error(err)
+
+            setMeals(current =>
+                current.filter(
+                    meal => meal.id !== temporaryId
+                )
+            )
+
+            setError("Could not save the meal.")
+        }
     }
 
     async function handleCreatePlan(event) {
         event.preventDefault()
 
-        const isRestaurant = planForm.planType === "restaurant"
-        const isLeftovers = planForm.planType === "leftovers"
+        const isRestaurant =
+            planForm.planType === "restaurant"
+
+        const isLeftovers =
+            planForm.planType === "leftovers"
 
         const selectedMeal = meals.find(
             meal => meal.id === planForm.mealId
         )
 
         if (!planForm.plannedDate) return
-        if (!isRestaurant && !isLeftovers && !selectedMeal) return
-        if (isRestaurant && !planForm.restaurantName.trim()) return
 
-        await createMealPlan({
-            meal: selectedMeal,
-            plannedDate: planForm.plannedDate,
-            notes: planForm.notes,
-            planType: planForm.planType,
-            restaurantName: planForm.restaurantName
-        })
+        if (
+            !isRestaurant &&
+            !isLeftovers &&
+            !selectedMeal
+        ) {
+            return
+        }
+
+        if (
+            isRestaurant &&
+            !planForm.restaurantName.trim()
+        ) {
+            return
+        }
+
+        const formSnapshot = { ...planForm }
+
+        const temporaryId =
+            createTemporaryId("optimistic-plan")
+
+        const optimisticPlan =
+            buildOptimisticPlan({
+                id: temporaryId,
+                meal: selectedMeal,
+                plannedDate:
+                    formSnapshot.plannedDate,
+                notes: formSnapshot.notes,
+                planType: formSnapshot.planType,
+                restaurantName:
+                    formSnapshot.restaurantName
+            })
+
+        setError("")
+        setMealPlans(current => [
+            ...current,
+            optimisticPlan
+        ])
 
         setPlanForm({
             mealId: "",
@@ -633,7 +921,39 @@ export default function Meals() {
             restaurantName: ""
         })
 
-        await loadData()
+        try {
+            const savedPlan =
+                await createMealPlan({
+                    meal: selectedMeal,
+                    plannedDate:
+                        formSnapshot.plannedDate,
+                    notes: formSnapshot.notes,
+                    planType:
+                        formSnapshot.planType,
+                    restaurantName:
+                        formSnapshot.restaurantName
+                })
+
+            if (savedPlan) {
+                setMealPlans(current =>
+                    current.map(plan =>
+                        plan.id === temporaryId
+                            ? savedPlan
+                            : plan
+                    )
+                )
+            }
+        } catch (err) {
+            console.error(err)
+
+            setMealPlans(current =>
+                current.filter(
+                    plan => plan.id !== temporaryId
+                )
+            )
+
+            setError("Could not add the meal plan.")
+        }
     }
 
     function handleHeaderAdd() {
@@ -667,9 +987,31 @@ export default function Meals() {
 
     async function handleCreateGroceryItem(event) {
         event.preventDefault()
+
         if (!groceryForm.name.trim()) return
 
-        await createGroceryItem(groceryForm)
+        const formSnapshot = { ...groceryForm }
+
+        const temporaryId =
+            createTemporaryId("optimistic-grocery")
+
+        const optimisticItem = {
+            id: temporaryId,
+            name: formSnapshot.name.trim(),
+            quantity: formSnapshot.quantity || "",
+            category:
+                formSnapshot.category ||
+                "Uncategorized",
+            checked: false,
+            meal_plan_id: null,
+            meal_plans: null
+        }
+
+        setError("")
+        setGroceryItems(current => [
+            ...current,
+            optimisticItem
+        ])
 
         setGroceryForm({
             name: "",
@@ -677,7 +1019,30 @@ export default function Meals() {
             category: ""
         })
 
-        await loadData()
+        try {
+            const savedItem =
+                await createGroceryItem(formSnapshot)
+
+            if (savedItem) {
+                setGroceryItems(current =>
+                    current.map(item =>
+                        item.id === temporaryId
+                            ? savedItem
+                            : item
+                    )
+                )
+            }
+        } catch (err) {
+            console.error(err)
+
+            setGroceryItems(current =>
+                current.filter(
+                    item => item.id !== temporaryId
+                )
+            )
+
+            setError("Could not add the grocery item.")
+        }
     }
 
     const addButtonLabel =
@@ -686,10 +1051,6 @@ export default function Meals() {
             : mobileTab === "groceries"
                 ? "Item"
                 : "Add"
-
-    if (loading) {
-        return <p className="muted-text">Loading meal planner...</p>
-    }
 
     return (
         <AppPage>

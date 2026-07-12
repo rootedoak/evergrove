@@ -18,6 +18,8 @@ import {
     markReferralHouseholdCreated
 } from "../services/referralService"
 
+import { sendWelcomeEmail } from "../services/emailService"
+
 function detectTimezone() {
     try {
         return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Chicago"
@@ -189,6 +191,15 @@ export default function Onboarding() {
 
             if (activatedReferral) {
                 clearReferralAttribution()
+            }
+
+            try {
+                await sendWelcomeEmail()
+            } catch (emailError) {
+                console.error(
+                    "Welcome email could not be sent:",
+                    emailError
+                )
             }
 
             sessionStorage.setItem(
