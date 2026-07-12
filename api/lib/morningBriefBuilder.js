@@ -17,7 +17,13 @@ function formatTime(value) {
 
     const [hour, minute] = value.split(":")
     const date = new Date()
-    date.setHours(Number(hour), Number(minute || 0), 0, 0)
+
+    date.setHours(
+        Number(hour),
+        Number(minute || 0),
+        0,
+        0
+    )
 
     return date.toLocaleTimeString(undefined, {
         hour: "numeric",
@@ -97,18 +103,22 @@ export async function buildMorningBrief({
 
         supabase
             .from("trips")
-            .select("name, name, destination, start_date")
+            .select("name, destination, start_date")
             .eq("household_id", householdId)
             .eq("start_date", today)
             .limit(1),
 
         supabase
             .from("calendar_events")
-            .select("id, title, start_time")
+            .select("id, title, start_date, end_date, start_time")
             .eq("household_id", householdId)
-            .lte("start_date", today)
-            .or(`end_date.gte.${today},end_date.is.null`)
-            .order("start_time", { ascending: true, nullsFirst: false })
+            .or(
+                `start_date.eq.${today},and(start_date.lte.${today},end_date.gte.${today})`
+            )
+            .order("start_time", {
+                ascending: true,
+                nullsFirst: false
+            })
             .limit(2),
 
         supabase
@@ -145,16 +155,23 @@ export async function buildMorningBrief({
     }
 
     for (const trip of trips || []) {
-        const tripName = trip.name || trip.name || "Trip"
-        const destination = trip.destination ? ` to ${trip.destination}` : ""
-        highlights.push(`✈️ ${tripName}${destination} starts today`)
+        const tripName = trip.name || "Trip"
+        const destination = trip.destination
+            ? ` to ${trip.destination}`
+            : ""
+
+        highlights.push(
+            `✈️ ${tripName}${destination} starts today`
+        )
     }
 
     for (const event of events || []) {
         const eventTitle = event.title || "Family event"
         const time = formatTime(event.start_time)
 
-        highlights.push(`📅 ${eventTitle}${time ? ` • ${time}` : ""}`)
+        highlights.push(
+            `📅 ${eventTitle}${time ? ` • ${time}` : ""}`
+        )
     }
 
     for (const task of tasks || []) {
@@ -187,7 +204,12 @@ export async function buildMorningBrief({
         url: "/",
         metadata: {
             today,
-            birthday_count: birthdays?.filter(item => monthDay(item.birthdate) === todayMonthDay).length || 0,
+            timezone,
+            birthday_count:
+                birthdays?.filter(
+                    item =>
+                        monthDay(item.birthdate) === todayMonthDay
+                ).length || 0,
             trip_count: trips?.length || 0,
             event_count: events?.length || 0,
             task_count: tasks?.length || 0,
