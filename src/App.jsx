@@ -88,6 +88,7 @@ import Growth from "./pages/admin/company/Growth"
 
 import PublicHome from "./pages/public/PublicHome"
 import PublicLayout from "./components/public/PublicLayout"
+import PublicMetadata from "./components/public/PublicMetadata"
 import ReferralLanding from "./pages/public/ReferralLanding"
 import AboutEvergrove from "./pages/public/AboutEvergrove"
 
@@ -325,46 +326,50 @@ function AppRoutes() {
 
 function PublicRoutes() {
   return (
-    <Routes>
-      <Route element={<PublicLayout />}>
-        <Route index element={<PublicHome />} />
+    <>
+      <PublicMetadata />
+
+      <Routes>
+        <Route element={<PublicLayout />}>
+          <Route index element={<PublicHome />} />
+
+          <Route
+            path="/about"
+            element={<AboutEvergrove />}
+          />
+
+          <Route
+            path="/trust"
+            element={<TrustCenter />}
+          />
+
+          <Route
+            path="/trust/:slug"
+            element={<TrustDocumentPage />}
+          />
+        </Route>
 
         <Route
-          path="/about"
-          element={<AboutEvergrove />}
+          path="/r/:code"
+          element={<ReferralLanding />}
         />
 
         <Route
-          path="/trust"
-          element={<TrustCenter />}
+          path="/invite/:token"
+          element={<InvitePage />}
         />
 
         <Route
-          path="/trust/:slug"
-          element={<TrustDocumentPage />}
+          path="/login"
+          element={<Login onLogin={() => { }} />}
         />
-      </Route>
 
-      <Route
-        path="/r/:code"
-        element={<ReferralLanding />}
-      />
-
-      <Route
-        path="/invite/:token"
-        element={<InvitePage />}
-      />
-
-      <Route
-        path="/login"
-        element={<Login onLogin={() => { }} />}
-      />
-
-      <Route
-        path="*"
-        element={<Navigate to="/" replace />}
-      />
-    </Routes>
+        <Route
+          path="*"
+          element={<Navigate to="/" replace />}
+        />
+      </Routes>
+    </>
   )
 }
 
