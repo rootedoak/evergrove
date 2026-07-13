@@ -11,6 +11,10 @@ function getMetadata(pathname, search) {
     const searchParams = new URLSearchParams(search)
     const loginMode = searchParams.get("mode")
 
+    if (pathname === "/") {
+        return DEFAULT_METADATA
+    }
+
     if (pathname === "/about") {
         return {
             title: "About Evergrove | A Calmer Way to Manage Family Life",
@@ -51,9 +55,7 @@ function getMetadata(pathname, search) {
 
     if (
         pathname === "/login" &&
-        (
-            loginMode === "invite"
-        )
+        loginMode === "invite"
     ) {
         return {
             title: "Continue Your Household Invitation | Evergrove",
@@ -86,7 +88,11 @@ function getMetadata(pathname, search) {
         }
     }
 
-    return DEFAULT_METADATA
+    return {
+        title: "Page Not Found | Evergrove",
+        description:
+            "The Evergrove page you were looking for could not be found."
+    }
 }
 
 function updateMetaDescription(description) {
@@ -135,7 +141,20 @@ export default function PublicMetadata() {
 
         document.title = metadata.title
         updateMetaDescription(metadata.description)
-        updateCanonicalUrl(location.pathname)
+        const isKnownPublicRoute =
+            location.pathname === "/" ||
+            location.pathname === "/about" ||
+            location.pathname === "/trust" ||
+            location.pathname === "/login" ||
+            location.pathname.startsWith("/trust/") ||
+            location.pathname.startsWith("/r/") ||
+            location.pathname.startsWith("/invite/")
+
+        updateCanonicalUrl(
+            isKnownPublicRoute
+                ? location.pathname
+                : "/"
+        )
     }, [location.pathname, location.search])
 
     return null

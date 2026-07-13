@@ -6642,3 +6642,127 @@ a {
   font-size: 0.78rem;
   white-space: nowrap;
 }
+
+.error-boundary-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(180deg,
+      #f7f9fc 0%,
+      #eef3f8 100%);
+}
+
+.error-boundary-card {
+  width: min(100%, 680px);
+  padding: 48px;
+  border: 1px solid #dbe4ee;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow:
+    0 24px 60px rgba(16, 38, 61, 0.1);
+  text-align: center;
+}
+
+.error-boundary-logo {
+  display: block;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 28px;
+  object-fit: contain;
+}
+
+.error-boundary-copy {
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+.error-boundary-eyebrow {
+  display: block;
+  margin-bottom: 10px;
+  color: #2b68b8;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.error-boundary-copy h1 {
+  margin: 0;
+  color: #10263d;
+  font-size: clamp(30px, 5vw, 46px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.error-boundary-copy p {
+  margin: 20px auto 0;
+  color: #64748b;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.error-boundary-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.error-boundary-primary,
+.error-boundary-secondary {
+  min-height: 52px;
+  padding: 0 28px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.error-boundary-primary {
+  border: 1px solid #163f5c;
+  background: #163f5c;
+  color: #ffffff;
+}
+
+.error-boundary-secondary {
+  border: 1px solid #d5e0ea;
+  background: #ffffff;
+  color: #10263d;
+}
+
+.error-boundary-primary:hover {
+  background: #102f47;
+}
+
+.error-boundary-secondary:hover {
+  background: #f5f8fb;
+}
+
+.error-boundary-primary:focus-visible,
+.error-boundary-secondary:focus-visible {
+  outline: 3px solid rgba(43, 104, 184, 0.35);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .error-boundary-page {
+    padding: 16px;
+  }
+
+  .error-boundary-card {
+    padding: 36px 24px;
+    border-radius: 24px;
+  }
+
+  .error-boundary-actions {
+    flex-direction: column;
+  }
+
+  .error-boundary-primary,
+  .error-boundary-secondary {
+    width: 100%;
+  }
+}

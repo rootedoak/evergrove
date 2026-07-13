@@ -72,9 +72,10 @@ import SupportTicket from "./pages/admin/support/SupportTicket"
 import UsersPage from "./pages/admin/users/Users"
 import UserProfile from "./pages/admin/users/UserProfile"
 import BetaHealth from "./pages/admin/beta/BetaHealth"
-import ReleaseDetail from "./pages/admin/releases/ReleaseDetail"
+import AdminErrors from "./pages/admin/errors/AdminErrors"
 
 import Releases from "./pages/admin/releases/Releases"
+import ReleaseDetail from "./pages/admin/releases/ReleaseDetail"
 import FeatureFlags from "./pages/admin/featureFlags/FeatureFlags"
 
 import SalesMarketing from "./pages/admin/sales/SalesMarketing"
@@ -103,6 +104,8 @@ import useDiscoverMessage from "./hooks/useDiscoverMessage"
 import DiscoverMessages from "./pages/admin/discover/DiscoverMessages"
 import DiscoverMessageEditor from "./pages/admin/discover/DiscoverMessageEditor"
 
+import ErrorBoundary from "./components/ErrorBoundary"
+import NotFound from "./pages/public/NotFound"
 import UIKit from "./pages/UIKit"
 
 const mobileNavItems = [
@@ -299,6 +302,10 @@ function AppRoutes() {
         <Route path="support" element={<SupportInbox />} />
         <Route path="support/:feedbackId" element={<SupportTicket />} />
         <Route path="releases" element={<Releases />} />
+        <Route
+          path="errors"
+          element={<AdminErrors />}
+        />
         <Route path="releases/:releaseId" element={<ReleaseDetail />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="users/:userId" element={<UserProfile />} />
@@ -366,7 +373,7 @@ function PublicRoutes() {
 
         <Route
           path="*"
-          element={<Navigate to="/" replace />}
+          element={<NotFound />}
         />
       </Routes>
     </>
@@ -563,12 +570,14 @@ export default function App() {
   }
 
   return (
-    <LegalAcceptanceGate>
-      <PersonalInboxEngine />
+    <ErrorBoundary>
+      <LegalAcceptanceGate>
+        <PersonalInboxEngine />
 
-      <OnboardingGuard>
-        <AppLayout />
-      </OnboardingGuard>
-    </LegalAcceptanceGate>
+        <OnboardingGuard>
+          <AppLayout />
+        </OnboardingGuard>
+      </LegalAcceptanceGate>
+    </ErrorBoundary>
   )
 }

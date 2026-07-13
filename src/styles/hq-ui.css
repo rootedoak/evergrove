@@ -6418,3 +6418,129 @@
     font-size: 0.72rem;
     font-weight: 750;
 }
+
+.admin-error-stat {
+    display: block;
+    color: #10263d;
+    font-size: 36px;
+    line-height: 1;
+    letter-spacing: -0.04em;
+}
+
+.admin-error-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.admin-error-list {
+    display: grid;
+    gap: 10px;
+}
+
+.admin-error-row {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 16px;
+    border: 1px solid #dbe4ee;
+    border-radius: 16px;
+    background: #ffffff;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.admin-error-row:hover {
+    border-color: #aebfd0;
+    background: #f8fafc;
+}
+
+.admin-error-row.active {
+    border-color: #2b68b8;
+    background: #eef5ff;
+}
+
+.admin-error-row>div {
+    min-width: 0;
+    display: grid;
+    gap: 6px;
+}
+
+.admin-error-row strong {
+    overflow: hidden;
+    color: #10263d;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-error-row span {
+    overflow: hidden;
+    color: #64748b;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-error-row time {
+    flex: 0 0 auto;
+    color: #64748b;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.admin-error-details {
+    display: grid;
+    gap: 18px;
+}
+
+.admin-error-details>div {
+    display: grid;
+    gap: 6px;
+}
+
+.admin-error-details span {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.admin-error-details strong {
+    color: #10263d;
+    overflow-wrap: anywhere;
+}
+
+.admin-error-stack pre {
+    max-height: 320px;
+    margin: 0;
+    padding: 16px;
+    overflow: auto;
+    border-radius: 14px;
+    background: #10263d;
+    color: #e5edf5;
+    font-family:
+        "SFMono-Regular",
+        Consolas,
+        "Liberation Mono",
+        monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+@media (max-width: 960px) {
+    .admin-error-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-error-row {
+        flex-direction: column;
+    }
+}
