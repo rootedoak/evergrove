@@ -7,6 +7,7 @@ import {
     Home,
     House,
     Map,
+    Megaphone,
     MessageSquare,
     Palette,
     Rocket,
@@ -41,6 +42,11 @@ const adminNavSections = [
                 to: "/admin/sales",
                 label: "Sales & Marketing",
                 icon: TrendingUp
+            },
+            {
+                to: "/admin/discover",
+                label: "Discover",
+                icon: Megaphone
             }
         ]
     },

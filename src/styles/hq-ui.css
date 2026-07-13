@@ -5811,11 +5811,9 @@
 
 .admin-sidebar {
     background:
-        linear-gradient(
-            180deg,
+        linear-gradient(180deg,
             var(--admin-sidebar) 0%,
-            #0c2033 100%
-        );
+            #0c2033 100%);
 }
 
 .admin-brand-mark {
@@ -6075,8 +6073,8 @@
 .admin-trust-summary-card small,
 .admin-trust-document-row__content span,
 .admin-trust-user-status-row__identity span,
-.admin-experience-item > div > span,
-.admin-notification-item > div > span,
+.admin-experience-item>div>span,
+.admin-notification-item>div>span,
 .admin-card-footnote,
 .admin-legal-fact span,
 .admin-card-section-label {
@@ -6110,25 +6108,25 @@
 
 .admin-shell .foundations-statement-card__label,
 .admin-shell .foundations-section-heading span,
-.admin-shell .foundations-principle-card__examples > span,
+.admin-shell .foundations-principle-card__examples>span,
 .admin-shell .foundations-principle-example svg,
 .admin-shell .foundations-decision-item__date,
 .admin-shell .brand-section-heading span,
-.admin-shell .brand-type-example > span,
+.admin-shell .brand-type-example>span,
 .admin-shell .brand-language-table__header,
 .admin-shell .gtm-readiness-card__header,
 .admin-shell .gtm-readiness-card__header span,
-.admin-shell .gtm-current-stage-card > span,
-.admin-shell .gtm-next-milestone-card > span,
+.admin-shell .gtm-current-stage-card>span,
+.admin-shell .gtm-next-milestone-card>span,
 .admin-shell .gtm-positioning-item span,
-.admin-shell .gtm-section-heading > span,
+.admin-shell .gtm-section-heading>span,
 .admin-shell .gtm-stage-item__meta span,
-.admin-shell .gtm-metric-card > span,
+.admin-shell .gtm-metric-card>span,
 .admin-shell .growth-referral-link span,
-.admin-shell .growth-referral-summary > span,
-.admin-shell .growth-section-heading > span,
-.admin-shell .growth-funnel-stage > span,
-.admin-shell .growth-metric-card > span {
+.admin-shell .growth-referral-summary>span,
+.admin-shell .growth-section-heading>span,
+.admin-shell .growth-funnel-stage>span,
+.admin-shell .growth-metric-card>span {
     color: #2f6f9f;
 }
 
@@ -6152,16 +6150,12 @@
 .admin-shell .brand-closing-card {
     border-color: rgba(47, 111, 159, 0.24);
     background:
-        radial-gradient(
-            circle at top right,
+        radial-gradient(circle at top right,
             rgba(47, 111, 159, 0.12),
-            transparent 36%
-        ),
-        linear-gradient(
-            135deg,
+            transparent 36%),
+        linear-gradient(135deg,
             rgba(217, 234, 243, 0.38),
-            #ffffff
-        );
+            #ffffff);
 }
 
 .admin-shell .gtm-progress-fill,
@@ -6182,3 +6176,245 @@
 /* Do not recolor semantic success, warning, error, legal-current,
    published, or fixed status components. */
 
+/* =========================================================
+   Discover
+   ========================================================= */
+
+.discover-admin-metric {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.discover-admin-metric__icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: var(--admin-primary-soft);
+    color: var(--admin-primary);
+}
+
+.discover-admin-metric span {
+    display: block;
+    color: var(--admin-muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.discover-admin-metric strong {
+    display: block;
+    margin-top: 3px;
+    color: var(--admin-text);
+    font-size: 1.65rem;
+    line-height: 1;
+}
+
+/* =========================================================
+   Discover Editor
+   ========================================================= */
+
+.discover-editor-layout {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1.05fr) minmax(380px, 0.95fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.discover-editor-form {
+    display: grid;
+    gap: 24px;
+}
+
+.discover-editor-preview {
+    position: sticky;
+    top: 24px;
+}
+
+.discover-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.admin-error-message {
+    margin: 0;
+    padding: 14px 16px;
+    border: 1px solid rgba(181, 71, 71, 0.2);
+    border-radius: 14px;
+    background: rgba(181, 71, 71, 0.07);
+    color: #9b3f3f;
+}
+
+@media (max-width: 1100px) {
+    .discover-editor-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .discover-editor-preview {
+        position: static;
+    }
+}
+
+@media (max-width: 680px) {
+    .discover-editor-actions {
+        flex-direction: column-reverse;
+    }
+
+    .discover-editor-actions a,
+    .discover-editor-actions button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+.discover-editor-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.discover-editor-actions__right {
+    display: flex;
+    gap: 12px;
+}
+
+.admin-danger-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 16px;
+    border: 1px solid rgba(181, 71, 71, 0.28);
+    border-radius: 12px;
+    background: rgba(181, 71, 71, 0.08);
+    color: #a13f3f;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.admin-danger-button:hover:not(:disabled) {
+    border-color: rgba(181, 71, 71, 0.42);
+    background: rgba(181, 71, 71, 0.13);
+}
+
+.admin-danger-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+@media (max-width: 680px) {
+
+    .discover-editor-actions,
+    .discover-editor-actions__right {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .discover-editor-actions button,
+    .discover-editor-actions a {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+.discover-image-editor {
+    display: grid;
+    gap: 16px;
+}
+
+.discover-image-editor__preview {
+    overflow: hidden;
+    border: 1px solid var(--admin-border);
+    border-radius: 18px;
+    background: var(--admin-primary-soft);
+}
+
+.discover-image-editor__preview img {
+    display: block;
+    width: 100%;
+    max-height: 280px;
+    object-fit: cover;
+}
+
+.discover-image-editor__upload {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    min-height: 42px;
+    padding: 0 16px;
+    border: 1px solid var(--admin-primary-border);
+    border-radius: 12px;
+    background: var(--admin-primary-soft);
+    color: var(--admin-primary);
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.discover-image-editor__upload:hover {
+    border-color: var(--admin-primary);
+    background: var(--admin-primary-soft-hover);
+}
+
+.discover-image-editor__upload input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.discover-image-editor__details {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.discover-image-editor__details>div {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.discover-image-editor__details strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 680px) {
+    .discover-image-editor__upload {
+        width: 100%;
+    }
+
+    .discover-image-editor__details {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}
+
+.discover-metric-fraction {
+    display: grid;
+    gap: 2px;
+}
+
+.discover-metric-fraction strong {
+    color: var(--admin-text);
+    font-size: 0.86rem;
+}
+
+.discover-metric-fraction span {
+    color: var(--admin-muted);
+    font-size: 0.72rem;
+    font-weight: 750;
+}

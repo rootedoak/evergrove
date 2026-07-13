@@ -95,6 +95,11 @@ import LegalAcceptanceGate from "./components/trust/LegalAcceptanceGate"
 import AdminTrustCenter from "./pages/admin/trust/AdminTrustCenter"
 import Roadmap from "./pages/admin/Roadmap"
 
+import DiscoverMessageModal from "./components/discover/DiscoverMessageModal"
+import useDiscoverMessage from "./hooks/useDiscoverMessage"
+import DiscoverMessages from "./pages/admin/discover/DiscoverMessages"
+import DiscoverMessageEditor from "./pages/admin/discover/DiscoverMessageEditor"
+
 import UIKit from "./pages/UIKit"
 
 const mobileNavItems = [
@@ -298,6 +303,19 @@ function AppRoutes() {
         <Route path="/admin/feature-flags" element={<FeatureFlags />} />
         <Route path="sales" element={<SalesMarketing />} />
         <Route path="roadmap" element={<Roadmap />} />
+        <Route
+          path="discover"
+          element={<DiscoverMessages />}
+        />
+        <Route
+          path="discover/new"
+          element={<DiscoverMessageEditor />}
+        />
+
+        <Route
+          path="discover/:discoverMessageId"
+          element={<DiscoverMessageEditor />}
+        />
       </Route>
     </Routes>
   )
@@ -382,6 +400,25 @@ function AppLayout() {
   const { preferences } = usePreferences()
   const { items: inboxItems } = usePersonalInbox()
 
+  const canShowDiscoverMessage =
+    preferences?.has_completed_onboarding === true &&
+    preferences?.has_completed_guided_walkthrough === true &&
+    !location.pathname.startsWith("/admin") &&
+    !location.pathname.startsWith("/trust") &&
+    !location.pathname.startsWith("/invite/") &&
+    location.pathname !== "/onboarding" &&
+    location.pathname !== "/join-household" &&
+    location.pathname !== "/first-week"
+
+  const {
+    message: discoverMessage,
+    dismissing: discoverMessageDismissing,
+    dismiss: dismissDiscoverMessage,
+    trackAction: trackDiscoverMessageAction
+  } = useDiscoverMessage({
+    enabled: canShowDiscoverMessage
+  })
+
   useEffect(() => {
     if (location.pathname.startsWith("/admin")) return
 
@@ -423,6 +460,13 @@ function AppLayout() {
       <MobileBottomNav
         unreadInboxCount={unreadInboxCount}
         onMoreClick={() => setMobileNavOpen(true)}
+      />
+
+      <DiscoverMessageModal
+        message={discoverMessage}
+        onDismiss={dismissDiscoverMessage}
+        onAction={trackDiscoverMessageAction}
+        dismissing={discoverMessageDismissing}
       />
     </div>
   )

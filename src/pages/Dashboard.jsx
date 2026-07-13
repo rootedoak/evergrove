@@ -900,8 +900,11 @@ export default function Dashboard() {
                 <header className="eg-dashboard-hero">
                     <div className="eg-dashboard-topbar">
                         <div className="eg-brand">
-                            <span>🌱</span>
-                            <strong>Evergrove</strong>
+                            <img
+                                src="/brand/evergrove-logo-horizontal.png"
+                                alt="Evergrove"
+                                className="eg-brand-logo"
+                            />
                         </div>
                     </div>
 
