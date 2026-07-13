@@ -2,17 +2,18 @@ import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import {
     ArrowRight,
+    CalendarDays,
     Check,
+    ClipboardCheck,
     Heart,
+    Home,
     Leaf,
     LoaderCircle,
     ShieldCheck,
-    Users
+    ShoppingCart,
+    Sparkles,
+    UtensilsCrossed
 } from "lucide-react"
-
-import logo from "../../assets/evergrove-logo.svg"
-
-import "../../styles/public.css"
 
 import {
     getReferralByCode,
@@ -20,14 +21,41 @@ import {
     startReferralConversion
 } from "../../services/referralService"
 
+const benefits = [
+    {
+        title: "One shared calendar",
+        description:
+            "Keep appointments, school, activities, birthdays, trips, and important dates together.",
+        icon: CalendarDays
+    },
+    {
+        title: "Shared to-dos",
+        description:
+            "Make responsibilities visible and help everyone know what needs attention.",
+        icon: ClipboardCheck
+    },
+    {
+        title: "Meals and shopping",
+        description:
+            "Plan dinner, save family favorites, and keep grocery lists connected.",
+        icon: UtensilsCrossed
+    },
+    {
+        title: "Everyday family life",
+        description:
+            "Bring the important parts of household life into one calm, connected place.",
+        icon: Home
+    }
+]
+
 export default function ReferralLanding() {
     const { code } = useParams()
     const navigate = useNavigate()
 
     const [loading, setLoading] = useState(true)
+    const [continuing, setContinuing] = useState(false)
     const [referral, setReferral] = useState(null)
     const [error, setError] = useState("")
-    const [continuing, setContinuing] = useState(false)
 
     useEffect(() => {
         let active = true
@@ -55,7 +83,7 @@ export default function ReferralLanding() {
 
                 if (active) {
                     setError(
-                        "We could not load this referral link."
+                        "We could not open this referral link."
                     )
                 }
             } finally {
@@ -100,176 +128,265 @@ export default function ReferralLanding() {
         }
     }
 
-    return (
-        <div className="referral-public-page">
-            <header className="referral-public-header">
-                <Link to="/" className="auth-brand">
-                    <img src={logo} alt="Evergrove" />
+    if (loading) {
+        return (
+            <div className="referral-v2-state-page">
+                <div className="referral-v2-state-card">
+                    <LoaderCircle
+                        size={34}
+                        className="referral-v2-spinner"
+                    />
 
-                    <div>
-                        <strong>Evergrove</strong>
+                    <h1>Opening your referral…</h1>
+
+                    <p>
+                        We&apos;re getting Evergrove ready for your
+                        family.
+                    </p>
+                </div>
+            </div>
+        )
+    }
+
+    if (error || !referral) {
+        return (
+            <div className="referral-v2-state-page">
+                <div className="referral-v2-state-card">
+                    <div className="referral-v2-state-icon">
+                        <ShieldCheck size={28} />
+                    </div>
+
+                    <span>Referral unavailable</span>
+
+                    <h1>This link could not be opened.</h1>
+
+                    <p>
+                        {error ||
+                            "The referral may have expired or been disabled."}
+                    </p>
+
+                    <Link
+                        to="/"
+                        className="public-site-button public-site-button--primary"
+                    >
+                        Visit Evergrove
+                        <ArrowRight size={18} />
+                    </Link>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <>
+            <section className="referral-v2-hero">
+                <div className="referral-v2-hero__copy">
+                    <div className="public-site-eyebrow">
+                        <Heart size={16} />
+                        <span>A family shared Evergrove with you</span>
+                    </div>
+
+                    <h1>
+                        Welcome home.
                         <span>
-                            Where organized families grow.
+                            Another family thinks Evergrove could
+                            help yours.
+                        </span>
+                    </h1>
+
+                    <p>
+                        Evergrove gives busy households one calm
+                        place for calendars, meals, to-dos,
+                        shopping, school, trips, and everyday life.
+                    </p>
+
+                    <div className="referral-v2-hero__actions">
+                        <button
+                            type="button"
+                            className="public-site-button public-site-button--primary"
+                            onClick={handleGetStarted}
+                            disabled={continuing}
+                        >
+                            {continuing
+                                ? "Getting Started…"
+                                : "Create My Household"}
+
+                            {!continuing && (
+                                <ArrowRight size={18} />
+                            )}
+                        </button>
+
+                        <Link
+                            to="/"
+                            className="public-site-button public-site-button--secondary"
+                        >
+                            Learn More About Evergrove
+                        </Link>
+                    </div>
+
+                    <div className="referral-v2-hero__details">
+                        <span>
+                            <Check size={15} />
+                            Free during beta
+                        </span>
+
+                        <span>
+                            <Check size={15} />
+                            Creates your own household
+                        </span>
+
+                        <span>
+                            <Check size={15} />
+                            Mobile-first
                         </span>
                     </div>
-                </Link>
 
-                <Link
-                    to="/login?mode=signin"
-                    className="referral-sign-in-link"
-                >
-                    Sign In
-                </Link>
-            </header>
+                    {error && (
+                        <div
+                            className="referral-v2-error"
+                            role="alert"
+                        >
+                            {error}
+                        </div>
+                    )}
+                </div>
 
-            <main className="referral-public-main">
-                <section className="referral-public-story">
-                    <div className="referral-public-story__content">
-                        <div className="referral-public-eyebrow">
-                            <Heart size={16} />
-                            <span>You&apos;ve been invited</span>
+                <div className="referral-v2-hero__visual">
+                    <div className="referral-v2-welcome-card">
+                        <div className="referral-v2-welcome-card__icon">
+                            <Leaf size={30} />
                         </div>
 
-                        <h1>
-                            Another family thinks Evergrove
-                            could help yours.
-                        </h1>
+                        <span>Where organized families grow</span>
+
+                        <h2>
+                            One less thing for your family to
+                            remember.
+                        </h2>
 
                         <p>
-                            Evergrove brings schedules, meals,
-                            to-dos, shopping, school, and family
-                            communication into one calm,
-                            connected place.
+                            Stay organized without turning family
+                            life into another job.
                         </p>
 
-                        <div className="referral-public-benefits">
-                            <div>
-                                <Check size={16} />
-                                <span>
-                                    Reduce the mental load of
-                                    everyday family life
-                                </span>
-                            </div>
+                        <div className="referral-v2-welcome-card__note">
+                            <Sparkles size={17} />
 
-                            <div>
-                                <Check size={16} />
-                                <span>
-                                    Keep important responsibilities
-                                    visible and organized
-                                </span>
-                            </div>
-
-                            <div>
-                                <Check size={16} />
-                                <span>
-                                    Help everyone stay on the same
-                                    page
-                                </span>
-                            </div>
+                            <span>
+                                Shared by a family already using
+                                Evergrove
+                            </span>
                         </div>
                     </div>
-                </section>
+                </div>
+            </section>
 
-                <section className="referral-public-action">
-                    <div className="referral-public-card">
-                        {loading && (
-                            <div className="referral-public-state">
-                                <LoaderCircle
-                                    size={30}
-                                    className="referral-spinner"
-                                />
+            <section className="public-site-section referral-v2-benefits">
+                <div className="public-site-section-heading public-site-section-heading--centered">
+                    <span>What Evergrove brings together</span>
 
-                                <h2>
-                                    Opening your invitation…
-                                </h2>
+                    <h2>
+                        Everything important. One family home.
+                    </h2>
 
-                                <p>
-                                    We&apos;re getting Evergrove
-                                    ready for your family.
-                                </p>
-                            </div>
-                        )}
+                    <p>
+                        Evergrove connects the everyday systems
+                        households already depend on, so fewer things
+                        rely on memory alone.
+                    </p>
+                </div>
 
-                        {!loading && error && (
-                            <div className="referral-public-state">
-                                <div className="referral-public-icon">
-                                    <ShieldCheck size={25} />
+                <div className="referral-v2-benefit-grid">
+                    {benefits.map(benefit => {
+                        const Icon = benefit.icon
+
+                        return (
+                            <article
+                                key={benefit.title}
+                                className="referral-v2-benefit-card"
+                            >
+                                <div>
+                                    <Icon size={23} />
                                 </div>
 
-                                <h2>
-                                    This link could not be opened.
-                                </h2>
+                                <h3>{benefit.title}</h3>
+                                <p>{benefit.description}</p>
+                            </article>
+                        )
+                    })}
+                </div>
+            </section>
 
-                                <p>{error}</p>
+            <section className="referral-v2-story">
+                <div className="referral-v2-story__content">
+                    <span>Why families share Evergrove</span>
 
-                                <Link
-                                    to="/"
-                                    className="auth-secondary-button"
-                                >
-                                    Visit Evergrove
-                                </Link>
-                            </div>
-                        )}
+                    <h2>
+                        Family life should not depend on one person
+                        remembering everything.
+                    </h2>
 
-                        {!loading && referral && (
-                            <>
-                                <div className="referral-public-icon">
-                                    <Leaf size={25} />
-                                </div>
+                    <p>
+                        Evergrove helps households stay connected
+                        around what matters, before important details
+                        become urgent.
+                    </p>
 
-                                <span className="auth-card-eyebrow">
-                                    Welcome to Evergrove
-                                </span>
-
-                                <h2>
-                                    Create a home for your
-                                    family&apos;s life.
-                                </h2>
-
-                                <p>
-                                    Start a new household and see
-                                    how Evergrove can help your
-                                    family feel more prepared,
-                                    connected, and confident.
-                                </p>
-
-                                <button
-                                    type="button"
-                                    className="auth-primary-button"
-                                    onClick={handleGetStarted}
-                                    disabled={continuing}
-                                >
-                                    {continuing
-                                        ? "Getting Started…"
-                                        : "Create My Household"}
-
-                                    {!continuing && (
-                                        <ArrowRight size={18} />
-                                    )}
-                                </button>
-
-                                <div className="referral-public-note">
-                                    <Users size={17} />
-
-                                    <span>
-                                        This creates a new
-                                        household. It will not add
-                                        you to the household that
-                                        referred you.
-                                    </span>
-                                </div>
-
-                                <p className="referral-public-existing">
-                                    Already have an account?{" "}
-                                    <Link to="/login?mode=signin">
-                                        Sign in
-                                    </Link>
-                                </p>
-                            </>
-                        )}
+                    <div className="referral-v2-story__outcomes">
+                        <strong>Less mental load.</strong>
+                        <strong>More confidence.</strong>
+                        <strong>More family.</strong>
                     </div>
-                </section>
-            </main>
-        </div>
+                </div>
+
+                <div className="referral-v2-story__quote">
+                    <Heart size={28} />
+
+                    <blockquote>
+                        The best recommendations come from families
+                        sharing something that genuinely helps.
+                    </blockquote>
+                </div>
+            </section>
+
+            <section className="referral-v2-final-cta">
+                <div className="referral-v2-final-cta__icon">
+                    <Leaf size={26} />
+                </div>
+
+                <span>Ready to begin?</span>
+
+                <h2>
+                    Create a home for your family&apos;s life.
+                </h2>
+
+                <p>
+                    Start your own Evergrove household and bring the
+                    important parts of family life together.
+                </p>
+
+                <button
+                    type="button"
+                    className="public-site-button public-site-button--primary"
+                    onClick={handleGetStarted}
+                    disabled={continuing}
+                >
+                    {continuing
+                        ? "Getting Started…"
+                        : "Create My Household"}
+
+                    {!continuing && (
+                        <ArrowRight size={18} />
+                    )}
+                </button>
+
+                <p className="referral-v2-existing-account">
+                    Already have an Evergrove account?{" "}
+                    <Link to="/login?mode=signin">
+                        Sign in
+                    </Link>
+                </p>
+            </section>
+        </>
     )
 }

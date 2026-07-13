@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
     Link,
     Navigate,
@@ -7,12 +7,15 @@ import {
 
 import {
     ArrowLeft,
+    ArrowRight,
     CalendarDays,
     Clock3,
-    Leaf
+    FileText,
+    Leaf,
+    LoaderCircle,
+    Mail,
+    ShieldCheck
 } from "lucide-react"
-
-import AppPage from "../../components/ui/AppPage"
 
 import {
     getPublishedLegalDocument
@@ -37,6 +40,29 @@ function renderInlineFormatting(text) {
 
         return part
     })
+}
+
+function createHeadingId(value) {
+    return value
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, "-")
+}
+
+function getDocumentHeadings(markdown = "") {
+    return markdown
+        .split("\n")
+        .map(line => line.trim())
+        .filter(line => line.startsWith("## "))
+        .map(line => {
+            const title = line.slice(3).trim()
+
+            return {
+                title,
+                id: createHeadingId(title)
+            }
+        })
 }
 
 function PolicyContent({ markdown }) {
@@ -83,9 +109,14 @@ function PolicyContent({ markdown }) {
         }
 
         if (line.startsWith("## ")) {
+            const title = line.slice(3)
+
             elements.push(
-                <h2 key={index}>
-                    {line.slice(3)}
+                <h2
+                    key={index}
+                    id={createHeadingId(title)}
+                >
+                    {title}
                 </h2>
             )
 
@@ -93,9 +124,14 @@ function PolicyContent({ markdown }) {
         }
 
         if (line.startsWith("### ")) {
+            const title = line.slice(4)
+
             elements.push(
-                <h3 key={index}>
-                    {line.slice(4)}
+                <h3
+                    key={index}
+                    id={createHeadingId(title)}
+                >
+                    {title}
                 </h3>
             )
 
@@ -140,20 +176,26 @@ function PolicyContent({ markdown }) {
     return elements
 }
 
+function formatEffectiveDate(value) {
+    if (!value) return null
+
+    return new Date(
+        `${value}T12:00:00`
+    ).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric"
+    })
+}
+
 export default function TrustDocumentPage() {
     const { slug } = useParams()
 
-    const metadata =
-        getTrustDocumentBySlug(slug)
+    const metadata = getTrustDocumentBySlug(slug)
 
-    const [document, setDocument] =
-        useState(null)
-
-    const [loading, setLoading] =
-        useState(true)
-
-    const [error, setError] =
-        useState("")
+    const [document, setDocument] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState("")
 
     useEffect(() => {
         let active = true
@@ -197,100 +239,179 @@ export default function TrustDocumentPage() {
         }
     }, [metadata])
 
+    const headings = useMemo(
+        () => getDocumentHeadings(document?.content),
+        [document?.content]
+    )
+
     if (!metadata) {
         return <Navigate to="/trust" replace />
     }
 
+    const effectiveDate =
+        formatEffectiveDate(document?.effective_date)
+
     return (
-        <AppPage className="trust-policy-page">
-            <Link
-                to="/trust"
-                className="trust-policy-back"
-            >
-                <ArrowLeft size={18} />
-                Trust Center
-            </Link>
+        <>
+            <section className="trust-document-public-hero">
+                <div className="trust-document-public-hero__content">
+                    <Link
+                        to="/trust"
+                        className="trust-document-back"
+                    >
+                        <ArrowLeft size={17} />
+                        Back to Trust Center
+                    </Link>
 
-            <header className="trust-policy-hero">
-                <p className="trust-policy-hero__eyebrow">
-                    Evergrove Trust Center
-                </p>
+                    <div className="public-site-eyebrow">
+                        <ShieldCheck size={16} />
+                        <span>Evergrove Trust Center</span>
+                    </div>
 
-                <h1>{metadata.title}</h1>
-
-                <p>
-                    {metadata.description}
-                </p>
-
-                <div className="trust-policy-meta">
-                    <span>
-                        <Clock3 size={16} />
-                        {metadata.readingTime}
-                    </span>
-
-                    {document?.effective_date && (
-                        <span>
-                            <CalendarDays size={16} />
-                            Effective{" "}
-                            {new Date(
-                                `${document.effective_date}T12:00:00`
-                            ).toLocaleDateString(
-                                "en-US",
-                                {
-                                    month: "long",
-                                    day: "numeric",
-                                    year: "numeric"
-                                }
-                            )}
-                        </span>
-                    )}
-
-                    {document?.version && (
-                        <span>
-                            Version {document.version}
-                        </span>
-                    )}
-                </div>
-            </header>
-
-            {loading && (
-                <div className="trust-policy-state">
-                    Opening the policy...
-                </div>
-            )}
-
-            {!loading && error && (
-                <div className="trust-policy-state trust-policy-state--error">
-                    {error}
-                </div>
-            )}
-
-            {!loading &&
-                !error &&
-                document?.content && (
-                    <article className="trust-policy-document">
-                        <PolicyContent
-                            markdown={document.content}
-                        />
-                    </article>
-                )}
-
-            <footer className="trust-policy-footer">
-                <Leaf size={22} aria-hidden="true" />
-
-                <div>
-                    <strong>
-                        Thank you for trusting Evergrove.
-                    </strong>
+                    <h1>{metadata.title}</h1>
 
                     <p>
-                        Questions?{" "}
-                        <a href="mailto:hello@evergroveapp.com">
-                            hello@evergroveapp.com
-                        </a>
+                        {metadata.description}
+                    </p>
+
+                    <div className="trust-document-meta">
+                        {metadata.readingTime && (
+                            <span>
+                                <Clock3 size={16} />
+                                {metadata.readingTime}
+                            </span>
+                        )}
+
+                        {effectiveDate && (
+                            <span>
+                                <CalendarDays size={16} />
+                                Effective {effectiveDate}
+                            </span>
+                        )}
+
+                        {document?.version && (
+                            <span>
+                                <FileText size={16} />
+                                Version {document.version}
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                <div
+                    className="trust-document-public-hero__symbol"
+                    aria-hidden="true"
+                >
+                    <FileText size={52} />
+                </div>
+            </section>
+
+            <section className="trust-document-public-section">
+                {loading && (
+                    <div className="trust-policy-state">
+                        <LoaderCircle
+                            size={28}
+                            className="trust-policy-spinner"
+                        />
+
+                        <div>
+                            <strong>Opening this policy…</strong>
+
+                            <p>
+                                We&apos;re loading the latest published
+                                version.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {!loading && error && (
+                    <div
+                        className="trust-policy-state trust-policy-state--error"
+                        role="alert"
+                    >
+                        <strong>
+                            This policy could not be loaded.
+                        </strong>
+
+                        <p>{error}</p>
+
+                        <Link
+                            to="/trust"
+                            className="public-site-button public-site-button--secondary"
+                        >
+                            Return to Trust Center
+                        </Link>
+                    </div>
+                )}
+
+                {!loading &&
+                    !error &&
+                    document?.content && (
+                        <div className="trust-document-layout">
+                            {headings.length > 0 && (
+                                <aside className="trust-document-sidebar">
+                                    <div className="trust-document-sidebar__card">
+                                        <span>On this page</span>
+
+                                        <nav
+                                            aria-label={`${metadata.title} sections`}
+                                        >
+                                            {headings.map(heading => (
+                                                <a
+                                                    key={heading.id}
+                                                    href={`#${heading.id}`}
+                                                >
+                                                    {heading.title}
+                                                </a>
+                                            ))}
+                                        </nav>
+
+                                        <Link
+                                            to="/trust"
+                                            className="trust-document-sidebar__back"
+                                        >
+                                            View all policies
+                                            <ArrowRight size={15} />
+                                        </Link>
+                                    </div>
+                                </aside>
+                            )}
+
+                            <article className="trust-policy-document">
+                                <PolicyContent
+                                    markdown={document.content}
+                                />
+                            </article>
+                        </div>
+                    )}
+            </section>
+
+            <section className="trust-policy-help">
+                <div className="trust-policy-help__icon">
+                    <Leaf size={24} />
+                </div>
+
+                <div>
+                    <span>Questions should have human answers</span>
+
+                    <h2>
+                        Need help understanding this policy?
+                    </h2>
+
+                    <p>
+                        Reach out and someone at Evergrove will help.
                     </p>
                 </div>
-            </footer>
-        </AppPage>
+
+                <a
+                    href="mailto:hello@evergroveapp.com"
+                    className="public-site-button public-site-button--primary"
+                >
+                    <Mail size={17} />
+                    Email Evergrove
+                </a>
+            </section>
+        </>
     )
 }

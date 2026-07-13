@@ -87,7 +87,9 @@ import GoToMarket from "./pages/admin/company/GoToMarket"
 import Growth from "./pages/admin/company/Growth"
 
 import PublicHome from "./pages/public/PublicHome"
+import PublicLayout from "./components/public/PublicLayout"
 import ReferralLanding from "./pages/public/ReferralLanding"
+import AboutEvergrove from "./pages/public/AboutEvergrove"
 
 import TrustCenter from "./pages/trust/TrustCenter"
 import TrustDocumentPage from "./pages/trust/TrustDocumentPage"
@@ -324,15 +326,44 @@ function AppRoutes() {
 function PublicRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<PublicHome />} />
-      <Route path="/r/:code" element={<ReferralLanding />} />
-      <Route path="/invite/:token" element={<InvitePage />} />
-      <Route path="/login" element={<Login onLogin={() => { }} />} />
+      <Route element={<PublicLayout />}>
+        <Route index element={<PublicHome />} />
 
-      <Route path="/trust" element={<TrustCenter />} />
-      <Route path="/trust/:slug" element={<TrustDocumentPage />} />
+        <Route
+          path="/about"
+          element={<AboutEvergrove />}
+        />
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="/trust"
+          element={<TrustCenter />}
+        />
+
+        <Route
+          path="/trust/:slug"
+          element={<TrustDocumentPage />}
+        />
+      </Route>
+
+      <Route
+        path="/r/:code"
+        element={<ReferralLanding />}
+      />
+
+      <Route
+        path="/invite/:token"
+        element={<InvitePage />}
+      />
+
+      <Route
+        path="/login"
+        element={<Login onLogin={() => { }} />}
+      />
+
+      <Route
+        path="*"
+        element={<Navigate to="/" replace />}
+      />
     </Routes>
   )
 }
