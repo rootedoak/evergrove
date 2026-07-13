@@ -103,6 +103,27 @@ function updateMetaDescription(description) {
     descriptionTag.setAttribute("content", description)
 }
 
+function updateCanonicalUrl(pathname) {
+    const canonicalUrl =
+        `https://evergroveapp.com${pathname}`
+
+    let canonical =
+        document.querySelector(
+            'link[rel="canonical"]'
+        )
+
+    if (!canonical) {
+        canonical = document.createElement("link")
+        canonical.setAttribute("rel", "canonical")
+        document.head.appendChild(canonical)
+    }
+
+    canonical.setAttribute(
+        "href",
+        canonicalUrl
+    )
+}
+
 export default function PublicMetadata() {
     const location = useLocation()
 
@@ -114,6 +135,7 @@ export default function PublicMetadata() {
 
         document.title = metadata.title
         updateMetaDescription(metadata.description)
+        updateCanonicalUrl(location.pathname)
     }, [location.pathname, location.search])
 
     return null

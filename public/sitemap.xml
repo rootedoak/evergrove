@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<urlset
+    xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+>
+
+    <url>
+        <loc>https://evergroveapp.com/</loc>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+    </url>
+
+    <url>
+        <loc>https://evergroveapp.com/about</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
+        <loc>https://evergroveapp.com/trust</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
+    <loc>https://evergroveapp.com/trust/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+</url>
+
+<url>
+    <loc>https://evergroveapp.com/trust/terms</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+</url>
+
+<url>
+    <loc>https://evergroveapp.com/trust/eula</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+</url>
+
+<url>
+    <loc>https://evergroveapp.com/trust/security</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+</url>
+
+<url>
+    <loc>https://evergroveapp.com/trust/dpa</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+</url>
+
+<url>
+    <loc>https://evergroveapp.com/trust/coppa</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+</url>
+
+<url>
+    <loc>https://evergroveapp.com/trust/beta</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+</url>
+
+</urlset>

@@ -1,0 +1,20 @@
+User-agent: *
+
+Allow: /
+
+Disallow: /admin/
+Disallow: /onboarding/
+Disallow: /join-household/
+Disallow: /personal-inbox/
+Disallow: /profile/
+Disallow: /calendar/
+Disallow: /tasks/
+Disallow: /shopping/
+Disallow: /meals/
+Disallow: /school/
+Disallow: /documents/
+Disallow: /trips/
+Disallow: /settings/
+Disallow: /r/
+
+Sitemap: https://evergroveapp.com/sitemap.xml
