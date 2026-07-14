@@ -25,7 +25,7 @@ function formatTime(value) {
         0
     )
 
-    return date.toLocaleTimeString(undefined, {
+    return date.toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit"
     })
@@ -45,27 +45,40 @@ function getGreetingName({ familyMember, user }) {
     )
 }
 
-function dayTone(itemCount) {
-    if (itemCount === 0) return "Looks like a quiet day."
-    if (itemCount <= 2) return "Today looks pretty manageable."
-    return "You’ve got a full day ahead."
+function pluralize(count, singular, plural = `${singular}s`) {
+    return count === 1 ? singular : plural
 }
 
-function dayEnding(itemCount) {
-    if (itemCount === 0) return "Enjoy the slower pace today."
-    if (itemCount >= 4) return "You’ve got this."
-    return "Have a great day!"
-}
+function summarizeItems({
+    label,
+    items,
+    formatItem,
+    visibleCount = 2
+}) {
+    if (!items?.length) return null
 
-function buildTitle(itemCount) {
-    if (itemCount === 0) return "🌿 Enjoy your quiet day"
-    if (itemCount >= 4) return "🌿 Good Morning • Busy day ahead"
-    return "🌿 Good Morning"
+    const visibleItems = items
+        .slice(0, visibleCount)
+        .map(formatItem)
+
+    const remainingCount =
+        Math.max(items.length - visibleItems.length, 0)
+
+    const remainingText =
+        remainingCount > 0
+            ? `; plus ${remainingCount} more`
+            : ""
+
+    return `${label}: ${visibleItems.join("; ")}${remainingText}.`
 }
 
 function trimBody(body, maxLength = 240) {
     if (body.length <= maxLength) return body
-    return `${body.slice(0, maxLength - 1).trim()}…`
+
+    return `${body
+        .slice(0, maxLength - 1)
+        .trim()
+        .replace(/[;,.:\s]+$/, "")}…`
 }
 
 export async function buildMorningBrief({
@@ -105,12 +118,13 @@ export async function buildMorningBrief({
             .from("trips")
             .select("name, destination, start_date")
             .eq("household_id", householdId)
-            .eq("start_date", today)
-            .limit(1),
+            .eq("start_date", today),
 
         supabase
             .from("calendar_events")
-            .select("id, title, start_date, end_date, start_time")
+            .select(
+                "id, title, start_date, end_date, start_time"
+            )
             .eq("household_id", householdId)
             .or(
                 `start_date.eq.${today},and(start_date.lte.${today},end_date.gte.${today})`
@@ -118,8 +132,7 @@ export async function buildMorningBrief({
             .order("start_time", {
                 ascending: true,
                 nullsFirst: false
-            })
-            .limit(2),
+            }),
 
         supabase
             .from("tasks")
@@ -127,8 +140,11 @@ export async function buildMorningBrief({
             .eq("household_id", householdId)
             .eq("user_id", userId)
             .eq("due_date", today)
-            .not("status", "in", '("complete","completed")')
-            .limit(2),
+            .not(
+                "status",
+                "in",
+                '("complete","completed")'
+            ),
 
         supabase
             .from("meal_plans")
@@ -146,75 +162,110 @@ export async function buildMorningBrief({
     if (tasksError) throw tasksError
     if (mealsError) throw mealsError
 
-    const highlights = []
-
-    for (const birthday of birthdays || []) {
-        if (monthDay(birthday.birthdate) === todayMonthDay) {
-            highlights.push(`🎂 ${birthday.name}'s birthday`)
-        }
-    }
-
-    for (const trip of trips || []) {
-        const tripName = trip.name || "Trip"
-        const destination = trip.destination
-            ? ` to ${trip.destination}`
-            : ""
-
-        highlights.push(
-            `✈️ ${tripName}${destination} starts today`
-        )
-    }
-
-    for (const event of events || []) {
-        const eventTitle = event.title || "Family event"
-        const time = formatTime(event.start_time)
-
-        highlights.push(
-            `📅 ${eventTitle}${time ? ` • ${time}` : ""}`
-        )
-    }
-
-    for (const task of tasks || []) {
-        highlights.push(`✅ ${task.title}`)
-    }
-
-    const dinner = mealPlans?.[0]?.meal_name
-
-    if (dinner) {
-        highlights.push(`🍽️ Dinner: ${dinner}`)
-    }
-
-    const visibleHighlights = highlights.slice(0, 4)
+    const todaysBirthdays =
+        birthdays?.filter(
+            birthday =>
+                monthDay(birthday.birthdate) ===
+                todayMonthDay
+        ) ?? []
 
     const greetingName = getGreetingName({
         familyMember,
         user: userData?.user
     })
 
-    const body = [
-        `Good morning, ${greetingName}!`,
-        dayTone(visibleHighlights.length),
-        ...visibleHighlights,
-        dayEnding(visibleHighlights.length)
-    ].join("\n")
+    const lines = []
+
+    const birthdaySummary = summarizeItems({
+        label: pluralize(
+            todaysBirthdays.length,
+            "Birthday",
+            "Birthdays"
+        ),
+        items: todaysBirthdays,
+        formatItem: birthday =>
+            birthday.name || "Family member"
+    })
+
+    if (birthdaySummary) {
+        lines.push(birthdaySummary)
+    }
+
+    const tripSummary = summarizeItems({
+        label: pluralize(
+            trips?.length || 0,
+            "Trip",
+            "Trips"
+        ),
+        items: trips || [],
+        formatItem: trip => {
+            const tripName = trip.name || "Trip"
+
+            return trip.destination
+                ? `${tripName} to ${trip.destination} starts today`
+                : `${tripName} starts today`
+        }
+    })
+
+    if (tripSummary) {
+        lines.push(tripSummary)
+    }
+
+    const eventSummary = summarizeItems({
+        label: "Calendar",
+        items: events || [],
+        formatItem: event => {
+            const eventTitle =
+                event.title || "Family event"
+
+            const time = formatTime(event.start_time)
+
+            return time
+                ? `${eventTitle} at ${time}`
+                : eventTitle
+        }
+    })
+
+    if (eventSummary) {
+        lines.push(eventSummary)
+    }
+
+    const taskSummary = summarizeItems({
+        label: "To-dos",
+        items: tasks || [],
+        formatItem: task =>
+            task.title || "Untitled to-do"
+    })
+
+    if (taskSummary) {
+        lines.push(taskSummary)
+    }
+
+    const dinner = mealPlans?.[0]?.meal_name
+
+    if (dinner) {
+        lines.push(`Dinner: ${dinner}.`)
+    }
+
+    if (lines.length === 0) {
+        lines.push(
+            "Nothing is currently scheduled in Evergrove for today."
+        )
+    }
 
     return {
-        title: buildTitle(visibleHighlights.length),
-        body: trimBody(body),
+        title: `Good morning, ${greetingName}`,
+        body: trimBody(lines.join("\n")),
         url: "/",
         metadata: {
             today,
             timezone,
-            birthday_count:
-                birthdays?.filter(
-                    item =>
-                        monthDay(item.birthdate) === todayMonthDay
-                ).length || 0,
+            birthday_count: todaysBirthdays.length,
             trip_count: trips?.length || 0,
             event_count: events?.length || 0,
             task_count: tasks?.length || 0,
             has_dinner: Boolean(dinner),
-            highlight_count: visibleHighlights.length
+            highlight_count: lines.length
         }
     }
 }

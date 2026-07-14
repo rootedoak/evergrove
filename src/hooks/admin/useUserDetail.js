@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import {
     getUserAdoptionEvents,
     getUserDetail,
+    getUserLaunchModeStatus,
     getUserLegalStatus,
     getUserPreferences,
     getUserPushStatus,
@@ -20,6 +21,8 @@ export default function useUserDetail(userId) {
     const [pushStatus, setPushStatus] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+
+    const [launchMode, setLaunchMode] = useState(null)
 
     const [legal, setLegal] = useState(null)
 
@@ -40,7 +43,8 @@ export default function useUserDetail(userId) {
                     eventData,
                     adoptionData,
                     legalData,
-                    pushData
+                    pushData,
+                    launchModeData
                 ] = await Promise.all([
                     getUserDetail(userId),
                     getUserPreferences(userId),
@@ -48,7 +52,8 @@ export default function useUserDetail(userId) {
                     getUserUsageEvents(userId),
                     getUserAdoptionEvents(userId),
                     getUserLegalStatus(userId),
-                    getUserPushStatus(userId)
+                    getUserPushStatus(userId),
+                    getUserLaunchModeStatus(userId)
                 ])
 
                 if (!cancelled) {
@@ -59,6 +64,7 @@ export default function useUserDetail(userId) {
                     setAdoptionEvents(adoptionData)
                     setLegal(legalData)
                     setPushStatus(pushData)
+                    setLaunchMode(launchModeData)
                 }
             } catch (err) {
                 console.error("Failed to load user detail:", err)
@@ -72,6 +78,7 @@ export default function useUserDetail(userId) {
                     setAdoptionEvents([])
                     setLegal(null)
                     setPushStatus(null)
+                    setLaunchMode(null)
                 }
             } finally {
                 if (!cancelled) {
@@ -95,6 +102,7 @@ export default function useUserDetail(userId) {
         adoptionEvents,
         legal,
         pushStatus,
+        launchMode,
         loading,
         error
     }

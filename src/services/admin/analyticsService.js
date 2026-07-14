@@ -239,6 +239,60 @@ export async function getDailyAppSessions({ days = 14 } = {}) {
     }))
 }
 
+export async function getLaunchModeMetrics({
+    days = 30
+} = {}) {
+    const since = getSinceDate(days)
+
+    const { data, error } = await supabase
+        .from("usage_events")
+        .select("metadata")
+        .eq("event_type", "session_started")
+        .gte("created_at", since.toISOString())
+
+    if (error) throw error
+
+    let installedPwaSessions = 0
+    let browserSessions = 0
+    let unknownSessions = 0
+
+    for (const row of data ?? []) {
+        const launchMode =
+            row.metadata?.launch_mode
+
+        if (launchMode === "installed_pwa") {
+            installedPwaSessions += 1
+        } else if (launchMode === "browser") {
+            browserSessions += 1
+        } else {
+            unknownSessions += 1
+        }
+    }
+
+    const knownSessions =
+        installedPwaSessions + browserSessions
+
+    const totalSessions =
+        knownSessions + unknownSessions
+
+    return {
+        installedPwaSessions,
+        browserSessions,
+        unknownSessions,
+        knownSessions,
+        totalSessions,
+        pwaRate:
+            knownSessions > 0
+                ? Math.round(
+                    (
+                        installedPwaSessions /
+                        knownSessions
+                    ) * 100
+                )
+                : 0
+    }
+}
+
 export async function getDailyActiveHouseholds({ days = 14 } = {}) {
     const since = getSinceDate(days)
 

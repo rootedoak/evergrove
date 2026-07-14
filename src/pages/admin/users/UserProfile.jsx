@@ -67,6 +67,7 @@ export default function UserProfile() {
         adoptionEvents,
         legal,
         pushStatus,
+        launchMode,
         loading,
         error
     } = useUserDetail(userId)
@@ -508,6 +509,101 @@ export default function UserProfile() {
                             <MorningBriefResult
                                 result={morningBriefResult}
                             />
+                        )}
+                    </AdminCard>
+
+                    <AdminCard title="Platform">
+                        {!launchMode ? (
+                            <AdminEmptyState>
+                                No launch-mode data found.
+                            </AdminEmptyState>
+                        ) : (
+                            <div className="admin-platform-panel">
+                                <div className="admin-platform-status">
+                                    <AdminStatusChip
+                                        status={
+                                            launchMode.status ===
+                                                "installed_pwa"
+                                                ? "fixed"
+                                                : launchMode.status ===
+                                                    "browser"
+                                                    ? "planned"
+                                                    : "neutral"
+                                        }
+                                    >
+                                        {getLaunchModeLabel(
+                                            launchMode.status
+                                        )}
+                                    </AdminStatusChip>
+
+                                    <p className="admin-muted">
+                                        {getLaunchModeDescription(
+                                            launchMode
+                                        )}
+                                    </p>
+                                </div>
+
+                                <div className="admin-simple-list">
+                                    <div className="admin-simple-row">
+                                        <span>Installed app sessions</span>
+
+                                        <strong>
+                                            {
+                                                launchMode
+                                                    .installedPwaSessions
+                                            }
+                                        </strong>
+                                    </div>
+
+                                    <div className="admin-simple-row">
+                                        <span>Browser sessions</span>
+
+                                        <strong>
+                                            {launchMode.browserSessions}
+                                        </strong>
+                                    </div>
+
+                                    {launchMode.unknownSessions > 0 && (
+                                        <div className="admin-simple-row">
+                                            <span>
+                                                Unclassified sessions
+                                            </span>
+
+                                            <strong>
+                                                {
+                                                    launchMode
+                                                        .unknownSessions
+                                                }
+                                            </strong>
+                                        </div>
+                                    )}
+
+                                    <div className="admin-simple-row">
+                                        <span>
+                                            Last installed-app launch
+                                        </span>
+
+                                        <strong>
+                                            {formatDateTime(
+                                                launchMode
+                                                    .lastInstalledPwaAt
+                                            )}
+                                        </strong>
+                                    </div>
+
+                                    <div className="admin-simple-row">
+                                        <span>
+                                            Last browser launch
+                                        </span>
+
+                                        <strong>
+                                            {formatDateTime(
+                                                launchMode.lastBrowserAt
+                                            )}
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </AdminCard>
 
@@ -1141,4 +1237,28 @@ function getAdoptionIcon(status) {
     if (status === "error") return "×"
 
     return "—"
+}
+
+function getLaunchModeLabel(status) {
+    if (status === "installed_pwa") {
+        return "Uses Installed App"
+    }
+
+    if (status === "browser") {
+        return "Browser Only"
+    }
+
+    return "Not Yet Known"
+}
+
+function getLaunchModeDescription(launchMode) {
+    if (launchMode.status === "installed_pwa") {
+        return "This user has launched Evergrove from an installed app."
+    }
+
+    if (launchMode.status === "browser") {
+        return "This user has only launched Evergrove from a browser."
+    }
+
+    return "No classified launch-mode sessions have been recorded yet."
 }

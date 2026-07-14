@@ -462,15 +462,34 @@ function AppLayout() {
     enabled: canShowDiscoverMessage
   })
 
+  function getLaunchMode() {
+    if (typeof window === "undefined") {
+      return "browser"
+    }
+
+    const isStandaloneDisplay =
+      window.matchMedia?.("(display-mode: standalone)")?.matches === true
+
+    const isIosStandalone =
+      window.navigator.standalone === true
+
+    return isStandaloneDisplay || isIosStandalone
+      ? "installed_pwa"
+      : "browser"
+  }
+
   useEffect(() => {
     if (location.pathname.startsWith("/admin")) return
+
+    const launchMode = getLaunchMode()
 
     trackUsageEvent({
       eventType: "session_started",
       entityType: "session",
       metadata: {
         source: "app_layout",
-        path: location.pathname
+        path: location.pathname,
+        launch_mode: launchMode
       }
     })
 

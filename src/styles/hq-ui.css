@@ -6544,3 +6544,18 @@
         flex-direction: column;
     }
 }
+
+.admin-platform-panel {
+    display: grid;
+    gap: 20px;
+}
+
+.admin-platform-status {
+    display: grid;
+    gap: 10px;
+    justify-items: start;
+}
+
+.admin-platform-status p {
+    margin: 0;
+}

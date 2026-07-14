@@ -7,9 +7,10 @@ import {
     getDashboardKpis,
     getEngagementMetrics,
     getFeatureUsage,
+    getHouseholdGrowth,
+    getLaunchModeMetrics,
     getOnboardingMetrics,
-    getSupportMetrics,
-    getHouseholdGrowth
+    getSupportMetrics
 } from "../../services/admin/analyticsService"
 
 export default function useAdminAnalytics(days = 30) {
@@ -35,22 +36,24 @@ export default function useAdminAnalytics(days = 30) {
         try {
             const [
                 kpis,
+                featureUsage,
+                dailyAppSessions,
+                dailyActiveHouseholds,
+                householdGrowth,
+                supportMetrics,
                 engagement,
                 onboarding,
-                featureUsage,
-                dailyActiveHouseholds,
-                dailyAppSessions,
-                householdGrowth,
-                supportMetrics
+                launchMode
             ] = await Promise.all([
                 getDashboardKpis({ days }),
+                getFeatureUsage({ days }),
+                getDailyAppSessions({ days }),
+                getDailyActiveHouseholds({ days }),
+                getHouseholdGrowth({ days }),
+                getSupportMetrics({ days }),
                 getEngagementMetrics(),
                 getOnboardingMetrics(),
-                getFeatureUsage({ days }),
-                getDailyActiveHouseholds({ days }),
-                getDailyAppSessions({ days }),
-                getHouseholdGrowth({ days }),
-                getSupportMetrics({ days })
+                getLaunchModeMetrics({ days })
             ])
 
             const insights = generateAnalyticsInsights({
@@ -61,14 +64,19 @@ export default function useAdminAnalytics(days = 30) {
 
             setAnalytics({
                 kpis,
-                engagement,
                 featureUsage,
-                dailyActiveHouseholds,
                 dailyAppSessions,
+                dailyActiveHouseholds,
                 householdGrowth,
-                onboarding,
                 supportMetrics,
-                insights
+                engagement,
+                onboarding,
+                launchMode,
+                insights: generateAnalyticsInsights({
+                    featureUsage,
+                    supportMetrics,
+                    dailyActiveHouseholds
+                })
             })
         } catch (err) {
             console.error("Failed to load admin analytics:", err)

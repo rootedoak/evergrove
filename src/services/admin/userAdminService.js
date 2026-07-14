@@ -304,3 +304,69 @@ export async function getUserPushStatus(userId) {
         latestSubscription: subscriptions[0] ?? null
     }
 }
+
+export async function getUserLaunchModeStatus(userId) {
+    if (!userId) {
+        throw new Error("userId is required")
+    }
+
+    const { data, error } = await supabase
+        .from("usage_events")
+        .select("metadata, created_at")
+        .eq("user_id", userId)
+        .eq("event_type", "session_started")
+        .order("created_at", {
+            ascending: false
+        })
+
+    if (error) throw error
+
+    const sessions = data ?? []
+
+    let installedPwaSessions = 0
+    let browserSessions = 0
+    let unknownSessions = 0
+    let lastInstalledPwaAt = null
+    let lastBrowserAt = null
+
+    for (const session of sessions) {
+        const launchMode =
+            session.metadata?.launch_mode
+
+        if (launchMode === "installed_pwa") {
+            installedPwaSessions += 1
+
+            if (!lastInstalledPwaAt) {
+                lastInstalledPwaAt =
+                    session.created_at
+            }
+        } else if (launchMode === "browser") {
+            browserSessions += 1
+
+            if (!lastBrowserAt) {
+                lastBrowserAt =
+                    session.created_at
+            }
+        } else {
+            unknownSessions += 1
+        }
+    }
+
+    let status = "unknown"
+
+    if (installedPwaSessions > 0) {
+        status = "installed_pwa"
+    } else if (browserSessions > 0) {
+        status = "browser"
+    }
+
+    return {
+        status,
+        installedPwaSessions,
+        browserSessions,
+        unknownSessions,
+        totalSessions: sessions.length,
+        lastInstalledPwaAt,
+        lastBrowserAt
+    }
+}

@@ -105,6 +105,60 @@ export default function Analytics() {
 
             </section>
 
+            <AdminCard title="Launch Mode">
+                {!analytics.launchMode ? (
+                    <AdminEmptyState>
+                        No launch-mode data available.
+                    </AdminEmptyState>
+                ) : (
+                    <>
+                        <div className="admin-simple-list">
+                            <div className="admin-simple-row">
+                                <span>Installed app</span>
+
+                                <strong>
+                                    {
+                                        analytics.launchMode
+                                            .installedPwaSessions
+                                    }
+                                </strong>
+                            </div>
+
+                            <div className="admin-simple-row">
+                                <span>Browser</span>
+
+                                <strong>
+                                    {
+                                        analytics.launchMode
+                                            .browserSessions
+                                    }
+                                </strong>
+                            </div>
+
+                            <div className="admin-simple-row">
+                                <span>Unknown</span>
+
+                                <strong>
+                                    {
+                                        analytics.launchMode
+                                            .unknownSessions
+                                    }
+                                </strong>
+                            </div>
+                        </div>
+
+                        <div className="admin-card-footnote">
+                            Installed app usage:{" "}
+                            <strong>
+                                {analytics.launchMode.pwaRate}%
+                            </strong>
+                            {" "}
+                            of classified sessions
+                        </div>
+                    </>
+                )}
+            </AdminCard>
+
             <AnalyticsLineChart
                 title="New Households"
                 description="Households created each day in the selected period."
