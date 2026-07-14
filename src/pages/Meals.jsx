@@ -34,6 +34,8 @@ import MealWeekCard from "../components/meals/MealWeekCard"
 import SavedMealsSection from "../components/meals/SavedMealsSection"
 import GrocerySummaryCard from "../components/meals/GrocerySummaryCard"
 
+import useCalendarEvents from "../hooks/useCalendarEvents"
+
 import Button from "../components/ui/Button"
 
 const defaultShoppingCategoryOrder = [
@@ -138,6 +140,10 @@ export default function Meals() {
         preferences?.shopping_category_order?.length
             ? preferences.shopping_category_order
             : defaultShoppingCategoryOrder
+
+    const {
+        calendarEvents
+    } = useCalendarEvents()
 
     const [meals, setMeals] = useState([])
     const [mealPlans, setMealPlans] = useState([])
@@ -312,6 +318,24 @@ export default function Meals() {
 
         return grouped
     }, [mealPlans, weekDays])
+
+    const weekEventCounts = useMemo(() => {
+        const counts = {}
+
+        weekDays.forEach(day => {
+            counts[day.dateValue] = 0
+        })
+
+        calendarEvents.forEach(event => {
+            if (
+                counts[event.start_date] !== undefined
+            ) {
+                counts[event.start_date] += 1
+            }
+        })
+
+        return counts
+    }, [calendarEvents, weekDays])
 
     const plannedDaysCount = useMemo(() => {
         return weekDays.filter(day => {
@@ -1128,6 +1152,7 @@ export default function Meals() {
                         addDays={addDays}
                         getStartOfWeek={getStartOfWeek}
                         handleGenerateWeek={handleGenerateWeek}
+                        weekEventCounts={weekEventCounts}
                     />
                 )}
 

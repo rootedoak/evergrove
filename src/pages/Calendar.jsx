@@ -35,6 +35,9 @@ import { deleteTrip } from "../services/tripService"
 
 import { deletePersonalInboxItem } from "../services/personalInboxService"
 
+import CalendarDateRangePicker
+    from "../components/calendar/CalendarDateRangePicker"
+
 function getDateOnly(value) {
     if (!value) return ""
     return String(value).slice(0, 10)
@@ -569,7 +572,7 @@ export default function Calendar() {
                 title: thought?.title || "",
                 event_type: "Family Event",
                 start_date: date,
-                end_date: "",
+                end_date: date,
                 repeats_yearly: false,
                 session_frequency: "none",
                 session_until: "",
@@ -614,7 +617,10 @@ export default function Calendar() {
                     title: existingEvent.title || "",
                     event_type: existingEvent.event_type || "Family Event",
                     start_date: existingEvent.start_date || location.state.selectedDate || "",
-                    end_date: existingEvent.end_date || "",
+                    end_date:
+                        existingEvent.end_date ||
+                        existingEvent.start_date ||
+                        "",
                     start_time: existingEvent.start_time || "",
                     end_time: existingEvent.end_time || "",
                     location: existingEvent.location || "",
@@ -688,7 +694,10 @@ export default function Calendar() {
                     title: existingEvent.title || location.state.thoughtToConvert?.title || "",
                     event_type: existingEvent.event_type || "Important Date",
                     start_date: existingEvent.start_date || selectedDate,
-                    end_date: existingEvent.end_date || "",
+                    end_date:
+                        existingEvent.end_date ||
+                        existingEvent.start_date ||
+                        "",
                     start_time: existingEvent.start_time || "",
                     end_time: existingEvent.end_time || "",
                     location: existingEvent.location || "",
@@ -734,7 +743,10 @@ export default function Calendar() {
             title: existingEvent.title || "",
             event_type: existingEvent.event_type || "Family Event",
             start_date: existingEvent.start_date || event.date || "",
-            end_date: existingEvent.end_date || "",
+            end_date:
+                existingEvent.end_date ||
+                existingEvent.start_date ||
+                "",
             start_time: existingEvent.start_time || "",
             end_time: existingEvent.end_time || "",
             location: existingEvent.location || "",
@@ -758,13 +770,15 @@ export default function Calendar() {
     }
 
     function resetCalendarEventForm(date = selectedDate) {
+        const defaultDate = date || ""
+
         setEditingCalendarEventId(null)
 
         setCalendarEventForm({
             title: "",
             event_type: "Family Event",
-            start_date: date || "",
-            end_date: "",
+            start_date: defaultDate,
+            end_date: defaultDate,
             start_time: "",
             end_time: "",
             location: "",
@@ -787,7 +801,12 @@ export default function Calendar() {
                 title: calendarEventForm.title.trim(),
                 event_type: calendarEventForm.event_type,
                 start_date: calendarEventForm.start_date || selectedDate,
-                end_date: calendarEventForm.end_date || null,
+                end_date:
+                    calendarEventForm.end_date &&
+                        calendarEventForm.end_date !==
+                        calendarEventForm.start_date
+                        ? calendarEventForm.end_date
+                        : null,
                 start_time: calendarEventForm.start_time || null,
                 end_time: calendarEventForm.end_time || null,
                 location: calendarEventForm.location.trim() || null,
@@ -1182,8 +1201,7 @@ export default function Calendar() {
                                                             ...current,
                                                             event_type: nextType,
                                                             session_frequency: "none",
-                                                            session_until: "",
-                                                            end_date: ""
+                                                            session_until: ""
                                                         }))
                                                     }}
                                                 >
@@ -1243,16 +1261,41 @@ export default function Calendar() {
                                                 </div>
                                             )}
 
-                                            <label>
-                                                Start Date
-                                                <input
-                                                    type="date"
-                                                    value={calendarEventForm.start_date}
-                                                    onChange={event =>
-                                                        updateCalendarEventForm("start_date", event.target.value)
+                                            {isRecurringActivity(calendarEventForm) ? (
+
+                                                <label>
+                                                    Start Date
+
+                                                    <input
+                                                        type="date"
+                                                        value={
+                                                            calendarEventForm.start_date
+                                                        }
+                                                        onChange={event =>
+                                                            updateCalendarEventForm(
+                                                                "start_date",
+                                                                event.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                </label>
+                                            ) : (
+                                                <CalendarDateRangePicker
+                                                    startDate={
+                                                        calendarEventForm.start_date
                                                     }
+                                                    endDate={
+                                                        calendarEventForm.end_date
+                                                    }
+                                                    onChange={range => {
+                                                        setCalendarEventForm(current => ({
+                                                            ...current,
+                                                            start_date: range.startDate,
+                                                            end_date: range.endDate
+                                                        }))
+                                                    }}
                                                 />
-                                            </label>
+                                            )}
 
                                             {["Activity", "Important Date"].includes(calendarEventForm.event_type) && (
                                                 <label>
@@ -1287,22 +1330,6 @@ export default function Calendar() {
                                                             value={calendarEventForm.session_until}
                                                             onChange={event =>
                                                                 updateCalendarEventForm("session_until", event.target.value)
-                                                            }
-                                                        />
-                                                    </label>
-                                                )}
-
-                                            {!(
-                                                calendarEventForm.event_type === "Activity" &&
-                                                calendarEventForm.session_frequency !== "none"
-                                            ) && (
-                                                    <label>
-                                                        End Date
-                                                        <input
-                                                            type="date"
-                                                            value={calendarEventForm.end_date}
-                                                            onChange={event =>
-                                                                updateCalendarEventForm("end_date", event.target.value)
                                                             }
                                                         />
                                                     </label>

@@ -16,6 +16,10 @@ import {
     sendAdminTestEmail
 } from "../../../services/admin/adminEmailService"
 
+import {
+    trackUsageEvent
+} from "../../../services/analytics/usageEventService"
+
 export default function AdminCommunications() {
     const [selectedTemplateId, setSelectedTemplateId] =
         useState(emailTemplates[0]?.id ?? "")
@@ -49,12 +53,26 @@ export default function AdminCommunications() {
         setErrorMessage("")
 
         try {
-            await sendAdminTestEmail({
+            const sendResult = await sendAdminTestEmail({
                 to: recipient.trim(),
                 subject:
                     `[TEST] ${selectedTemplate.subject}`,
                 html: selectedTemplate.html,
                 templateId: selectedTemplate.id
+            })
+
+            trackUsageEvent({
+                eventType: "email_test_sent",
+                entityType: "email_template",
+                entityId: selectedTemplate.id,
+                metadata: {
+                    template_name: selectedTemplate.name,
+                    provider: "resend",
+                    category: selectedTemplate.category,
+                    resend_email_id:
+                        sendResult?.emailId || null,
+                    source: "evergrove_hq"
+                }
             })
 
             setMessage(

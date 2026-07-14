@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react"
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react"
 
 import SectionCard from "../ui/SectionCard"
 import Button from "../ui/Button"
@@ -19,7 +19,8 @@ export default function MealWeekCard({
     weekStart,
     addDays,
     getStartOfWeek,
-    handleGenerateWeek
+    handleGenerateWeek,
+    weekEventCounts
 }) {
     function getPlanIcon(plan) {
         if (!plan) return null
@@ -32,10 +33,10 @@ export default function MealWeekCard({
         <SectionCard
             title="This Week"
             subtitle={`${weekDays[0].dateLabel} - ${weekDays[6].dateLabel}`}
-            actions={
+            action={
                 <Button variant="secondary" size="sm" onClick={handleGenerateWeek}>
                     <Plus size={16} />
-                    Generate
+                    Plan My Week
                 </Button>
             }
         >
@@ -74,30 +75,76 @@ export default function MealWeekCard({
                                     startDayQuickAdd(day.dateValue)
                                 }}
                             >
-                                <div className="eg-meal-day-date">
-                                    <strong>{day.dayLabel}</strong>
-                                    <span>{day.dateLabel}</span>
-                                </div>
-
-                                <div className="eg-meal-day-main">
-                                    {plans.length === 0 ? (
-                                        <>
-                                            <span className="eg-meal-add-icon">+</span>
-                                            <span className="muted">Plan dinner</span>
-                                        </>
-                                    ) : (
-                                        <div className="eg-meal-plan-stack">
-                                            {plans.map(plan => (
-                                                <span key={plan.id} className="eg-meal-plan-pill">
-                                                    <span>{getPlanIcon(plan)}</span>
-                                                    {plan.meal_name}
-                                                </span>
-                                            ))}
+                                <div className="eg-meal-day-content">
+                                    <div className="eg-meal-day-header">
+                                        <div className="eg-meal-day-date">
+                                            <strong>{day.dayLabel}</strong>
+                                            <span>{day.dateLabel}</span>
                                         </div>
-                                    )}
+
+                                        {weekEventCounts?.[day.dateValue] > 0 && (
+                                            <span
+                                                className="eg-calendar-count"
+                                                aria-label={
+                                                    `${weekEventCounts[day.dateValue]} ${weekEventCounts[day.dateValue] === 1
+                                                        ? "calendar event"
+                                                        : "calendar events"
+                                                    }`
+                                                }
+                                                title={
+                                                    `${weekEventCounts[day.dateValue]} ${weekEventCounts[day.dateValue] === 1
+                                                        ? "calendar event"
+                                                        : "calendar events"
+                                                    }`
+                                                }
+                                            >
+                                                <CalendarDays
+                                                    size={13}
+                                                    className="eg-calendar-count-icon"
+                                                    aria-hidden="true"
+                                                />
+
+                                                <span>
+                                                    {weekEventCounts[day.dateValue]}
+                                                </span>
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div className="eg-meal-day-main">
+                                        {plans.length === 0 ? (
+                                            <>
+                                                <span className="eg-meal-add-icon">
+                                                    +
+                                                </span>
+
+                                                <span className="muted">
+                                                    Plan dinner
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <div className="eg-meal-plan-stack">
+                                                {plans.map(plan => (
+                                                    <span
+                                                        key={plan.id}
+                                                        className="eg-meal-plan-pill"
+                                                    >
+                                                        <span>
+                                                            {getPlanIcon(plan)}
+                                                        </span>
+
+                                                        {plan.meal_name}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <ChevronRight size={18} />
+                                <ChevronRight
+                                    size={18}
+                                    className="eg-meal-day-chevron"
+                                />
                             </button>
 
                             {plans.length > 0 && (

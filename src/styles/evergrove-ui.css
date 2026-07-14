@@ -4759,3 +4759,246 @@ input[type="file"]::-webkit-file-upload-button:hover,
     pointer-events: none;
     box-shadow: 0 20px 55px rgba(16, 38, 61, 0.18);
 }
+
+.calendar-range-trigger {
+    width: 100%;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 16px;
+    border: 1px solid var(--eg-border, #d9e1e7);
+    border-radius: 14px;
+    background: var(--eg-surface, #ffffff);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+}
+
+.calendar-range-sheet {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.calendar-range-calendar {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0 18px;
+}
+
+.calendar-range-calendar .rdp-root {
+    --rdp-accent-color: var(--eg-primary,
+            #315f85);
+    --rdp-accent-background-color: rgba(49,
+            95,
+            133,
+            0.12);
+    margin: 0;
+}
+
+.calendar-range-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.calendar-range-summary>div {
+    display: grid;
+    gap: 4px;
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--eg-surface-subtle,
+            #f4f7f8);
+}
+
+.calendar-range-summary span {
+    font-size: 0.78rem;
+    color: var(--eg-text-muted,
+            #637083);
+}
+
+.calendar-range-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 18px;
+}
+
+@media (max-width: 560px) {
+    .calendar-range-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .calendar-range-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.eg-meal-day-date {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.eg-calendar-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    padding: 2px 8px;
+
+    border-radius: 999px;
+
+    background: var(--eg-surface-muted);
+
+    color: var(--eg-text-muted);
+
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.eg-meal-day-content {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.eg-meal-day-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.eg-meal-day-date {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    min-width: 0;
+}
+
+.eg-calendar-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 auto;
+
+    padding: 3px 7px;
+    border-radius: 999px;
+
+    background: var(--eg-surface-muted, #eef3f5);
+    color: var(--eg-text-muted, #607080);
+
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.eg-meal-day-chevron {
+    flex: 0 0 auto;
+}
+
+/* Prevent mobile form controls from exceeding their containers */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+input,
+select,
+textarea,
+button {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+input,
+select,
+textarea {
+    min-width: 0;
+}
+
+.form-grid,
+.eg-form,
+.eg-form label,
+.form-grid>*,
+.eg-form>* {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid textarea,
+.eg-form input,
+.eg-form select,
+.eg-form textarea {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.eg-bottom-sheet {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+.calendar-detail-sheet {
+    width: min(calc(100% - 24px),
+            760px);
+    max-width: calc(100% - 24px);
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+.eg-bottom-sheet {
+    padding-left: max(24px,
+            env(safe-area-inset-left));
+
+    padding-right: max(24px,
+            env(safe-area-inset-right));
+
+    padding-bottom: max(24px,
+            env(safe-area-inset-bottom));
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+.form-grid>*,
+.eg-form label {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid textarea,
+.eg-form input,
+.eg-form select,
+.eg-form textarea {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+    min-width: 0;
+    max-width: 100%;
+}
