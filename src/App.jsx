@@ -104,6 +104,8 @@ import useDiscoverMessage from "./hooks/useDiscoverMessage"
 import DiscoverMessages from "./pages/admin/discover/DiscoverMessages"
 import DiscoverMessageEditor from "./pages/admin/discover/DiscoverMessageEditor"
 
+import AdminCommunications from "./pages/admin/communications/AdminCommunications"
+
 import ErrorBoundary from "./components/ErrorBoundary"
 import NotFound from "./pages/public/NotFound"
 import UIKit from "./pages/UIKit"
@@ -313,6 +315,10 @@ function AppRoutes() {
         <Route path="/admin/feature-flags" element={<FeatureFlags />} />
         <Route path="sales" element={<SalesMarketing />} />
         <Route path="roadmap" element={<Roadmap />} />
+        <Route
+          path="communications"
+          element={<AdminCommunications />}
+        />
         <Route
           path="discover"
           element={<DiscoverMessages />}

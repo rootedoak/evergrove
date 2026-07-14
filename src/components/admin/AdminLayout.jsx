@@ -6,6 +6,7 @@ import {
     Flag,
     Home,
     House,
+    Mail,
     Map,
     Megaphone,
     MessageSquare,
@@ -47,6 +48,11 @@ const adminNavSections = [
                 to: "/admin/discover",
                 label: "Discover",
                 icon: Megaphone
+            },
+            {
+                to: "/admin/communications",
+                label: "Communications",
+                icon: Mail
             }
         ]
     },
