@@ -6,7 +6,7 @@ function getMissingEnvVars() {
         "SUPABASE_URL",
         "SUPABASE_SERVICE_ROLE_KEY",
         "RESEND_TEST_API_KEY",
-        "EVERGROVE_EMAIL_FROM"
+        "EVERGROVE_TEST_EMAIL_FROM"
     ].filter(envVar => !process.env[envVar])
 }
 
@@ -146,7 +146,7 @@ export default async function handler(req, res) {
             data,
             error
         } = await resend.emails.send({
-            from: process.env.EVERGROVE_EMAIL_FROM,
+            from: process.env.EVERGROVE_TEST_EMAIL_FROM,
             to: [to.trim()],
             subject: subject.trim(),
             html,
