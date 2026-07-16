@@ -194,7 +194,8 @@ function MobileMoreSheet({
 
     return ![
       "/settings/family",
-      "/routines"
+      "/routines",
+      "/documents"
     ].includes(item.to)
   })
 
@@ -284,7 +285,14 @@ function AppRoutes() {
         }
       />
       <Route path="/reminders" element={<Reminders />} />
-      <Route path="/documents" element={<Documents />} />
+      <Route
+        path="/documents"
+        element={
+          <RoleRoute allow={["owner", "adult"]}>
+            <Documents />
+          </RoleRoute>
+        }
+      />
       <Route path="/calendar" element={<CalendarPage />} />
       <Route path="/trips" element={<Trips />} />
       <Route path="/profile" element={<Profile />} />

@@ -42,6 +42,8 @@ import InsightCard from "../components/dashboard/InsightCard"
 import { getEvergroveInsights } from "../insights"
 import { getTaskTemplate } from "../utils/taskTemplates"
 
+import useHouseholdRole from "../hooks/useHouseholdRole"
+
 import { createIntelligenceContext } from "../intelligence/createIntelligenceContext"
 
 import { trackUsageEvent } from "../services/analytics/usageEventService"
@@ -435,6 +437,11 @@ export default function Dashboard() {
     const { trips } = useTrips()
     const { preferences, loading: preferencesLoading } = usePreferences()
 
+    const {
+        isTeen,
+        isAdult
+    } = useHouseholdRole()
+
     const { dinnerTonight } = useMeals()
 
     const [completedInsight, setCompletedInsight] = useState(null)
@@ -522,7 +529,13 @@ export default function Dashboard() {
         .filter(isChildMember)
         .map(member => member.id)
 
-    const dashboardTaskScope = preferences?.task_default_view || "mine_family"
+    const dashboardTaskScope =
+        isTeen
+            ? "mine"
+            : (
+                preferences?.task_default_view ||
+                "mine_family"
+            )
 
     const scopedTasks = useMemo(() => {
         return filterTasksByScope(
@@ -939,41 +952,46 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                <AttentionCard
-                    overdueCount={
-                        scopedTasks.filter(task =>
-                            task.status !== "complete" &&
-                            task.due_date &&
-                            task.due_date < todayString
-                        ).length
-                    }
-                    todayEventsCount={todayEvents.length}
-                    unreadInboxCount={0}
-                    announcementsCount={announcements.length}
+                {!isTeen && (
+                    <AttentionCard
+                        overdueCount={
+                            scopedTasks.filter(task =>
+                                task.status !== "complete" &&
+                                task.due_date &&
+                                task.due_date < todayString
+                            ).length
+                        }
+                        todayEventsCount={todayEvents.length}
+                        unreadInboxCount={0}
+                        announcementsCount={announcements.length}
 
-                    onOpenOverdue={() =>
-                        navigate("/tasks?filter=overdue")
-                    }
+                        onOpenOverdue={() =>
+                            navigate("/tasks?filter=overdue")
+                        }
 
-                    onOpenToday={() =>
-                        navigate("/calendar")
-                    }
+                        onOpenToday={() =>
+                            navigate("/calendar")
+                        }
 
-                    onOpenInbox={() =>
-                        navigate("/personal-inbox")
-                    }
+                        onOpenInbox={() =>
+                            navigate("/personal-inbox")
+                        }
 
-                    onOpenAnnouncements={() =>
-                        document
-                            .querySelector(".family-announcements-card .secondary-button")
-                            ?.click()
-                    }
-                />
+                        onOpenAnnouncements={() =>
+                            document
+                                .querySelector(".family-announcements-card .secondary-button")
+                                ?.click()
+                        }
+                    />
+                )}
 
                 <TodayCard
                     events={todayEvents}
-                    tasks={openTasks.filter(task => task.due_date <= todayString)}
+                    tasks={openTasks.filter(
+                        task => task.due_date <= todayString
+                    )}
                     dinner={dinnerTonight}
+                    isTeen={isTeen}
                     onOpenEvents={() => {
                         trackDashboardAction("open_today_events")
                         setBriefModal("events")
@@ -988,7 +1006,7 @@ export default function Dashboard() {
                     }}
                 />
 
-                {(visibleInsights.length > 0 || completedInsight) && (
+                {(visibleInsights.length > 0 || completedInsight) && !isTeen && (
                     <InsightCard
                         insight={visibleInsights[0]}
                         completedInsight={completedInsight}
@@ -996,15 +1014,17 @@ export default function Dashboard() {
                     />
                 )}
 
-                <FamilyAnnouncementsCard
-                    announcements={announcements}
-                    loading={announcementsLoading}
-                    showForm={showAnnouncementForm}
-                    onShowFormChange={setShowAnnouncementForm}
-                    onAdd={addAnnouncement}
-                    onEdit={editAnnouncement}
-                    onDelete={removeAnnouncement}
-                />
+                {!isTeen && (
+                    <FamilyAnnouncementsCard
+                        announcements={announcements}
+                        loading={announcementsLoading}
+                        showForm={showAnnouncementForm}
+                        onShowFormChange={setShowAnnouncementForm}
+                        onAdd={addAnnouncement}
+                        onEdit={editAnnouncement}
+                        onDelete={removeAnnouncement}
+                    />
+                )}
 
                 <FeedCard
                     feedEvents={feedEvents}

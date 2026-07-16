@@ -16,6 +16,8 @@ import SectionCard from "../components/ui/SectionCard"
 
 import Avatar from "../components/ui/Avatar"
 
+import useHouseholdRole from "../hooks/useHouseholdRole"
+
 import {
     CalendarDays,
     CheckCircle2,
@@ -232,6 +234,8 @@ function TaskSection({
     highlightedTaskId,
     taskMenuOpen,
     setTaskMenuOpen,
+    isTeen,
+    currentUserId,
     hideWhenEmpty = false
 }) {
     if (hideWhenEmpty && tasks.length === 0) return null
@@ -267,6 +271,8 @@ function TaskSection({
                             highlighted={task.id === highlightedTaskId}
                             taskMenuOpen={taskMenuOpen}
                             setTaskMenuOpen={setTaskMenuOpen}
+                            isTeen={isTeen}
+                            currentUserId={currentUserId}
                         />
                     ))}
                 </div>
@@ -283,11 +289,16 @@ function TaskListRow({
     onDelete,
     highlighted,
     taskMenuOpen,
-    setTaskMenuOpen
+    setTaskMenuOpen,
+    isTeen,
+    currentUserId
 }) {
     const isComplete = task.status === "complete"
     const meta = getTaskMeta(task, familyMembers)
     const ownership = getOwnershipBadge(task)
+    const canManageTask =
+        !isTeen ||
+        task.user_id === currentUserId
 
     return (
         <ListRow
@@ -328,21 +339,25 @@ function TaskListRow({
                         </div>
                     )}
 
-                    <button
-                        type="button"
-                        className="eg-text-button"
-                        onClick={() => onEdit(task)}
-                    >
-                        Edit
-                    </button>
+                    {canManageTask && (
+                        <>
+                            <button
+                                type="button"
+                                className="eg-text-button"
+                                onClick={() => onEdit(task)}
+                            >
+                                Edit
+                            </button>
 
-                    <button
-                        type="button"
-                        className="eg-text-button danger"
-                        onClick={() => onDelete(task)}
-                    >
-                        Delete
-                    </button>
+                            <button
+                                type="button"
+                                className="eg-text-button danger"
+                                onClick={() => onDelete(task)}
+                            >
+                                Delete
+                            </button>
+                        </>
+                    )}
                 </div>
             }
         />
@@ -351,6 +366,12 @@ function TaskListRow({
 
 export default function Tasks() {
     const { preferences, refreshPreferences } = usePreferences()
+
+    const {
+        isTeen,
+        isAdult
+    } = useHouseholdRole()
+
     const [searchParams] = useSearchParams()
 
     const location = useLocation()
@@ -368,7 +389,7 @@ export default function Tasks() {
     const [saving, setSaving] = useState(false)
     const [editingId, setEditingId] = useState(null)
     const [showCompleted, setShowCompleted] = useState(false)
-    const [taskScope, setTaskScope] = useState("mine_family")
+    const [taskScope, setTaskScope] = useState(null)
 
     const [highlightedTaskId, setHighlightedTaskId] = useState(null)
     const [taskMenuOpen, setTaskMenuOpen] = useState(null)
@@ -469,10 +490,22 @@ export default function Tasks() {
     }, [location.state, tasks, navigate])
 
     useEffect(() => {
-        if (preferences?.task_default_view && !tripId) {
-            setTaskScope(preferences.task_default_view)
+        if (tripId) return
+
+        if (isTeen) {
+            setTaskScope("mine")
+            return
         }
-    }, [preferences?.task_default_view, tripId])
+
+        setTaskScope(
+            preferences?.task_default_view ||
+            "mine_family"
+        )
+    }, [
+        isTeen,
+        preferences?.task_default_view,
+        tripId
+    ])
 
     function updateForm(field, value) {
         setForm(current => ({
@@ -484,7 +517,11 @@ export default function Tasks() {
     function openNewTaskForm() {
         setForm({
             ...initialForm,
-            trip_id: tripId || ""
+            trip_id: tripId || "",
+            family_member_id:
+                isTeen
+                    ? currentMember?.id || ""
+                    : ""
         })
         setEditingId(null)
         setShowForm(true)
@@ -501,7 +538,15 @@ export default function Tasks() {
 
     function startEdit(task) {
         setEditingId(task.id)
-        setForm(normalizeTask(task))
+        const normalized =
+            normalizeTask(task)
+
+        if (isTeen) {
+            normalized.family_member_id =
+                currentMember?.id || ""
+        }
+
+        setForm(normalized)
         setShowForm(true)
     }
 
@@ -590,6 +635,13 @@ export default function Tasks() {
         }
     }
 
+    const availableTaskScopes = isTeen
+        ? [
+            { key: "mine", label: "My Tasks" },
+            { key: "family", label: "Household" }
+        ]
+        : taskScopes
+
     return (
         <AppPage>
             <PageHeader
@@ -614,7 +666,7 @@ export default function Tasks() {
             <div className="eg-stack">
                 {!tripId && (
                     <div className="eg-filter-chips">
-                        {taskScopes.map(scope => (
+                        {availableTaskScopes.map(scope => (
                             <button
                                 key={scope.key}
                                 type="button"
@@ -627,7 +679,7 @@ export default function Tasks() {
                     </div>
                 )}
 
-                {!tripId && (
+                {!tripId && !isTeen && (
                     <SectionCard>
                         <Link className="eg-routines-link-row" to="/routines">
                             <span className="eg-routines-link-icon">🔁</span>
@@ -659,20 +711,30 @@ export default function Tasks() {
                                     onChange={value => updateForm("due_date", value)}
                                 />
 
-                                <SelectField
-                                    label="Family Member"
-                                    value={form.family_member_id}
-                                    onChange={value => updateForm("family_member_id", value)}
-                                    options={[
-                                        { value: "", label: "No family member selected" },
-                                        ...familyMembers.map(member => ({
-                                            value: member.id,
-                                            label: `${member.avatar_emoji ? `${member.avatar_emoji} ` : ""}${member.name}`
-                                        }))
-                                    ]}
-                                />
+                                {!isTeen && (
+                                    <SelectField
+                                        label="Family Member"
+                                        value={form.family_member_id}
+                                        onChange={value =>
+                                            updateForm("family_member_id", value)
+                                        }
+                                        options={[
+                                            {
+                                                value: "",
+                                                label: "No family member selected"
+                                            },
+                                            ...familyMembers.map(member => ({
+                                                value: member.id,
+                                                label:
+                                                    `${member.avatar_emoji
+                                                        ? `${member.avatar_emoji} `
+                                                        : ""}${member.name}`
+                                            }))
+                                        ]}
+                                    />
+                                )}
 
-                                {editingId && (
+                                {editingId && !isTeen && (
                                     <SelectField
                                         label="Status"
                                         value={form.status}
@@ -684,15 +746,29 @@ export default function Tasks() {
                                     />
                                 )}
 
-                                <SelectField
-                                    label="Visibility"
-                                    value={form.visibility}
-                                    onChange={value => updateForm("visibility", value)}
-                                    options={[
-                                        { value: "household", label: "Family task" },
-                                        { value: "private", label: "Private task" }
-                                    ]}
-                                />
+                                {!isTeen && (
+                                    <SelectField
+                                        label="Visibility"
+                                        value={form.visibility}
+                                        onChange={value =>
+                                            updateForm("visibility", value)
+                                        }
+                                        options={[
+                                            {
+                                                value: "household",
+                                                label: "Household — everyone"
+                                            },
+                                            {
+                                                value: "adults",
+                                                label: "Adults only"
+                                            },
+                                            {
+                                                value: "private",
+                                                label: "Private — only me"
+                                            }
+                                        ]}
+                                    />
+                                )}
 
                                 <TextAreaField
                                     label="Description"
@@ -741,6 +817,8 @@ export default function Tasks() {
                                 taskMenuOpen={taskMenuOpen}
                                 setTaskMenuOpen={setTaskMenuOpen}
                                 hideWhenEmpty
+                                isTeen={isTeen}
+                                currentUserId={currentUserId}
                             />
 
                             <TaskSection
@@ -757,6 +835,8 @@ export default function Tasks() {
                                 setTaskMenuOpen={setTaskMenuOpen}
                                 className="task-section-today"
                                 hideWhenEmpty
+                                isTeen={isTeen}
+                                currentUserId={currentUserId}
                             />
 
                             <TaskSection
@@ -772,6 +852,8 @@ export default function Tasks() {
                                 taskMenuOpen={taskMenuOpen}
                                 setTaskMenuOpen={setTaskMenuOpen}
                                 hideWhenEmpty
+                                isTeen={isTeen}
+                                currentUserId={currentUserId}
                             />
 
                             <TaskSection
@@ -787,6 +869,8 @@ export default function Tasks() {
                                 taskMenuOpen={taskMenuOpen}
                                 setTaskMenuOpen={setTaskMenuOpen}
                                 hideWhenEmpty
+                                isTeen={isTeen}
+                                currentUserId={currentUserId}
                             />
 
                             {openCount === 0 && (
@@ -822,6 +906,8 @@ export default function Tasks() {
                                             highlightedTaskId={highlightedTaskId}
                                             taskMenuOpen={taskMenuOpen}
                                             setTaskMenuOpen={setTaskMenuOpen}
+                                            isTeen={isTeen}
+                                            currentUserId={currentUserId}
                                         />
                                     )}
                                 </section>

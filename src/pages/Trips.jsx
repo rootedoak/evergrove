@@ -1,3 +1,4 @@
+import { supabase } from "../lib/supabase"
 import { useEffect, useMemo, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Plus } from "lucide-react"
@@ -15,13 +16,15 @@ import PageHeader from "../components/ui/PageHeader"
 import SectionCard from "../components/ui/SectionCard"
 import Button from "../components/ui/Button"
 import InsightCard from "../components/dashboard/InsightCard"
+import useHouseholdRole from "../hooks/useHouseholdRole"
 
 const initialForm = {
     name: "",
     destination: "",
     start_date: "",
     end_date: "",
-    notes: ""
+    notes: "",
+    visibility: "household"
 }
 
 const initialPlanForm = {
@@ -147,11 +150,18 @@ function normalizeTrip(trip) {
         destination: trip.destination || "",
         start_date: trip.start_date || "",
         end_date: trip.end_date || "",
-        notes: trip.notes || ""
+        notes: trip.notes || "",
+        visibility: trip.visibility || "household"
     }
 }
 
-function TripSection({ title, subtitle, trips, emptyText, renderTripRow }) {
+function TripSection({
+    title,
+    subtitle,
+    trips,
+    emptyText,
+    renderTripRow
+}) {
     return (
         <SectionCard
             title={title}
@@ -159,10 +169,14 @@ function TripSection({ title, subtitle, trips, emptyText, renderTripRow }) {
             count={trips.length}
         >
             {trips.length === 0 ? (
-                <p className="dashboard-empty">{emptyText}</p>
+                <p className="dashboard-empty">
+                    {emptyText}
+                </p>
             ) : (
                 <div className="eg-stack">
-                    {trips.map(trip => renderTripRow(trip))}
+                    {trips.map(trip =>
+                        renderTripRow(trip)
+                    )}
                 </div>
             )}
         </SectionCard>
@@ -172,6 +186,11 @@ function TripSection({ title, subtitle, trips, emptyText, renderTripRow }) {
 export default function Trips() {
     const navigate = useNavigate()
     const location = useLocation()
+    const {
+        isTeen
+    } = useHouseholdRole()
+
+    const [currentUserId, setCurrentUserId] = useState(null)
 
     const { trips, loading, refreshTrips } = useTrips()
     const { tasks, refreshTasks } = useTasks()
@@ -326,7 +345,11 @@ export default function Trips() {
             destination: form.destination.trim() || null,
             start_date: form.start_date || null,
             end_date: form.end_date || null,
-            notes: form.notes.trim() || null
+            notes: form.notes.trim() || null,
+            visibility:
+                isTeen
+                    ? "household"
+                    : form.visibility || "household"
         }
 
         try {
@@ -562,6 +585,10 @@ export default function Trips() {
     }
 
     function renderTripRow(trip) {
+        const canManageTrip =
+            !isTeen ||
+            trip.user_id === currentUserId
+
         const checklist = getChecklistProgress(trip)
         const hasChecklist = checklist.total > 0
 
@@ -651,7 +678,7 @@ export default function Trips() {
                             ⋮
                         </button>
 
-                        {tripMenuOpen === trip.id && (
+                        {tripMenuOpen === trip.id && canManageTrip && (
                             <div
                                 className="task-action-backdrop"
                                 onClick={() => setTripMenuOpen(null)}
@@ -814,6 +841,30 @@ export default function Trips() {
                                     }
                                 />
                             </label>
+
+                            {!isTeen && (
+                                <label>
+                                    Visibility
+
+                                    <select
+                                        value={form.visibility}
+                                        onChange={event =>
+                                            setForm({
+                                                ...form,
+                                                visibility: event.target.value
+                                            })
+                                        }
+                                    >
+                                        <option value="household">
+                                            Household — everyone
+                                        </option>
+
+                                        <option value="adults">
+                                            Adults only
+                                        </option>
+                                    </select>
+                                </label>
+                            )}
 
                             <div className="full-width trip-member-picker">
                                 <strong>Who's Going?</strong>

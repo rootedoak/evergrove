@@ -7,6 +7,7 @@ export default function TodayCard({
     onOpenEvents,
     onOpenTasks,
     onOpenDinner,
+    isTeen = false
 }) {
     const primaryEvent = events[0]
     const primaryTask = tasks[0]
@@ -91,13 +92,21 @@ export default function TodayCard({
 
                         <small>
                             {primaryTask
-                                ? "Due today"
-                                : "You're clear for now"}
+                                ? (
+                                    isTeen
+                                        ? "Your task for today"
+                                        : "Due today"
+                                )
+                                : (
+                                    isTeen
+                                        ? "You have nothing due today"
+                                        : "You're clear for now"
+                                )}
                         </small>
 
                         {tasks.length > 1 && (
                             <div className="eg-more-items">
-                                +{tasks.length - 1} more tasks
+                                +{tasks.length - 1} more {isTeen ? "of your tasks" : "tasks"}
                             </div>
                         )}
                     </div>

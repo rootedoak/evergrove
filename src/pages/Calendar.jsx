@@ -1,3 +1,5 @@
+import { supabase } from "../lib/supabase"
+
 import AppPage from "../components/ui/AppPage"
 import CalendarHeader from "../components/calendar/CalendarHeader"
 import CalendarAgenda from "../components/calendar/CalendarAgenda"
@@ -34,6 +36,8 @@ import { deleteSchoolItem } from "../services/schoolService"
 import { deleteTrip } from "../services/tripService"
 
 import { deletePersonalInboxItem } from "../services/personalInboxService"
+
+import useHouseholdRole from "../hooks/useHouseholdRole"
 
 import CalendarDateRangePicker
     from "../components/calendar/CalendarDateRangePicker"
@@ -185,6 +189,8 @@ function buildCalendarEvents({
     function pushCalendarEvent(event, dateString, idSuffix = dateString) {
         events.push({
             id: `calendar-event-${event.id}-${idSuffix}`,
+            user_id: event.user_id,
+            visibility: event.visibility || "household",
             type: "calendar_event",
             sourceType: "calendar_event",
             sourceId: event.id,
@@ -414,6 +420,12 @@ export default function Calendar() {
     const navigate = useNavigate()
     const location = useLocation()
 
+    const {
+        isTeen
+    } = useHouseholdRole()
+
+    const [currentUserId, setCurrentUserId] = useState(null)
+
     const [showAddMenu, setShowAddMenu] = useState(false)
 
     const [visibleDate, setVisibleDate] = useState(() => new Date())
@@ -438,7 +450,8 @@ export default function Calendar() {
         start_time: "",
         end_time: "",
         location: "",
-        notes: ""
+        notes: "",
+        visibility: "household",
     })
 
     const [selectedBirthday, setSelectedBirthday] = useState(null)
@@ -558,6 +571,18 @@ export default function Calendar() {
     }, [agendaEvents])
 
     useEffect(() => {
+        async function loadUser() {
+            const {
+                data: { user }
+            } = await supabase.auth.getUser()
+
+            setCurrentUserId(user?.id ?? null)
+        }
+
+        loadUser()
+    }, [])
+
+    useEffect(() => {
         const date = location.state?.selectedDate || getTodayString()
 
         if (location.state?.openCalendarEventForm) {
@@ -579,7 +604,8 @@ export default function Calendar() {
                 start_time: "",
                 end_time: "",
                 location: "",
-                notes: thought?.body || ""
+                notes: thought?.body || "",
+                visibility: "household"
             })
 
             setShowCalendarEventForm(true)
@@ -627,7 +653,8 @@ export default function Calendar() {
                     notes: existingEvent.notes || "",
                     repeats_yearly: Boolean(existingEvent.repeats_yearly),
                     session_frequency: existingEvent.session_frequency || "none",
-                    session_until: existingEvent.session_until || ""
+                    session_until: existingEvent.session_until || "",
+                    visibility: existingEvent.visibility || "household"
                 })
 
                 setShowCalendarEventForm(true)
@@ -704,7 +731,8 @@ export default function Calendar() {
                     notes: location.state.thoughtToConvert?.body || existingEvent.notes || "",
                     repeats_yearly: Boolean(existingEvent.repeats_yearly),
                     session_frequency: existingEvent.session_frequency || "none",
-                    session_until: existingEvent.session_until || ""
+                    session_until: existingEvent.session_until || "",
+                    visibility: existingEvent.visibility || "household"
                 })
             }
 
@@ -753,7 +781,8 @@ export default function Calendar() {
             notes: existingEvent.notes || "",
             repeats_yearly: Boolean(existingEvent.repeats_yearly),
             session_frequency: existingEvent.session_frequency || "none",
-            session_until: existingEvent.session_until || ""
+            session_until: existingEvent.session_until || "",
+            visibility: existingEvent.visibility || "household"
         })
 
         setShowCalendarEventForm(true)
@@ -785,7 +814,8 @@ export default function Calendar() {
             notes: "",
             repeats_yearly: false,
             session_frequency: "none",
-            session_until: ""
+            session_until: "",
+            visibility: "household"
         })
     }
 
@@ -813,7 +843,10 @@ export default function Calendar() {
                 notes: calendarEventForm.notes.trim() || null,
                 repeats_yearly: yearlyRepeat,
                 session_frequency: calendarEventForm.session_frequency || "none",
-                session_until: calendarEventForm.session_until || null
+                session_until: calendarEventForm.session_until || null,
+                visibility: isTeen
+                    ? "household"
+                    : calendarEventForm.visibility || "household"
             }
 
             if (editingCalendarEventId) {
@@ -1376,6 +1409,29 @@ export default function Calendar() {
                                                 />
                                             </label>
 
+                                            {!isTeen && (
+                                                <label>
+                                                    Visibility
+                                                    <select
+                                                        value={calendarEventForm.visibility}
+                                                        onChange={event =>
+                                                            updateCalendarEventForm(
+                                                                "visibility",
+                                                                event.target.value
+                                                            )
+                                                        }
+                                                    >
+                                                        <option value="household">
+                                                            Household — everyone
+                                                        </option>
+
+                                                        <option value="adults">
+                                                            Adults only
+                                                        </option>
+                                                    </select>
+                                                </label>
+                                            )}
+
                                             <label className="full-width">
                                                 Notes
                                                 <textarea
@@ -1825,48 +1881,61 @@ export default function Calendar() {
                                 </p>
                             ) : (
                                 <div className="calendar-detail-list">
-                                    {selectedEvents.map(event => (
-                                        <div className="calendar-detail-row" key={event.id}>
-                                            <span className="calendar-detail-icon">
-                                                {event.icon}
-                                            </span>
+                                    {selectedEvents.map(event => {
+                                        const canManageEvent =
+                                            !isTeen ||
+                                            event.user_id === currentUserId
 
-                                            <div>
-                                                <strong>{event.title}</strong>
+                                        return (
+                                            <div
+                                                className="calendar-detail-row"
+                                                key={event.id}
+                                            >
+                                                <span className="calendar-detail-icon">
+                                                    {event.icon}
+                                                </span>
 
-                                                {event.subtitle && <p>{event.subtitle}</p>}
+                                                <div>
+                                                    <strong>{event.title}</strong>
 
-                                                {event.location && <small>{event.location}</small>}
+                                                    {event.subtitle && (
+                                                        <p>{event.subtitle}</p>
+                                                    )}
+
+                                                    {event.location && (
+                                                        <small>{event.location}</small>
+                                                    )}
+                                                </div>
+
+                                                <div className="calendar-detail-actions">
+                                                    {canManageEvent && (
+                                                        <button
+                                                            className="secondary-button"
+                                                            type="button"
+                                                            onClick={() => handleViewEvent(event)}
+                                                        >
+                                                            Manage
+                                                        </button>
+                                                    )}
+
+                                                    {event.canDelete && canManageEvent && (
+                                                        <button
+                                                            className="danger-button"
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleDeleteCalendarEvent(event)
+                                                            }
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
-
-                                            <div className="calendar-detail-actions">
-                                                <button
-                                                    className="secondary-button"
-                                                    type="button"
-                                                    onClick={() => handleViewEvent(event)}
-                                                >
-                                                    Manage
-                                                </button>
-
-
-
-                                                {event.canDelete && (
-                                                    <button
-                                                        className="danger-button"
-                                                        type="button"
-                                                        onClick={() => handleDeleteCalendarEvent(event)}
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             )}
                         </section>
-
-
                     </div>
                 )}
                 <CalendarEventDetailSheet
