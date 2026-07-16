@@ -717,7 +717,7 @@ export default function Tasks() {
                     </SectionCard>
                 </BottomSheet>
 
-                <section className="card task-command-card">
+                <section className="task-command-card">
                     {loading ? (
                         <p>Loading tasks...</p>
                     ) : visibleTasks.length === 0 ? (

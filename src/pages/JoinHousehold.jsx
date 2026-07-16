@@ -98,6 +98,9 @@ export default function JoinHousehold() {
         invite?.household_name ||
         "this household"
 
+    const isTeenInvite =
+        invite?.member_type === "teen"
+
     return (
         <div className="onboarding-page">
             <section>
@@ -143,8 +146,9 @@ export default function JoinHousehold() {
                         </p>
 
                         <p className="onboarding-helper-text">
-                            Once you join, you’ll share calendars, to-dos, meals,
-                            shopping lists, and household updates with this household.
+                            {isTeenInvite
+                                ? "Once you join, you’ll be able to see family plans, manage your to-dos, and participate in this household."
+                                : "Once you join, you’ll share calendars, to-dos, meals, shopping lists, and household updates with this household."}
                         </p>
 
                         <div className="join-household-card">

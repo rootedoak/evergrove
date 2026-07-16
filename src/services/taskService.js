@@ -22,17 +22,27 @@ async function getCurrentUserId() {
     return user.id
 }
 
-async function getCurrentHouseholdId(userId) {
+async function getCurrentHouseholdMembership(userId) {
     const { data, error } = await supabase
         .from("household_members")
-        .select("household_id")
+        .select(`
+            household_id,
+            role
+        `)
         .eq("user_id", userId)
         .limit(1)
         .maybeSingle()
 
     if (error) throw error
 
-    return data?.household_id || null
+    return data || null
+}
+
+async function getCurrentHouseholdId(userId) {
+    const membership =
+        await getCurrentHouseholdMembership(userId)
+
+    return membership?.household_id || null
 }
 
 export async function getTasks() {
@@ -69,9 +79,7 @@ export async function getTasks() {
         `)
 
     if (householdId) {
-        query = query
-            .eq("household_id", householdId)
-            .or(`visibility.eq.household,and(visibility.eq.private,user_id.eq.${user.id})`)
+        query = query.eq("household_id", householdId)
     } else {
         query = query.eq("user_id", user.id)
     }
@@ -130,15 +138,60 @@ export async function createTask(task) {
     return data
 }
 
-export async function updateTask(id, updates) {
-    const { data, error } = await supabase
-        .from("tasks")
-        .update(updates)
-        .eq("id", id)
-        .select()
-        .maybeSingle()
+async function updateAssignedTaskStatus(id, status) {
+    const { data, error } = await supabase.rpc(
+        "set_my_assigned_task_status",
+        {
+            target_task_id: id,
+            target_status: status
+        }
+    )
 
     if (error) throw error
+
+    return data
+}
+
+export async function updateTask(id, updates) {
+    const user = await getCurrentUser()
+
+    const membership =
+        await getCurrentHouseholdMembership(user.id)
+
+    const isTeen = membership?.role === "teen"
+
+    const updateKeys = Object.keys(updates)
+
+    const isStatusOnlyUpdate =
+        updateKeys.length === 1 &&
+        updateKeys[0] === "status" &&
+        ["open", "complete"].includes(updates.status)
+
+    let data
+
+    if (isTeen && isStatusOnlyUpdate) {
+        data = await updateAssignedTaskStatus(
+            id,
+            updates.status
+        )
+    } else {
+        const response = await supabase
+            .from("tasks")
+            .update(updates)
+            .eq("id", id)
+            .select()
+            .maybeSingle()
+
+        if (response.error) throw response.error
+
+        data = response.data
+    }
+
+    if (!data) {
+        throw new Error(
+            "Task could not be updated or is not available."
+        )
+    }
 
     const isCompleted =
         updates.status === "complete" ||
@@ -156,8 +209,9 @@ export async function updateTask(id, updates) {
                 metadata: {
                     task_id: data.id,
                     task_title: data.title,
-                    family_member_id: data.family_member_id || null,
-                },
+                    family_member_id:
+                        data.family_member_id || null
+                }
             })
         }
 
@@ -168,10 +222,14 @@ export async function updateTask(id, updates) {
             metadata: {
                 source: "tasks",
                 visibility: data.visibility || null,
-                family_member_id: data.family_member_id || null,
-                activity_id: data.activity_id || null,
-                routine_id: data.routine_id || null,
-                trip_id: data.trip_id || null
+                family_member_id:
+                    data.family_member_id || null,
+                activity_id:
+                    data.activity_id || null,
+                routine_id:
+                    data.routine_id || null,
+                trip_id:
+                    data.trip_id || null
             }
         })
     }

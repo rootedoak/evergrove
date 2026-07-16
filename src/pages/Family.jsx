@@ -26,6 +26,7 @@ import {
 } from "../services/preferenceService"
 
 import ShareEvergroveCard from "../components/referrals/ShareEvergroveCard"
+import useHouseholdRole from "../hooks/useHouseholdRole"
 
 const initialForm = {
     name: "",
@@ -117,10 +118,13 @@ function FamilyMemberRow({
     onUploadAvatar,
     onDeleteAvatar,
     familyMenuOpen,
-    setFamilyMenuOpen
+    setFamilyMenuOpen,
+    isAdult
 }) {
     const details = []
     const isPendingInvite = member.invite_status === "pending"
+    const isTeenAccount =
+        member.member_type === "teen"
 
     function getInviteLink() {
         if (!member.invite_token) return ""
@@ -165,11 +169,16 @@ function FamilyMemberRow({
 
             <div className="family-member-main">
                 <strong>
-                    {isPendingInvite ? "Invited Adult" : member.name}
+                    {isPendingInvite
+                        ? member.member_type === "teen"
+                            ? "Invited Teen"
+                            : "Invited Adult"
+                        : member.name}
                 </strong>
 
                 <p>
                     {getRoleLabel(member.role)}
+                    {isTeenAccount ? " • Teen Account" : ""}
                     {isPendingInvite && member.invite_email
                         ? ` • ${member.invite_email}`
                         : details.length > 0
@@ -208,35 +217,38 @@ function FamilyMemberRow({
 
             {!isPendingInvite && (
                 <div className="family-row-actions">
-                    <ActionMenu
-                        title={member.name}
-                        open={familyMenuOpen === member.id}
-                        onOpenChange={isOpen =>
-                            setFamilyMenuOpen(isOpen ? member.id : null)
-                        }
-                        ariaLabel="Open family member actions"
-                        actions={[
-                            {
-                                label: "Change Photo",
-                                onClick: () => onUploadAvatar(member)
-                            },
-                            {
-                                label: "Remove Photo",
-                                danger: true,
-                                onClick: () => onDeleteAvatar(member)
-                            },
-                            {
-                                label: "Edit",
-                                onClick: () => onEdit(member)
-                            },
-                            {
-                                label: "Delete",
-                                danger: true,
-                                onClick: () => onDelete(member)
+                    {isAdult && (
+                        <ActionMenu
+                            title={member.name}
+                            open={familyMenuOpen === member.id}
+                            onOpenChange={isOpen =>
+                                setFamilyMenuOpen(isOpen ? member.id : null)
                             }
-                        ]}
-                    />
+                            ariaLabel="Open family member actions"
+                            actions={[
+                                {
+                                    label: "Change Photo",
+                                    onClick: () => onUploadAvatar(member)
+                                },
+                                {
+                                    label: "Remove Photo",
+                                    danger: true,
+                                    onClick: () => onDeleteAvatar(member)
+                                },
+                                {
+                                    label: "Edit",
+                                    onClick: () => onEdit(member)
+                                },
+                                {
+                                    label: "Delete",
+                                    danger: true,
+                                    onClick: () => onDelete(member)
+                                }
+                            ]}
+                        />
+                    )}
                 </div>
+
             )}
         </div>
     )
@@ -252,7 +264,8 @@ function FamilyGroup({
     onUploadAvatar,
     onDeleteAvatar,
     familyMenuOpen,
-    setFamilyMenuOpen
+    setFamilyMenuOpen,
+    isAdult
 }) {
     return (
         <SectionCard
@@ -274,6 +287,7 @@ function FamilyGroup({
                             onDeleteAvatar={onDeleteAvatar}
                             familyMenuOpen={familyMenuOpen}
                             setFamilyMenuOpen={setFamilyMenuOpen}
+                            isAdult={isAdult}
                         />
                     ))}
                 </div>
@@ -290,6 +304,7 @@ export default function Family() {
     const [saving, setSaving] = useState(false)
     const [editingId, setEditingId] = useState(null)
     const [inviteEmail, setInviteEmail] = useState("")
+    const [inviteType, setInviteType] = useState("adult")
     const [inviting, setInviting] = useState(false)
 
     const [familyMenuOpen, setFamilyMenuOpen] = useState(null)
@@ -304,6 +319,11 @@ export default function Family() {
         week_starts_on: "Sunday",
         shopping_category_order: defaultShoppingCategoryOrder
     })
+
+    const {
+        isAdult,
+        isTeen
+    } = useHouseholdRole()
 
     const [shoppingCategoriesOpen, setShoppingCategoriesOpen] = useState(false)
 
@@ -507,25 +527,29 @@ export default function Family() {
         }
     }
 
-    async function handleInviteAdult() {
+    async function handleInviteHouseholdMember() {
         if (!inviteEmail.trim()) return
 
         setInviting(true)
 
         try {
             const invite = await createPendingInvite(
-                inviteEmail.trim().toLowerCase()
+                inviteEmail.trim().toLowerCase(),
+                inviteType
             )
 
-            const inviteLink = `${window.location.origin}/invite/${invite.invite_token}`
+            const inviteLink =
+                `${window.location.origin}/invite/${invite.invite_token}`
 
             await navigator.clipboard.writeText(inviteLink)
 
             alert(
-                "Invite created!\n\nThe invite link has been copied to your clipboard."
+                `${inviteType === "teen" ? "Teen" : "Adult"} invite created!\n\n` +
+                "The invite link has been copied to your clipboard."
             )
 
             setInviteEmail("")
+            setInviteType("adult")
             await loadFamilyMembers()
         } catch (error) {
             console.error(error)
@@ -560,172 +584,202 @@ export default function Family() {
                 title="Household Management"
                 subtitle={`${familyMembers.length} total • ${groupedMembers.parents.length} parents • ${groupedMembers.children.length} children • ${groupedMembers.pets.length} pets`}
                 action={
-                    <Button
-                        onClick={() => {
-                            if (showForm) {
-                                resetForm()
-                            } else {
-                                setShowForm(true)
-                            }
-                        }}
-                    >
-                        {showForm ? "Cancel" : "+ Add"}
-                    </Button>
+                    isAdult && (
+                        <Button
+                            onClick={() => {
+                                if (showForm) {
+                                    resetForm()
+                                } else {
+                                    setShowForm(true)
+                                }
+                            }}
+                        >
+                            {showForm ? "Cancel" : "+ Add"}
+                        </Button>
+                    )
                 }
             />
 
             <div className="eg-stack">
 
-                <SectionCard
-                    title="Household Settings"
-                    subtitle="Shared settings for everyone in this household."
-                >
-                    <form className="form-grid" onSubmit={handleSaveHouseholdSettings}>
-                        <label>
-                            Household Name
-                            <input
-                                value={preferences.household_name}
-                                onChange={event =>
-                                    updatePreference("household_name", event.target.value)
-                                }
-                                placeholder="McGee Family"
-                            />
-                        </label>
-
-                        <label>
-                            Time Zone
-                            <select
-                                value={preferences.timezone}
-                                onChange={event =>
-                                    updatePreference("timezone", event.target.value)
-                                }
-                            >
-                                <option value="America/Chicago">Central Time</option>
-                                <option value="America/New_York">Eastern Time</option>
-                                <option value="America/Denver">Mountain Time</option>
-                                <option value="America/Los_Angeles">Pacific Time</option>
-                            </select>
-                        </label>
-
-                        <label>
-                            Week Starts On
-                            <select
-                                value={preferences.week_starts_on}
-                                onChange={event =>
-                                    updatePreference("week_starts_on", event.target.value)
-                                }
-                            >
-                                <option value="Sunday">Sunday</option>
-                                <option value="Monday">Monday</option>
-                            </select>
-                        </label>
-
-                        <Button
-                            className="full-width"
-                            type="submit"
-                            disabled={savingPreferences}
-                        >
-                            {savingPreferences ? "Saving..." : "Save Household Settings"}
-                        </Button>
-                    </form>
-                </SectionCard>
-
-                <SectionCard
-                    title="Invite Adult"
-                    subtitle="Invite a spouse, partner, or another adult to join your household."
-                >
-
-                    <div className="form-grid">
-                        <label className="full-width">
-                            Email Address
-                            <input
-                                type="email"
-                                value={inviteEmail}
-                                onChange={event => setInviteEmail(event.target.value)}
-                                placeholder="name@example.com"
-                            />
-                        </label>
-
-                        <Button
-                            type="button"
-                            className="full-width"
-                            disabled={inviting || !inviteEmail.trim()}
-                            onClick={handleInviteAdult}
-                        >
-                            {inviting ? "Creating Invite..." : "Create Invite"}
-                        </Button>
-                    </div>
-                </SectionCard>
-
-                <SectionCard
-                    title="Shopping Categories"
-                    subtitle="This category order is shared across household shopping lists."
-                >
-                    <button
-                        type="button"
-                        className="eg-collapsible-row"
-                        onClick={() => setShoppingCategoriesOpen(current => !current)}
+                {isAdult && (
+                    <SectionCard
+                        title="Household Settings"
+                        subtitle="Shared settings for everyone in this household."
                     >
-                        <span>
-                            {preferences.shopping_category_order.length} categories configured
-                        </span>
+                        <form className="form-grid" onSubmit={handleSaveHouseholdSettings}>
+                            <label>
+                                Household Name
+                                <input
+                                    value={preferences.household_name}
+                                    onChange={event =>
+                                        updatePreference("household_name", event.target.value)
+                                    }
+                                    placeholder="McGee Family"
+                                />
+                            </label>
 
-                        <strong>
-                            {shoppingCategoriesOpen ? "Hide" : "Manage"}
-                        </strong>
-                    </button>
+                            <label>
+                                Time Zone
+                                <select
+                                    value={preferences.timezone}
+                                    onChange={event =>
+                                        updatePreference("timezone", event.target.value)
+                                    }
+                                >
+                                    <option value="America/Chicago">Central Time</option>
+                                    <option value="America/New_York">Eastern Time</option>
+                                    <option value="America/Denver">Mountain Time</option>
+                                    <option value="America/Los_Angeles">Pacific Time</option>
+                                </select>
+                            </label>
 
-                    {shoppingCategoriesOpen && (
-                        <div className="eg-stack">
-                            <div className="settings-category-list">
-                                {preferences.shopping_category_order.map((category, index) => (
-                                    <div key={category} className="settings-category-row">
-                                        <span>{category}</span>
-
-                                        <div className="button-row">
-                                            <Button
-                                                variant="secondary"
-                                                size="sm"
-                                                type="button"
-                                                onClick={() => moveShoppingCategory(index, -1)}
-                                                disabled={index === 0}
-                                            >
-                                                Up
-                                            </Button>
-
-                                            <Button
-                                                variant="secondary"
-                                                size="sm"
-                                                type="button"
-                                                onClick={() => moveShoppingCategory(index, 1)}
-                                                disabled={index === preferences.shopping_category_order.length - 1}
-                                            >
-                                                Down
-                                            </Button>
-
-                                            <Button
-                                                variant="danger"
-                                                size="sm"
-                                                type="button"
-                                                onClick={() => removeShoppingCategory(category)}
-                                            >
-                                                Remove
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                            <label>
+                                Week Starts On
+                                <select
+                                    value={preferences.week_starts_on}
+                                    onChange={event =>
+                                        updatePreference("week_starts_on", event.target.value)
+                                    }
+                                >
+                                    <option value="Sunday">Sunday</option>
+                                    <option value="Monday">Monday</option>
+                                </select>
+                            </label>
 
                             <Button
-                                variant="secondary"
-                                type="button"
-                                onClick={addShoppingCategory}
+                                className="full-width"
+                                type="submit"
+                                disabled={savingPreferences}
                             >
-                                Add Category
+                                {savingPreferences ? "Saving..." : "Save Household Settings"}
+                            </Button>
+                        </form>
+                    </SectionCard>
+                )}
+
+                {isAdult && (
+                    <SectionCard
+                        title="Invite Household Member"
+                        subtitle="Invite an adult or teen to participate in your household."
+                    >
+                        <div className="form-grid">
+                            <label>
+                                Member Type
+                                <select
+                                    value={inviteType}
+                                    onChange={event =>
+                                        setInviteType(event.target.value)
+                                    }
+                                >
+                                    <option value="adult">Adult</option>
+                                    <option value="teen">Teen (13+)</option>
+                                </select>
+                            </label>
+
+                            <label>
+                                Email Address
+                                <input
+                                    type="email"
+                                    value={inviteEmail}
+                                    onChange={event =>
+                                        setInviteEmail(event.target.value)
+                                    }
+                                    placeholder="name@example.com"
+                                />
+                            </label>
+
+                            {inviteType === "teen" && (
+                                <p className="full-width muted-text">
+                                    Teen accounts are intended for household members age 13 or older.
+                                </p>
+                            )}
+
+                            <Button
+                                type="button"
+                                className="full-width"
+                                disabled={inviting || !inviteEmail.trim()}
+                                onClick={handleInviteHouseholdMember}
+                            >
+                                {inviting
+                                    ? "Creating Invite..."
+                                    : `Create ${inviteType === "teen" ? "Teen" : "Adult"} Invite`}
                             </Button>
                         </div>
-                    )}
-                </SectionCard>
+                    </SectionCard>
+                )}
+
+                {isAdult && (
+                    <SectionCard
+                        title="Shopping Categories"
+                        subtitle="This category order is shared across household shopping lists."
+                    >
+                        <button
+                            type="button"
+                            className="eg-collapsible-row"
+                            onClick={() => setShoppingCategoriesOpen(current => !current)}
+                        >
+                            <span>
+                                {preferences.shopping_category_order.length} categories configured
+                            </span>
+
+                            <strong>
+                                {shoppingCategoriesOpen ? "Hide" : "Manage"}
+                            </strong>
+                        </button>
+
+                        {shoppingCategoriesOpen && (
+                            <div className="eg-stack">
+                                <div className="settings-category-list">
+                                    {preferences.shopping_category_order.map((category, index) => (
+                                        <div key={category} className="settings-category-row">
+                                            <span>{category}</span>
+
+                                            <div className="button-row">
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    type="button"
+                                                    onClick={() => moveShoppingCategory(index, -1)}
+                                                    disabled={index === 0}
+                                                >
+                                                    Up
+                                                </Button>
+
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    type="button"
+                                                    onClick={() => moveShoppingCategory(index, 1)}
+                                                    disabled={index === preferences.shopping_category_order.length - 1}
+                                                >
+                                                    Down
+                                                </Button>
+
+                                                <Button
+                                                    variant="danger"
+                                                    size="sm"
+                                                    type="button"
+                                                    onClick={() => removeShoppingCategory(category)}
+                                                >
+                                                    Remove
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <Button
+                                    variant="secondary"
+                                    type="button"
+                                    onClick={addShoppingCategory}
+                                >
+                                    Add Category
+                                </Button>
+                            </div>
+                        )}
+                    </SectionCard>
+                )}
 
                 {showForm && (
                     <SectionCard
@@ -870,7 +924,7 @@ export default function Family() {
 
                 <SectionCard
                     title="Household"
-                    subtitle="Parents, children, pets, and invited adults."
+                    subtitle="Parents, teens, children, pets, and invited household members."
                 >
                     {loading ? (
                         <p>Loading family members...</p>
@@ -891,6 +945,7 @@ export default function Family() {
                                 onDeleteAvatar={handleDeleteAvatar}
                                 familyMenuOpen={familyMenuOpen}
                                 setFamilyMenuOpen={setFamilyMenuOpen}
+                                isAdult={isAdult}
                             />
 
                             <FamilyGroup
@@ -904,6 +959,7 @@ export default function Family() {
                                 onDeleteAvatar={handleDeleteAvatar}
                                 familyMenuOpen={familyMenuOpen}
                                 setFamilyMenuOpen={setFamilyMenuOpen}
+                                isAdult={isAdult}
                             />
 
                             <FamilyGroup
@@ -917,6 +973,7 @@ export default function Family() {
                                 onDeleteAvatar={handleDeleteAvatar}
                                 familyMenuOpen={familyMenuOpen}
                                 setFamilyMenuOpen={setFamilyMenuOpen}
+                                isAdult={isAdult}
                             />
 
                             {groupedMembers.other.length > 0 && (
@@ -931,6 +988,7 @@ export default function Family() {
                                     onDeleteAvatar={handleDeleteAvatar}
                                     familyMenuOpen={familyMenuOpen}
                                     setFamilyMenuOpen={setFamilyMenuOpen}
+                                    isAdult={isAdult}
                                 />
                             )}
                         </div>

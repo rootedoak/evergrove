@@ -42,6 +42,8 @@ import usePersonalInbox from "./hooks/usePersonalInbox"
 import PWAInstallBanner from "./components/PWAInstallBanner"
 import PersonalInboxEngine from "./components/PersonalInboxEngine"
 
+import LoadingScreen from "./components/LoadingScreen"
+
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
 import Family from "./pages/Family"
@@ -106,6 +108,9 @@ import DiscoverMessageEditor from "./pages/admin/discover/DiscoverMessageEditor"
 
 import AdminCommunications from "./pages/admin/communications/AdminCommunications"
 
+import useHouseholdRole from "./hooks/useHouseholdRole"
+import RoleRoute from "./components/RoleRoute"
+
 import ErrorBoundary from "./components/ErrorBoundary"
 import NotFound from "./pages/public/NotFound"
 import UIKit from "./pages/UIKit"
@@ -118,7 +123,7 @@ const mobileNavItems = [
   { to: "/personal-inbox", icon: Mail, label: "Inbox" }
 ]
 
-const moreNavItems = [
+const defaultMoreNavItems = [
   { to: "/profile", icon: User, label: "Account" },
   { to: "/settings/family", icon: Users, label: "Household" },
   { to: "/shopping", icon: ShoppingCart, label: "Shopping" },
@@ -128,17 +133,6 @@ const moreNavItems = [
   { to: "/routines", icon: Repeat, label: "Automations" },
   { to: "/about", icon: Info, label: "About" }
 ]
-
-function LoadingScreen({ message = "Loading Evergrove..." }) {
-  return (
-    <div className="loading-screen">
-      <div className="loading-card">
-        <div className="brand-mark">E</div>
-        <p>{message}</p>
-      </div>
-    </div>
-  )
-}
 
 function NavItem({ to, icon: Icon, label, end, onClick, badge = 0 }) {
   return (
@@ -188,8 +182,21 @@ function MobileBottomNav({ unreadInboxCount, onMoreClick }) {
   )
 }
 
-function MobileMoreSheet({ open, onClose }) {
+function MobileMoreSheet({
+  open,
+  onClose,
+  isTeen
+}) {
   if (!open) return null
+
+  const moreNavItems = defaultMoreNavItems.filter(item => {
+    if (!isTeen) return true
+
+    return ![
+      "/settings/family",
+      "/routines"
+    ].includes(item.to)
+  })
 
   return (
     <div className="eg-bottom-sheet-backdrop" onClick={onClose}>
@@ -245,7 +252,7 @@ function AuthenticatedInviteRedirect() {
 
   useEffect(() => {
     if (token) {
-      window.localStorage.setItem("evergrove_InviteToken", token)
+      window.localStorage.setItem("evergrove_inviteToken", token)
     }
   }, [token])
 
@@ -256,12 +263,26 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Dashboard />} />
-      <Route path="/settings/family" element={<Family />} />
+      <Route
+        path="/settings/family"
+        element={
+          <RoleRoute allow={["owner", "adult"]}>
+            <Family />
+          </RoleRoute>
+        }
+      />
       <Route path="/school" element={<SchoolHub />} />
       <Route path="/tasks" element={<Tasks />} />
       <Route path="/meals" element={<Meals />} />
       <Route path="/shopping" element={<ShoppingLists />} />
-      <Route path="/routines" element={<Routines />} />
+      <Route
+        path="/routines"
+        element={
+          <RoleRoute allow={["owner", "adult"]}>
+            <Routines />
+          </RoleRoute>
+        }
+      />
       <Route path="/reminders" element={<Reminders />} />
       <Route path="/documents" element={<Documents />} />
       <Route path="/calendar" element={<CalendarPage />} />
@@ -400,6 +421,17 @@ function OnboardingGuard({ children }) {
   const hasCompletedGuidedWalkthrough =
     preferences?.has_completed_guided_walkthrough === true
 
+  const pendingInviteToken =
+    window.localStorage.getItem("evergrove_invite_token")
+
+  if (
+    pendingInviteToken &&
+    location.pathname !== "/join-household" &&
+    !location.pathname.startsWith("/invite/")
+  ) {
+    return <Navigate to="/join-household" replace />
+  }
+
   if (
     hasCompletedOnboarding &&
     location.pathname === "/join-household"
@@ -447,6 +479,11 @@ function AppLayout() {
   const location = useLocation()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const { preferences } = usePreferences()
+
+  const {
+    isTeen
+  } = useHouseholdRole()
+
   const { items: inboxItems } = usePersonalInbox()
 
   const canShowDiscoverMessage =
@@ -523,6 +560,7 @@ function AppLayout() {
       <MobileMoreSheet
         open={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
+        isTeen={isTeen}
       />
 
       <MobileBottomNav
@@ -569,7 +607,16 @@ export default function App() {
       setSession(nextSession)
 
       if (event === "SIGNED_IN") {
-        window.history.replaceState({}, "", "/")
+        const pendingInviteToken =
+          window.localStorage.getItem("evergrove_invite_token")
+
+        window.history.replaceState(
+          {},
+          "",
+          pendingInviteToken
+            ? "/join-household"
+            : "/"
+        )
       }
     })
 

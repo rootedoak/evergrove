@@ -255,7 +255,6 @@ export default function Onboarding() {
             {step === 1 && (
                 <section className="eg-card onboarding-card onboarding-welcome-card">
                     <div className="eg-stack">
-                        <div className="onboarding-hero-icon">🏡</div>
 
                         <div>
                             <h1>Welcome Home</h1>
@@ -471,7 +470,6 @@ export default function Onboarding() {
             {step === 5 && (
                 <section className="eg-card onboarding-card onboarding-ready-card">
                     <div className="eg-stack">
-                        <div className="onboarding-hero-icon">✨</div>
 
                         <div>
                             <p className="onboarding-eyebrow">Welcome Home</p>

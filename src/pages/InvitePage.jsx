@@ -94,6 +94,9 @@ export default function InvitePage() {
 
     const householdName = invite?.households?.name || "this household"
 
+    const isTeenInvite =
+        invite?.member_type === "teen"
+
     return (
         <div className="onboarding-page">
             <section>
@@ -137,12 +140,12 @@ export default function InvitePage() {
                         </p>
 
                         <p className="onboarding-helper-text">
-                            You’ll be able to share calendars, to-dos, meals,
-                            shopping lists, and household updates.
+                            {isTeenInvite
+                                ? "You’ll be able to see family plans, manage your to-dos, and participate in your household."
+                                : "You’ll be able to share calendars, to-dos, meals, shopping lists, and household updates."}
                         </p>
 
                         <div className="join-household-card">
-                            <span>🏡</span>
                             <strong>
                                 {householdName}
                             </strong>

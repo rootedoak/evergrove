@@ -61,10 +61,42 @@ export async function createHousehold(name) {
         .insert({
             household_id: household.id,
             user_id: user.id,
-            role: "admin"
+            role: "owner"
         })
 
     if (memberError) throw memberError
 
     return household
+}
+
+export async function getMyHouseholdAccess() {
+    const household = await ensureMyHousehold()
+
+    const [
+        { data: isMember, error: memberError },
+        { data: role, error: roleError },
+        { data: canManage, error: manageError }
+    ] = await Promise.all([
+        supabase.rpc("is_household_member", {
+            target_household_id: household.id
+        }),
+        supabase.rpc("get_household_role", {
+            target_household_id: household.id
+        }),
+        supabase.rpc("has_household_role", {
+            target_household_id: household.id,
+            allowed_roles: ["owner", "adult"]
+        })
+    ])
+
+    if (memberError) throw memberError
+    if (roleError) throw roleError
+    if (manageError) throw manageError
+
+    return {
+        householdId: household.id,
+        isMember,
+        role,
+        canManage
+    }
 }

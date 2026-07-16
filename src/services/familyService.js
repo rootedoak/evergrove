@@ -129,7 +129,7 @@ export async function updateFamilyMember(id, updates) {
         entityId: data.id,
         metadata: {
             source: "family",
-            updated_fields: Object.keys(cleanMember),
+            updated_fields: Object.keys(updates),
             role: data.role || null,
             member_type: data.member_type || null
         }
@@ -161,17 +161,31 @@ export async function deleteFamilyMember(id) {
     return true
 }
 
-export async function createPendingInvite(email) {
+export async function createPendingInvite(
+    email,
+    inviteType = "adult"
+) {
     const household = await ensureMyHousehold()
     const normalizedEmail = email.trim().toLowerCase()
     const inviteToken = createInviteToken()
+
+    const validInviteTypes = ["adult", "teen"]
+
+    if (!validInviteTypes.includes(inviteType)) {
+        throw new Error("Invalid household invite type.")
+    }
+
+    const familyRole =
+        inviteType === "teen"
+            ? "child"
+            : "parent"
 
     const { data, error } = await supabase
         .from("family_members")
         .insert({
             household_id: household.id,
-            role: "parent",
-            member_type: "adult",
+            role: familyRole,
+            member_type: inviteType,
             invite_email: normalizedEmail,
             invite_status: "pending",
             invite_token: inviteToken,
@@ -229,7 +243,10 @@ export async function acceptPendingInvite(email) {
             .insert({
                 household_id: invite.household_id,
                 user_id: user.id,
-                role: invite.role || "member"
+                role:
+                    invite.member_type === "teen"
+                        ? "teen"
+                        : "adult"
             })
 
         if (householdMemberError) throw householdMemberError
@@ -295,17 +312,6 @@ export async function getPendingInviteForCurrentUser() {
 
     if (error) throw error
 
-    await trackUsageEvent({
-        eventType: "household_invite_accepted",
-        entityType: "family_member",
-        entityId: data.id,
-        metadata: {
-            source: "family",
-            household_id: data.household_id,
-            role: data.role || null
-        }
-    })
-
     return data
 }
 
@@ -356,53 +362,34 @@ export async function getPendingInviteByToken(inviteToken) {
 }
 
 export async function acceptPendingInviteByToken(inviteToken) {
-    const invite = await getPendingInviteByToken(inviteToken)
-    const user = await getCurrentUser()
+    const cleanToken = inviteToken?.trim()
 
-    if (!invite) {
-        throw new Error("No pending invite found.")
+    if (!cleanToken) {
+        throw new Error("Invite token is required.")
     }
 
-    const { data: existingMembership, error: membershipLookupError } = await supabase
-        .from("household_members")
-        .select("id")
-        .eq("household_id", invite.household_id)
-        .eq("user_id", user.id)
-        .maybeSingle()
-
-    if (membershipLookupError) throw membershipLookupError
-
-    if (!existingMembership) {
-        const { error: householdMemberError } = await supabase
-            .from("household_members")
-            .insert({
-                household_id: invite.household_id,
-                user_id: user.id,
-                role: invite.role || "member"
-            })
-
-        if (householdMemberError) throw householdMemberError
-    }
-
-    const { data, error } = await supabase
-        .from("family_members")
-        .update({
-            invite_status: "accepted",
-            linked_user_id: user.id,
-            user_id: user.id,
-            name:
-                user.user_metadata?.full_name ||
-                user.user_metadata?.name ||
-                invite.name ||
-                user.email,
-        })
-        .eq("id", invite.id)
-        .select()
-        .single()
+    const { data, error } = await supabase.rpc(
+        "accept_household_invite",
+        {
+            p_invite_token: cleanToken
+        }
+    )
 
     if (error) throw error
 
     await completeOnboarding()
+
+    await trackUsageEvent({
+        eventType: "household_invite_accepted",
+        entityType: "family_member",
+        entityId: data.id,
+        metadata: {
+            source: "family",
+            household_id: data.household_id,
+            role: data.role || null,
+            member_type: data.member_type || null
+        }
+    })
 
     return data
 }

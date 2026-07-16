@@ -823,6 +823,13 @@
     margin-top: 8px;
 }
 
+.task-command-card {
+    display: grid;
+    gap: 16px;
+    width: 100%;
+    min-width: 0;
+}
+
 .eg-task-check {
     width: 28px;
     height: 28px;
@@ -4902,103 +4909,81 @@ input[type="file"]::-webkit-file-upload-button:hover,
     flex: 0 0 auto;
 }
 
-/* Prevent mobile form controls from exceeding their containers */
+/* =========================================================
+   CSS TO FIX CONTAINER SPILL
+   ========================================================= */
 *,
 *::before,
 *::after {
     box-sizing: border-box;
 }
 
-input,
-select,
-textarea,
-button {
-    max-width: 100%;
+/* Keep form controls inset inside mobile overlays */
+.eg-bottom-sheet .eg-section-content,
+.calendar-detail-sheet .calendar-form-card {
+    padding-left: 16px;
+    padding-right: 16px;
     box-sizing: border-box;
 }
 
-input,
-select,
-textarea {
-    min-width: 0;
-}
-
-.form-grid,
-.eg-form,
-.eg-form label,
-.form-grid>*,
-.eg-form>* {
-    min-width: 0;
-    max-width: 100%;
-}
-
-.form-grid input,
-.form-grid select,
-.form-grid textarea,
-.eg-form input,
-.eg-form select,
-.eg-form textarea {
+.eg-bottom-sheet .eg-section-content form,
+.calendar-detail-sheet .calendar-form-card .form-grid {
     width: 100%;
     min-width: 0;
     max-width: 100%;
 }
 
-.eg-bottom-sheet {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    overflow-x: hidden;
+/* Prevent calendar form grids from exceeding mobile sheets */
+@media (max-width: 768px) {
+    .calendar-detail-sheet .form-grid {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .calendar-detail-sheet .form-grid>*,
+    .calendar-detail-sheet .form-grid label,
+    .calendar-detail-sheet .form-grid input,
+    .calendar-detail-sheet .form-grid select,
+    .calendar-detail-sheet .form-grid textarea,
+    .calendar-detail-sheet .form-grid button {
+        min-width: 0;
+        max-width: 100%;
+    }
 }
 
-.calendar-detail-sheet {
-    width: min(calc(100% - 24px),
-            760px);
-    max-width: calc(100% - 24px);
-    min-width: 0;
-    box-sizing: border-box;
-    overflow-x: hidden;
-}
-
-.eg-bottom-sheet {
-    padding-left: max(24px,
-            env(safe-area-inset-left));
-
-    padding-right: max(24px,
-            env(safe-area-inset-right));
-
-    padding-bottom: max(24px,
-            env(safe-area-inset-bottom));
-}
-
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
-}
-
-.form-grid>*,
-.eg-form label {
-    min-width: 0;
-    max-width: 100%;
-}
-
-.form-grid input,
-.form-grid select,
-.form-grid textarea,
-.eg-form input,
-.eg-form select,
-.eg-form textarea {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
+/* Prevent native iOS time controls from forcing form overflow */
 input[type="date"],
 input[type="time"],
 input[type="datetime-local"] {
+    display: block;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+
+    inline-size: 100% !important;
+    min-inline-size: 0 !important;
+    max-inline-size: 100% !important;
+
+    min-height: 52px;
+    padding: 0.85rem 1rem;
+
+    border: 1px solid var(--eg-border);
+    border-radius: 0.85rem;
+    background: var(--eg-surface);
+    color: var(--eg-text);
+    font: inherit;
+
+    -webkit-appearance: none;
+    appearance: none;
+
+    box-sizing: border-box;
+}
+
+label:has(input[type="time"]) {
+    width: 100%;
     min-width: 0;
     max-width: 100%;
 }
