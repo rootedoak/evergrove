@@ -305,7 +305,7 @@ export default async function handler(req, res) {
         )
 
         const { data, error } = await resend.emails.send({
-            from: process.env.EVERGROVE_EMAIL_FROM,
+            from: "Evergrove <no-reply@auth.evergroveapp.com>",
             to: [invite.invite_email],
             subject: `You’re invited to join ${householdName} on Evergrove`,
             html: buildInviteEmail({
