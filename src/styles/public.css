@@ -951,6 +951,10 @@
 }
 
 .public-site-sign-in {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
     padding: 0.7rem 0.85rem;
 }
 
@@ -1801,8 +1805,7 @@
             env(safe-area-inset-top) 1rem 0;
     }
 
-    .public-site-brand span,
-    .public-site-sign-in {
+    .public-site-brand span {
         display: none;
     }
 
