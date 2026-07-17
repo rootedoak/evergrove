@@ -20,9 +20,7 @@ function escapeHtml(value = "") {
 }
 
 function getAppUrl() {
-    return process.env.VERCEL_PROJECT_PRODUCTION_URL
-        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-        : "https://evergroveapp.com"
+    return "https://evergroveapp.com"
 }
 
 function buildInviteEmail({
@@ -290,6 +288,15 @@ export default async function handler(req, res) {
 
         const inviteUrl =
             `${getAppUrl()}/invite/${invite.invite_token}`
+
+        console.log("Household invite email details:", {
+            inviteId: invite.id,
+            inviteEmail: invite.invite_email,
+            inviteToken: invite.invite_token,
+            householdName,
+            inviteUrl,
+            from: process.env.EVERGROVE_EMAIL_FROM
+        })
 
         const resend = new Resend(
             process.env.RESEND_API_KEY
