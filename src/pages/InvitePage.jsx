@@ -68,7 +68,7 @@ export default function InvitePage() {
             } = await supabase.auth.getSession()
 
             if (!session) {
-                window.location.href = "/?mode=create-account"
+                window.location.href = "/login?mode=create-account"
                 return
             }
 
@@ -89,7 +89,7 @@ export default function InvitePage() {
 
     function handleSignInInstead() {
         localStorage.setItem(INVITE_TOKEN_KEY, token)
-        window.location.href = "/"
+        window.location.href = "/login"
     }
 
     const householdName = invite?.households?.name || "this household"
@@ -168,7 +168,7 @@ export default function InvitePage() {
                                 ? "Joining..."
                                 : alreadySignedIn
                                     ? `Join ${householdName}`
-                                    : "Create Account"}
+                                    : `Join ${householdName}`}
                         </button>
 
                         {!alreadySignedIn && (

@@ -53,6 +53,12 @@ export default function Login({ onLogin }) {
     const [confirmedAdult, setConfirmedAdult] = useState(false)
     const [acceptedLegal, setAcceptedLegal] = useState(false)
 
+    const inviteToken = localStorage.getItem(
+        "evergrove_invite_token"
+    )
+
+    const isInviteFlow = Boolean(inviteToken)
+
     useEffect(() => {
         const modeParam = searchParams.get("mode")
 
@@ -540,14 +546,20 @@ export default function Login({ onLogin }) {
                                 </div>
 
                                 <span className="auth-card-eyebrow">
-                                    Start your household
+                                    {isInviteFlow
+                                        ? "Join your household"
+                                        : "Start your household"}
                                 </span>
 
-                                <h2>Let&apos;s get your family started.</h2>
+                                <h2>{isInviteFlow
+                                    ? "Create your account to join."
+                                    : "Let's get your family started."}
+                                </h2>
 
                                 <p>
-                                    Your account will become the first member
-                                    of your new Evergrove household.
+                                    {isInviteFlow
+                                        ? "Your account will be added to the household that invited you."
+                                        : "Your account will become the first member of your new Evergrove household."}
                                 </p>
 
                                 {errorMessage && (
@@ -651,7 +663,9 @@ export default function Login({ onLogin }) {
                                 >
                                     {loading
                                         ? "Creating Your Account..."
-                                        : "Create My Household"}
+                                        : isInviteFlow
+                                            ? "Create Account & Join Household"
+                                            : "Create My Household"}
 
                                     {!loading && (
                                         <ArrowRight size={18} />
@@ -767,9 +781,9 @@ export default function Login({ onLogin }) {
                                 <strong>{email}</strong>
 
                                 <p>
-                                    After verifying your email, return to
-                                    Evergrove and sign in to finish setting
-                                    up your household.
+                                    {isInviteFlow
+                                        ? "After verifying your email, return to Evergrove to join your household."
+                                        : "After verifying your email, return to Evergrove and sign in to finish setting up your household."}
                                 </p>
 
                                 <button

@@ -253,7 +253,10 @@ function AuthenticatedInviteRedirect() {
 
   useEffect(() => {
     if (token) {
-      window.localStorage.setItem("evergrove_inviteToken", token)
+      window.localStorage.setItem(
+        "evergrove_invite_token",
+        token
+      )
     }
   }, [token])
 
@@ -438,14 +441,6 @@ function OnboardingGuard({ children }) {
     !location.pathname.startsWith("/invite/")
   ) {
     return <Navigate to="/join-household" replace />
-  }
-
-  if (
-    hasCompletedOnboarding &&
-    location.pathname === "/join-household"
-  ) {
-    window.localStorage.removeItem("evergrove_invite_token")
-    return <Navigate to="/" replace />
   }
 
   if (
