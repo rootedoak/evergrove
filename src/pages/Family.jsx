@@ -13,6 +13,8 @@ import SectionCard from "../components/ui/SectionCard"
 import Button from "../components/ui/Button"
 import InsightCard from "../components/dashboard/InsightCard"
 import ActionMenu from "../components/ui/ActionMenu"
+import BottomSheet from "../components/ui/BottomSheet"
+import { X } from "lucide-react"
 
 import Avatar from "../components/ui/Avatar"
 import {
@@ -308,6 +310,7 @@ export default function Family() {
     const [inviting, setInviting] = useState(false)
 
     const [familyMenuOpen, setFamilyMenuOpen] = useState(null)
+    const [householdSettingsOpen, setHouseholdSettingsOpen] = useState(false)
 
     const isChild = form.role === "child"
     const isPet = form.role === "pet"
@@ -619,62 +622,6 @@ export default function Family() {
 
                 {isAdult && (
                     <SectionCard
-                        title="Household Settings"
-                        subtitle="Shared settings for everyone in this household."
-                    >
-                        <form className="form-grid" onSubmit={handleSaveHouseholdSettings}>
-                            <label>
-                                Household Name
-                                <input
-                                    value={preferences.household_name}
-                                    onChange={event =>
-                                        updatePreference("household_name", event.target.value)
-                                    }
-                                    placeholder="McGee Family"
-                                />
-                            </label>
-
-                            <label>
-                                Time Zone
-                                <select
-                                    value={preferences.timezone}
-                                    onChange={event =>
-                                        updatePreference("timezone", event.target.value)
-                                    }
-                                >
-                                    <option value="America/Chicago">Central Time</option>
-                                    <option value="America/New_York">Eastern Time</option>
-                                    <option value="America/Denver">Mountain Time</option>
-                                    <option value="America/Los_Angeles">Pacific Time</option>
-                                </select>
-                            </label>
-
-                            <label>
-                                Week Starts On
-                                <select
-                                    value={preferences.week_starts_on}
-                                    onChange={event =>
-                                        updatePreference("week_starts_on", event.target.value)
-                                    }
-                                >
-                                    <option value="Sunday">Sunday</option>
-                                    <option value="Monday">Monday</option>
-                                </select>
-                            </label>
-
-                            <Button
-                                className="full-width"
-                                type="submit"
-                                disabled={savingPreferences}
-                            >
-                                {savingPreferences ? "Saving..." : "Save Household Settings"}
-                            </Button>
-                        </form>
-                    </SectionCard>
-                )}
-
-                {isAdult && (
-                    <SectionCard
                         title="Invite Household Member"
                         subtitle="Invite an adult or teen to participate in your household."
                     >
@@ -723,219 +670,6 @@ export default function Family() {
                         </div>
                     </SectionCard>
                 )}
-
-                {isAdult && (
-                    <SectionCard
-                        title="Shopping Categories"
-                        subtitle="This category order is shared across household shopping lists."
-                    >
-                        <button
-                            type="button"
-                            className="eg-collapsible-row"
-                            onClick={() => setShoppingCategoriesOpen(current => !current)}
-                        >
-                            <span>
-                                {preferences.shopping_category_order.length} categories configured
-                            </span>
-
-                            <strong>
-                                {shoppingCategoriesOpen ? "Hide" : "Manage"}
-                            </strong>
-                        </button>
-
-                        {shoppingCategoriesOpen && (
-                            <div className="eg-stack">
-                                <div className="settings-category-list">
-                                    {preferences.shopping_category_order.map((category, index) => (
-                                        <div key={category} className="settings-category-row">
-                                            <span>{category}</span>
-
-                                            <div className="button-row">
-                                                <Button
-                                                    variant="secondary"
-                                                    size="sm"
-                                                    type="button"
-                                                    onClick={() => moveShoppingCategory(index, -1)}
-                                                    disabled={index === 0}
-                                                >
-                                                    Up
-                                                </Button>
-
-                                                <Button
-                                                    variant="secondary"
-                                                    size="sm"
-                                                    type="button"
-                                                    onClick={() => moveShoppingCategory(index, 1)}
-                                                    disabled={index === preferences.shopping_category_order.length - 1}
-                                                >
-                                                    Down
-                                                </Button>
-
-                                                <Button
-                                                    variant="danger"
-                                                    size="sm"
-                                                    type="button"
-                                                    onClick={() => removeShoppingCategory(category)}
-                                                >
-                                                    Remove
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <Button
-                                    variant="secondary"
-                                    type="button"
-                                    onClick={addShoppingCategory}
-                                >
-                                    Add Category
-                                </Button>
-                            </div>
-                        )}
-                    </SectionCard>
-                )}
-
-                {showForm && (
-                    <SectionCard
-                        title={
-                            editingId
-                                ? "Edit Family Member"
-                                : "Add Family Member"
-                        }
-                        subtitle="Parents, children, and pets."
-                    >
-
-                        <form className="form-grid" onSubmit={handleSubmit}>
-                            <label>
-                                Name
-                                <input
-                                    value={form.name}
-                                    onChange={event =>
-                                        updateForm("name", event.target.value)
-                                    }
-                                    required
-                                />
-                            </label>
-
-                            <label>
-                                Role
-                                <select
-                                    value={form.role}
-                                    onChange={event =>
-                                        updateForm("role", event.target.value)
-                                    }
-                                    required
-                                >
-                                    <option value="">Select Role</option>
-                                    <option value="parent">Parent</option>
-                                    <option value="child">Child</option>
-                                    <option value="pet">Pet</option>
-                                </select>
-                            </label>
-
-                            {form.role && (
-                                <>
-                                    <label>
-                                        Avatar Emoji
-                                        <input
-                                            value={form.avatar_emoji}
-                                            onChange={event =>
-                                                updateForm("avatar_emoji", event.target.value)
-                                            }
-                                            placeholder={isPet ? "🐶" : "🧒"}
-                                        />
-                                    </label>
-
-                                    <label>
-                                        {isPet ? "Birthday / Adoption Date" : "Birthdate"}
-                                        <input
-                                            type="date"
-                                            value={form.birthdate}
-                                            onChange={event =>
-                                                updateForm("birthdate", event.target.value)
-                                            }
-                                        />
-                                    </label>
-                                </>
-                            )}
-
-                            {isChild && (
-                                <>
-                                    <label>
-                                        School
-                                        <input
-                                            value={form.school}
-                                            onChange={event =>
-                                                updateForm("school", event.target.value)
-                                            }
-                                        />
-                                    </label>
-
-                                    <label>
-                                        Grade
-                                        <input
-                                            value={form.grade}
-                                            onChange={event =>
-                                                updateForm("grade", event.target.value)
-                                            }
-                                        />
-                                    </label>
-                                </>
-                            )}
-
-                            {isPet && (
-                                <>
-                                    <label>
-                                        Species
-                                        <input
-                                            value={form.species}
-                                            onChange={event =>
-                                                updateForm("species", event.target.value)
-                                            }
-                                            placeholder="Dog, cat, rabbit..."
-                                        />
-                                    </label>
-
-                                    <label>
-                                        Breed
-                                        <input
-                                            value={form.breed}
-                                            onChange={event =>
-                                                updateForm("breed", event.target.value)
-                                            }
-                                            placeholder="Golden Retriever, Tabby..."
-                                        />
-                                    </label>
-                                </>
-                            )}
-
-                            {form.role && (
-                                <label className="full-width">
-                                    Notes
-                                    <textarea
-                                        value={form.notes}
-                                        onChange={event =>
-                                            updateForm("notes", event.target.value)
-                                        }
-                                        rows="3"
-                                    />
-                                </label>
-                            )}
-
-                            <Button
-                                className="full-width"
-                                type="submit"
-                                disabled={saving}
-                            >
-                                {saving
-                                    ? "Saving..."
-                                    : editingId
-                                        ? "Save Changes"
-                                        : "Save Family Member"}
-                            </Button>
-                        </form>
-                    </SectionCard>)}
 
                 <SectionCard
                     title="Household"
@@ -1020,6 +754,338 @@ export default function Family() {
                         </div>
                     )}
                 </SectionCard>
+
+                {isAdult && (
+                    <SectionCard
+                        title="Household Settings"
+                        subtitle="Shared settings for everyone in this household."
+                    >
+                        <button
+                            type="button"
+                            className="eg-collapsible-row"
+                            onClick={() =>
+                                setHouseholdSettingsOpen(current => !current)
+                            }
+                        >
+                            <span>
+                                Household name, time zone, and week settings
+                            </span>
+
+                            <strong>
+                                {householdSettingsOpen ? "Hide" : "Manage"}
+                            </strong>
+                        </button>
+
+                        {householdSettingsOpen && (
+                            <form className="form-grid" onSubmit={handleSaveHouseholdSettings}>
+                                <label>
+                                    Household Name
+                                    <input
+                                        value={preferences.household_name}
+                                        onChange={event =>
+                                            updatePreference("household_name", event.target.value)
+                                        }
+                                        placeholder="McGee Family"
+                                    />
+                                </label>
+
+                                <label>
+                                    Time Zone
+                                    <select
+                                        value={preferences.timezone}
+                                        onChange={event =>
+                                            updatePreference("timezone", event.target.value)
+                                        }
+                                    >
+                                        <option value="America/Chicago">Central Time</option>
+                                        <option value="America/New_York">Eastern Time</option>
+                                        <option value="America/Denver">Mountain Time</option>
+                                        <option value="America/Los_Angeles">Pacific Time</option>
+                                    </select>
+                                </label>
+
+                                <label>
+                                    Week Starts On
+                                    <select
+                                        value={preferences.week_starts_on}
+                                        onChange={event =>
+                                            updatePreference("week_starts_on", event.target.value)
+                                        }
+                                    >
+                                        <option value="Sunday">Sunday</option>
+                                        <option value="Monday">Monday</option>
+                                    </select>
+                                </label>
+
+                                <Button
+                                    className="full-width"
+                                    type="submit"
+                                    disabled={savingPreferences}
+                                >
+                                    {savingPreferences ? "Saving..." : "Save Household Settings"}
+                                </Button>
+                            </form>
+                        )}
+                    </SectionCard>
+                )}
+
+                {isAdult && (
+                    <SectionCard
+                        title="Shopping Categories"
+                        subtitle="This category order is shared across household shopping lists."
+                    >
+                        <button
+                            type="button"
+                            className="eg-collapsible-row"
+                            onClick={() => setShoppingCategoriesOpen(current => !current)}
+                        >
+                            <span>
+                                {preferences.shopping_category_order.length} categories configured
+                            </span>
+
+                            <strong>
+                                {shoppingCategoriesOpen ? "Hide" : "Manage"}
+                            </strong>
+                        </button>
+
+                        {shoppingCategoriesOpen && (
+                            <div className="eg-stack">
+                                <div className="settings-category-list">
+                                    {preferences.shopping_category_order.map((category, index) => (
+                                        <div key={category} className="settings-category-row">
+                                            <span>{category}</span>
+
+                                            <div className="button-row">
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    type="button"
+                                                    onClick={() => moveShoppingCategory(index, -1)}
+                                                    disabled={index === 0}
+                                                >
+                                                    Up
+                                                </Button>
+
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    type="button"
+                                                    onClick={() => moveShoppingCategory(index, 1)}
+                                                    disabled={index === preferences.shopping_category_order.length - 1}
+                                                >
+                                                    Down
+                                                </Button>
+
+                                                <Button
+                                                    variant="danger"
+                                                    size="sm"
+                                                    type="button"
+                                                    onClick={() => removeShoppingCategory(category)}
+                                                >
+                                                    Remove
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <Button
+                                    variant="secondary"
+                                    type="button"
+                                    onClick={addShoppingCategory}
+                                >
+                                    Add Category
+                                </Button>
+                            </div>
+                        )}
+                    </SectionCard>
+                )}
+
+                <BottomSheet
+                    open={showForm}
+                    onClose={resetForm}
+                >
+                    <div className="eg-sheet-content">
+                        <div className="eg-sheet-header">
+                            <div>
+                                <h2>
+                                    {editingId
+                                        ? "Edit Family Member"
+                                        : "Add Family Member"}
+                                </h2>
+
+                                <p>
+                                    Parents, children, and pets.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                className="eg-sheet-close"
+                                onClick={resetForm}
+                                aria-label="Close"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form
+                            className="form-grid"
+                            onSubmit={handleSubmit}
+                        >
+                            <label>
+                                Name
+                                <input
+                                    value={form.name}
+                                    onChange={event =>
+                                        updateForm("name", event.target.value)
+                                    }
+                                    required
+                                />
+                            </label>
+
+                            <label>
+                                Role
+                                <select
+                                    value={form.role}
+                                    onChange={event =>
+                                        updateForm("role", event.target.value)
+                                    }
+                                    required
+                                >
+                                    <option value="">Select Role</option>
+                                    <option value="parent">Parent</option>
+                                    <option value="child">Child</option>
+                                    <option value="pet">Pet</option>
+                                </select>
+                            </label>
+
+                            {form.role && (
+                                <>
+                                    <label>
+                                        Avatar Emoji
+                                        <input
+                                            value={form.avatar_emoji}
+                                            onChange={event =>
+                                                updateForm(
+                                                    "avatar_emoji",
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder={isPet ? "🐶" : "🧒"}
+                                        />
+                                    </label>
+
+                                    <label>
+                                        {isPet
+                                            ? "Birthday / Adoption Date"
+                                            : "Birthdate"}
+                                        <input
+                                            type="date"
+                                            value={form.birthdate}
+                                            onChange={event =>
+                                                updateForm(
+                                                    "birthdate",
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+                                </>
+                            )}
+
+                            {isChild && (
+                                <>
+                                    <label>
+                                        School
+                                        <input
+                                            value={form.school}
+                                            onChange={event =>
+                                                updateForm(
+                                                    "school",
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+
+                                    <label>
+                                        Grade
+                                        <input
+                                            value={form.grade}
+                                            onChange={event =>
+                                                updateForm(
+                                                    "grade",
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+                                </>
+                            )}
+
+                            {isPet && (
+                                <>
+                                    <label>
+                                        Species
+                                        <input
+                                            value={form.species}
+                                            onChange={event =>
+                                                updateForm(
+                                                    "species",
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder="Dog, cat, rabbit..."
+                                        />
+                                    </label>
+
+                                    <label>
+                                        Breed
+                                        <input
+                                            value={form.breed}
+                                            onChange={event =>
+                                                updateForm(
+                                                    "breed",
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder="Golden Retriever, Tabby..."
+                                        />
+                                    </label>
+                                </>
+                            )}
+
+                            {form.role && (
+                                <label className="full-width">
+                                    Notes
+                                    <textarea
+                                        value={form.notes}
+                                        onChange={event =>
+                                            updateForm(
+                                                "notes",
+                                                event.target.value
+                                            )
+                                        }
+                                        rows="3"
+                                    />
+                                </label>
+                            )}
+
+                            <Button
+                                className="full-width"
+                                type="submit"
+                                disabled={saving}
+                            >
+                                {saving
+                                    ? "Saving..."
+                                    : editingId
+                                        ? "Save Changes"
+                                        : "Save Family Member"}
+                            </Button>
+                        </form>
+                    </div>
+                </BottomSheet>
 
                 <ShareEvergroveCard />
             </div>

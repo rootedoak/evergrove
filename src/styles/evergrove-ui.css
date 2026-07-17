@@ -4933,6 +4933,50 @@ input[type="file"]::-webkit-file-upload-button:hover,
     max-width: 100%;
 }
 
+.eg-sheet-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.eg-sheet-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.eg-sheet-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--eg-text-primary);
+}
+
+.eg-sheet-header p {
+    margin: 6px 0 0;
+    color: var(--eg-text-secondary);
+}
+
+.eg-sheet-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 12px;
+    background: var(--eg-surface-secondary);
+    color: var(--eg-text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: background .2s ease;
+}
+
+.eg-sheet-close:hover {
+    background: var(--eg-border);
+}
+
 /* Prevent calendar form grids from exceeding mobile sheets */
 @media (max-width: 768px) {
     .calendar-detail-sheet .form-grid {
