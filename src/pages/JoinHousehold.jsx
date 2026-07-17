@@ -31,6 +31,11 @@ export default function JoinHousehold() {
                     const tokenInvite = await getPendingInviteByToken(storedToken)
 
                     if (tokenInvite) {
+                        console.log(
+                            "Loaded household invite:",
+                            tokenInvite
+                        )
+
                         setInvite(tokenInvite)
                         setInviteToken(storedToken)
                         return
@@ -96,7 +101,7 @@ export default function JoinHousehold() {
         invite?.households?.name ||
         invite?.household?.name ||
         invite?.household_name ||
-        "this household"
+        "your household"
 
     const isTeenInvite =
         invite?.member_type === "teen"
