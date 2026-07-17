@@ -4,23 +4,29 @@ export default function PWAInstallBanner() {
     const [deferredPrompt, setDeferredPrompt] = useState(null)
     const [showBanner, setShowBanner] = useState(false)
     const [isIOS, setIsIOS] = useState(false)
+    const [isSafari, setIsSafari] = useState(false)
     const [isStandalone, setIsStandalone] = useState(false)
 
     useEffect(() => {
         const ios =
             /iphone|ipad|ipod/i.test(window.navigator.userAgent)
 
+        const userAgent =
+            window.navigator.userAgent
+
+        const safari =
+            /safari/i.test(userAgent) &&
+            !/crios|fxios|edgios|opios/i.test(userAgent)
+
         const standalone =
             window.matchMedia("(display-mode: standalone)").matches ||
             window.navigator.standalone === true
 
         setIsIOS(ios)
+        setIsSafari(safari)
         setIsStandalone(standalone)
 
-        const dismissed =
-            localStorage.getItem("evergroveInstallBannerDismissed") === "true"
-
-        if (!standalone && !dismissed) {
+        if (!standalone) {
             setShowBanner(true)
         }
 
@@ -49,7 +55,6 @@ export default function PWAInstallBanner() {
     }
 
     function handleDismiss() {
-        localStorage.setItem("evergroveInstallBannerDismissed", "true")
         setShowBanner(false)
     }
 
@@ -58,15 +63,38 @@ export default function PWAInstallBanner() {
     return (
         <div className="pwa-install-banner">
             <div>
-                <strong>Install Evergrove</strong>
-                <p>
-                    Add Evergrove to your home screen for quick access to your
-                    family dashboard, calendar, meals, and to-dos.
-                </p>
+                <strong>
+                    {isIOS
+                        ? "Install Evergrove on your iPhone or iPad"
+                        : "Install Evergrove"}
+                </strong>
 
-                {isIOS && (
-                    <p className="pwa-install-ios-note">
-                        On iPhone: tap Share, then Add to Home Screen.
+                {isIOS && !isSafari ? (
+                    <>
+                        <p>
+                            Apple requires Evergrove to be installed from Safari.
+                        </p>
+
+                        <p className="pwa-install-ios-note">
+                            Open this page in Safari, tap Share, then select
+                            Add to Home Screen.
+                        </p>
+                    </>
+                ) : isIOS ? (
+                    <>
+                        <p>
+                            Add Evergrove to your Home Screen for quick access
+                            and the best notification experience.
+                        </p>
+
+                        <p className="pwa-install-ios-note">
+                            Tap Share, then select Add to Home Screen.
+                        </p>
+                    </>
+                ) : (
+                    <p>
+                        Add Evergrove to your home screen for quick access to your
+                        family dashboard, calendar, meals, and to-dos.
                     </p>
                 )}
             </div>
