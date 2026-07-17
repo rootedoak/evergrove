@@ -312,6 +312,10 @@ export default function Family() {
     const isChild = form.role === "child"
     const isPet = form.role === "pet"
     const groupedMembers = groupMembers(familyMembers)
+    const hasChildren =
+        groupedMembers.children.length > 0
+    const hasPets =
+        groupedMembers.pets.length > 0
 
     const [preferences, setPreferences] = useState({
         household_name: "My Family",
@@ -582,7 +586,18 @@ export default function Family() {
             <PageHeader
                 eyebrow="Household"
                 title="Household Management"
-                subtitle={`${familyMembers.length} total • ${groupedMembers.parents.length} parents • ${groupedMembers.children.length} children • ${groupedMembers.pets.length} pets`}
+                subtitle={[
+                    `${familyMembers.length} total`,
+                    `${groupedMembers.parents.length} parents`,
+                    hasChildren
+                        ? `${groupedMembers.children.length} children & teens`
+                        : null,
+                    groupedMembers.pets.length > 0
+                        ? `${groupedMembers.pets.length} pets`
+                        : null
+                ]
+                    .filter(Boolean)
+                    .join(" • ")}
                 action={
                     isAdult && (
                         <Button
@@ -924,7 +939,14 @@ export default function Family() {
 
                 <SectionCard
                     title="Household"
-                    subtitle="Parents, teens, children, pets, and invited household members."
+                    subtitle={[
+                        "Household members",
+                        hasChildren ? "children and teens" : null,
+                        hasPets ? "pets" : null,
+                        "pending invitations"
+                    ]
+                        .filter(Boolean)
+                        .join(", ")}
                 >
                     {loading ? (
                         <p>Loading family members...</p>
@@ -948,33 +970,37 @@ export default function Family() {
                                 isAdult={isAdult}
                             />
 
-                            <FamilyGroup
-                                title="Children"
-                                subtitle="Kids, school details, and birthdays."
-                                members={groupedMembers.children}
-                                emptyText="No children added yet."
-                                onEdit={startEdit}
-                                onDelete={handleDelete}
-                                onUploadAvatar={handleUploadAvatar}
-                                onDeleteAvatar={handleDeleteAvatar}
-                                familyMenuOpen={familyMenuOpen}
-                                setFamilyMenuOpen={setFamilyMenuOpen}
-                                isAdult={isAdult}
-                            />
+                            {hasChildren && (
+                                <FamilyGroup
+                                    title="Children & Teens"
+                                    subtitle="Kids, teen accounts, school details, and birthdays."
+                                    members={groupedMembers.children}
+                                    emptyText="No children or teens added yet."
+                                    onEdit={startEdit}
+                                    onDelete={handleDelete}
+                                    onUploadAvatar={handleUploadAvatar}
+                                    onDeleteAvatar={handleDeleteAvatar}
+                                    familyMenuOpen={familyMenuOpen}
+                                    setFamilyMenuOpen={setFamilyMenuOpen}
+                                    isAdult={isAdult}
+                                />
+                            )}
 
-                            <FamilyGroup
-                                title="Pets"
-                                subtitle="Pets, breeds, and adoption dates."
-                                members={groupedMembers.pets}
-                                emptyText="No pets added yet."
-                                onEdit={startEdit}
-                                onDelete={handleDelete}
-                                onUploadAvatar={handleUploadAvatar}
-                                onDeleteAvatar={handleDeleteAvatar}
-                                familyMenuOpen={familyMenuOpen}
-                                setFamilyMenuOpen={setFamilyMenuOpen}
-                                isAdult={isAdult}
-                            />
+                            {hasPets && (
+                                <FamilyGroup
+                                    title="Pets"
+                                    subtitle="Pets, breeds, and adoption dates."
+                                    members={groupedMembers.pets}
+                                    emptyText="No pets added yet."
+                                    onEdit={startEdit}
+                                    onDelete={handleDelete}
+                                    onUploadAvatar={handleUploadAvatar}
+                                    onDeleteAvatar={handleDeleteAvatar}
+                                    familyMenuOpen={familyMenuOpen}
+                                    setFamilyMenuOpen={setFamilyMenuOpen}
+                                    isAdult={isAdult}
+                                />
+                            )}
 
                             {groupedMembers.other.length > 0 && (
                                 <FamilyGroup
