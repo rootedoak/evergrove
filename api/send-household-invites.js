@@ -263,6 +263,8 @@ export default async function handler(req, res) {
                 .select("id, role")
                 .eq("household_id", invite.household_id)
                 .eq("user_id", user.id)
+                .in("role", ["owner", "adult"])
+                .limit(1)
                 .maybeSingle()
 
         if (membershipError) throw membershipError
