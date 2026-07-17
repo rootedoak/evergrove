@@ -5031,3 +5031,93 @@ label:has(input[type="time"]) {
     min-width: 0;
     max-width: 100%;
 }
+
+.eg-person-type-row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid var(--border-color, #dbe3ec);
+    border-radius: 16px;
+    background: var(--surface-color, #ffffff);
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.eg-person-type-row:hover {
+    background: var(--surface-muted, #f7f9fb);
+}
+
+.eg-person-type-icon {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--surface-muted, #f1f5f8);
+    font-size: 22px;
+}
+
+.eg-person-type-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.eg-person-type-copy strong {
+    font-size: 1rem;
+}
+
+.eg-person-type-copy small {
+    color: var(--text-muted, #667085);
+    line-height: 1.4;
+}
+
+.eg-sheet-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.eg-form-help {
+    margin: 0 0 12px;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+.eg-radio-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    cursor: pointer;
+}
+
+.eg-radio-option input[type="radio"] {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.eg-radio-option span {
+    font-weight: 500;
+}
+
+.eg-form-help {
+    margin: 8px 0 16px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+}

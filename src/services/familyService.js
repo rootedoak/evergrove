@@ -163,7 +163,8 @@ export async function deleteFamilyMember(id) {
 
 export async function createPendingInvite(
     email,
-    inviteType = "adult"
+    inviteType = "adult",
+    memberDetails = {}
 ) {
     const household = await ensureMyHousehold()
     const normalizedEmail = email.trim().toLowerCase()
@@ -180,6 +181,10 @@ export async function createPendingInvite(
             ? "child"
             : "parent"
 
+    const cleanName =
+        memberDetails.name?.trim() ||
+        normalizedEmail
+
     const { data, error } = await supabase
         .from("family_members")
         .insert({
@@ -190,7 +195,9 @@ export async function createPendingInvite(
             invite_status: "pending",
             invite_token: inviteToken,
             invite_expires_at: getInviteExpirationDate(),
-            name: normalizedEmail
+            name: cleanName,
+            birthdate:
+                memberDetails.birthdate || null
         })
         .select()
         .single()
@@ -209,6 +216,41 @@ export async function createPendingInvite(
     })
 
     return data
+}
+
+export async function sendHouseholdInviteEmail(inviteId) {
+    const {
+        data: { session },
+        error: sessionError
+    } = await supabase.auth.getSession()
+
+    if (sessionError) throw sessionError
+
+    if (!session?.access_token) {
+        throw new Error("You must be signed in to send an invitation.")
+    }
+
+    const response = await fetch("/api/send-household-invite", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+            inviteId
+        })
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+        throw new Error(
+            result.error ||
+            "Could not send household invitation."
+        )
+    }
+
+    return result
 }
 
 export async function acceptPendingInvite(email) {

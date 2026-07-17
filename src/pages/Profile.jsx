@@ -321,6 +321,14 @@ export default function Profile() {
                     <form className="card settings-command-card" onSubmit={handleSavePreferences}>
 
                         <SettingsSection
+                            title="Push Notifications"
+                            scope="Personal user setting"
+                            subtitle="Receive device alerts for important Evergrove updates."
+                        >
+                            <PushNotificationSettings />
+                        </SettingsSection>
+
+                        <SettingsSection
                             title="Calendar & Timeline"
                             scope="Personal user setting"
                             subtitle="These settings only affect your own calendar and timeline view."
@@ -495,14 +503,6 @@ export default function Profile() {
                                     onChange={value => updatePreference("inbox_reminders", value)}
                                 />
                             </div>
-                        </SettingsSection>
-
-                        <SettingsSection
-                            title="Push Notifications"
-                            scope="Personal user setting"
-                            subtitle="Receive device alerts for important Evergrove updates."
-                        >
-                            <PushNotificationSettings />
                         </SettingsSection>
 
                         <div className="settings-save-row">

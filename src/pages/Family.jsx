@@ -4,6 +4,7 @@ import {
     createPendingInvite,
     deleteFamilyMember,
     getFamilyMembers,
+    sendHouseholdInviteEmail,
     updateFamilyMember
 } from "../services/familyService"
 
@@ -14,7 +15,11 @@ import Button from "../components/ui/Button"
 import InsightCard from "../components/dashboard/InsightCard"
 import ActionMenu from "../components/ui/ActionMenu"
 import BottomSheet from "../components/ui/BottomSheet"
-import { X } from "lucide-react"
+import {
+    ArrowLeft,
+    ChevronRight,
+    X
+} from "lucide-react"
 
 import Avatar from "../components/ui/Avatar"
 import {
@@ -29,6 +34,9 @@ import {
 
 import ShareEvergroveCard from "../components/referrals/ShareEvergroveCard"
 import useHouseholdRole from "../hooks/useHouseholdRole"
+
+import AddAdultForm from "../components/family/AddAdultForm"
+import AddChildForm from "../components/family/AddChildForm"
 
 const initialForm = {
     name: "",
@@ -171,21 +179,23 @@ function FamilyMemberRow({
 
             <div className="family-member-main">
                 <strong>
-                    {isPendingInvite
-                        ? member.member_type === "teen"
+                    {member.name ||
+                        (member.member_type === "teen"
                             ? "Invited Teen"
-                            : "Invited Adult"
-                        : member.name}
+                            : "Invited Adult")}
                 </strong>
 
                 <p>
-                    {getRoleLabel(member.role)}
-                    {isTeenAccount ? " • Teen Account" : ""}
-                    {isPendingInvite && member.invite_email
-                        ? ` • ${member.invite_email}`
-                        : details.length > 0
-                            ? ` • ${details.join(" • ")}`
-                            : ""}
+                    {[
+                        getRoleLabel(member.role),
+                        isTeenAccount ? "Teen Account" : null,
+                        isPendingInvite
+                            ? member.invite_email
+                            : null,
+                        ...details
+                    ]
+                        .filter(Boolean)
+                        .join(" • ")}
                 </p>
 
                 {member.notes && <small>{member.notes}</small>}
@@ -302,12 +312,27 @@ export default function Family() {
     const [familyMembers, setFamilyMembers] = useState([])
     const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
+    const [addPersonStep, setAddPersonStep] = useState("choose")
     const [form, setForm] = useState(initialForm)
     const [saving, setSaving] = useState(false)
     const [editingId, setEditingId] = useState(null)
-    const [inviteEmail, setInviteEmail] = useState("")
-    const [inviteType, setInviteType] = useState("adult")
     const [inviting, setInviting] = useState(false)
+
+    const [adultInvite, setAdultInvite] = useState({
+        email: "",
+        name: ""
+    })
+
+    const [childForm, setChildForm] = useState({
+        name: "",
+        hasAccount: "no",
+        email: "",
+        avatar_emoji: "",
+        birthdate: "",
+        school: "",
+        grade: "",
+        notes: ""
+    })
 
     const [familyMenuOpen, setFamilyMenuOpen] = useState(null)
     const [householdSettingsOpen, setHouseholdSettingsOpen] = useState(false)
@@ -384,6 +409,100 @@ export default function Family() {
         } catch (error) {
             console.error(error)
             alert(error.message || "Could not remove avatar.")
+        }
+    }
+
+    async function handleAdultInviteSubmit(event) {
+        event.preventDefault()
+
+        if (!adultInvite.email.trim()) return
+
+        setInviting(true)
+
+        try {
+            const invite = await createPendingInvite(
+                adultInvite.email.trim().toLowerCase(),
+                "adult",
+                {
+                    name: adultInvite.name
+                }
+            )
+
+            await sendHouseholdInviteEmail(invite.id)
+
+            alert(
+                `Invitation sent to ${invite.invite_email}.`
+            )
+
+            setAdultInvite({
+                email: "",
+                name: ""
+            })
+
+            resetForm()
+            await loadFamilyMembers()
+        } catch (error) {
+            console.error(error)
+            alert(
+                error.message ||
+                "The invitation was created, but the email could not be sent. You can copy the invite link from the pending invitation."
+            )
+        } finally {
+            setInviting(false)
+        }
+    }
+
+    async function handleChildSubmit(event) {
+        event.preventDefault()
+
+        const hasAccount = childForm.hasAccount === "yes"
+
+        setSaving(true)
+
+        try {
+            if (hasAccount) {
+                const invite = await createPendingInvite(
+                    childForm.email.trim().toLowerCase(),
+                    "teen",
+                    {
+                        name: childForm.name,
+                        birthdate: childForm.birthdate
+                    }
+                )
+
+                await sendHouseholdInviteEmail(invite.id)
+            } else {
+                await createFamilyMember({
+                    name: childForm.name.trim(),
+                    role: "child",
+                    avatar_emoji: childForm.avatar_emoji,
+                    birthdate: childForm.birthdate || null,
+                    school: childForm.school || null,
+                    grade: childForm.grade || null,
+                    species: null,
+                    breed: null,
+                    notes: childForm.notes
+                })
+            }
+
+            resetForm()
+            await loadFamilyMembers()
+
+            alert(
+                hasAccount
+                    ? `Invitation sent to ${childForm.email.trim().toLowerCase()}.`
+                    : "Child added."
+            )
+        } catch (error) {
+            console.error(error)
+            alert(
+                error.message ||
+                (hasAccount
+                    ? "The teen invitation was created, but the email could not be sent. You can copy the invite link from the pending invitation."
+                    : "Could not add child.")
+            )
+        } finally {
+            setSaving(false)
         }
     }
 
@@ -468,14 +587,37 @@ export default function Family() {
     function resetForm() {
         setForm(initialForm)
         setEditingId(null)
+        setAddPersonStep("choose")
         setShowForm(false)
+    }
+
+    function returnToPersonChooser() {
+        setForm(initialForm)
+
+        setAdultInvite({
+            email: "",
+            name: ""
+        })
+
+        setChildForm({
+            name: "",
+            hasAccount: "no",
+            email: "",
+            avatar_emoji: "",
+            birthdate: "",
+            school: "",
+            grade: "",
+            notes: ""
+        })
+
+        setAddPersonStep("choose")
     }
 
     function startEdit(member) {
         setEditingId(member.id)
         setForm(normalizeMember(member))
+        setAddPersonStep(member.role)
         setShowForm(true)
-        window.scrollTo({ top: 0, behavior: "smooth" })
     }
 
     async function handleSubmit(event) {
@@ -534,38 +676,6 @@ export default function Family() {
         }
     }
 
-    async function handleInviteHouseholdMember() {
-        if (!inviteEmail.trim()) return
-
-        setInviting(true)
-
-        try {
-            const invite = await createPendingInvite(
-                inviteEmail.trim().toLowerCase(),
-                inviteType
-            )
-
-            const inviteLink =
-                `${window.location.origin}/invite/${invite.invite_token}`
-
-            await navigator.clipboard.writeText(inviteLink)
-
-            alert(
-                `${inviteType === "teen" ? "Teen" : "Adult"} invite created!\n\n` +
-                "The invite link has been copied to your clipboard."
-            )
-
-            setInviteEmail("")
-            setInviteType("adult")
-            await loadFamilyMembers()
-        } catch (error) {
-            console.error(error)
-            alert(error.message || "Could not create invite.")
-        } finally {
-            setInviting(false)
-        }
-    }
-
     async function handleDelete(member) {
         const confirmed = window.confirm(
             member.invite_status === "pending"
@@ -605,71 +715,17 @@ export default function Family() {
                     isAdult && (
                         <Button
                             onClick={() => {
-                                if (showForm) {
-                                    resetForm()
-                                } else {
-                                    setShowForm(true)
-                                }
+                                setAddPersonStep("choose")
+                                setShowForm(true)
                             }}
                         >
-                            {showForm ? "Cancel" : "+ Add"}
+                            + Add Person
                         </Button>
                     )
                 }
             />
 
             <div className="eg-stack">
-
-                {isAdult && (
-                    <SectionCard
-                        title="Invite Household Member"
-                        subtitle="Invite an adult or teen to participate in your household."
-                    >
-                        <div className="form-grid">
-                            <label>
-                                Member Type
-                                <select
-                                    value={inviteType}
-                                    onChange={event =>
-                                        setInviteType(event.target.value)
-                                    }
-                                >
-                                    <option value="adult">Adult</option>
-                                    <option value="teen">Teen (13+)</option>
-                                </select>
-                            </label>
-
-                            <label>
-                                Email Address
-                                <input
-                                    type="email"
-                                    value={inviteEmail}
-                                    onChange={event =>
-                                        setInviteEmail(event.target.value)
-                                    }
-                                    placeholder="name@example.com"
-                                />
-                            </label>
-
-                            {inviteType === "teen" && (
-                                <p className="full-width muted-text">
-                                    Teen accounts are intended for household members age 13 or older.
-                                </p>
-                            )}
-
-                            <Button
-                                type="button"
-                                className="full-width"
-                                disabled={inviting || !inviteEmail.trim()}
-                                onClick={handleInviteHouseholdMember}
-                            >
-                                {inviting
-                                    ? "Creating Invite..."
-                                    : `Create ${inviteType === "teen" ? "Teen" : "Adult"} Invite`}
-                            </Button>
-                        </div>
-                    </SectionCard>
-                )}
 
                 <SectionCard
                     title="Household"
@@ -911,11 +967,25 @@ export default function Family() {
                                 <h2>
                                     {editingId
                                         ? "Edit Family Member"
-                                        : "Add Family Member"}
+                                        : addPersonStep === "choose"
+                                            ? "Add Person"
+                                            : addPersonStep === "adult"
+                                                ? "Add Adult"
+                                                : addPersonStep === "child"
+                                                    ? "Add Child"
+                                                    : "Add Pet"}
                                 </h2>
 
                                 <p>
-                                    Parents, children, and pets.
+                                    {editingId
+                                        ? "Update this household member."
+                                        : addPersonStep === "choose"
+                                            ? "Who are you adding to your household?"
+                                            : addPersonStep === "adult"
+                                                ? "Invite another adult to join Evergrove."
+                                                : addPersonStep === "child"
+                                                    ? "Add a child or create an account for someone age 13 or older."
+                                                    : "Add a pet to your household."}
                                 </p>
                             </div>
 
@@ -929,161 +999,265 @@ export default function Family() {
                             </button>
                         </div>
 
-                        <form
-                            className="form-grid"
-                            onSubmit={handleSubmit}
-                        >
-                            <label>
-                                Name
-                                <input
-                                    value={form.name}
-                                    onChange={event =>
-                                        updateForm("name", event.target.value)
-                                    }
-                                    required
-                                />
-                            </label>
-
-                            <label>
-                                Role
-                                <select
-                                    value={form.role}
-                                    onChange={event =>
-                                        updateForm("role", event.target.value)
-                                    }
-                                    required
-                                >
-                                    <option value="">Select Role</option>
-                                    <option value="parent">Parent</option>
-                                    <option value="child">Child</option>
-                                    <option value="pet">Pet</option>
-                                </select>
-                            </label>
-
-                            {form.role && (
-                                <>
-                                    <label>
-                                        Avatar Emoji
-                                        <input
-                                            value={form.avatar_emoji}
-                                            onChange={event =>
-                                                updateForm(
-                                                    "avatar_emoji",
-                                                    event.target.value
-                                                )
-                                            }
-                                            placeholder={isPet ? "🐶" : "🧒"}
-                                        />
-                                    </label>
-
-                                    <label>
-                                        {isPet
-                                            ? "Birthday / Adoption Date"
-                                            : "Birthdate"}
-                                        <input
-                                            type="date"
-                                            value={form.birthdate}
-                                            onChange={event =>
-                                                updateForm(
-                                                    "birthdate",
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                    </label>
-                                </>
-                            )}
-
-                            {isChild && (
-                                <>
-                                    <label>
-                                        School
-                                        <input
-                                            value={form.school}
-                                            onChange={event =>
-                                                updateForm(
-                                                    "school",
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                    </label>
-
-                                    <label>
-                                        Grade
-                                        <input
-                                            value={form.grade}
-                                            onChange={event =>
-                                                updateForm(
-                                                    "grade",
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                    </label>
-                                </>
-                            )}
-
-                            {isPet && (
-                                <>
-                                    <label>
-                                        Species
-                                        <input
-                                            value={form.species}
-                                            onChange={event =>
-                                                updateForm(
-                                                    "species",
-                                                    event.target.value
-                                                )
-                                            }
-                                            placeholder="Dog, cat, rabbit..."
-                                        />
-                                    </label>
-
-                                    <label>
-                                        Breed
-                                        <input
-                                            value={form.breed}
-                                            onChange={event =>
-                                                updateForm(
-                                                    "breed",
-                                                    event.target.value
-                                                )
-                                            }
-                                            placeholder="Golden Retriever, Tabby..."
-                                        />
-                                    </label>
-                                </>
-                            )}
-
-                            {form.role && (
-                                <label className="full-width">
-                                    Notes
-                                    <textarea
-                                        value={form.notes}
-                                        onChange={event =>
-                                            updateForm(
-                                                "notes",
-                                                event.target.value
-                                            )
-                                        }
-                                        rows="3"
-                                    />
-                                </label>
-                            )}
-
-                            <Button
-                                className="full-width"
-                                type="submit"
-                                disabled={saving}
+                        {!editingId && addPersonStep !== "choose" && (
+                            <button
+                                type="button"
+                                className="eg-sheet-back"
+                                onClick={returnToPersonChooser}
                             >
-                                {saving
-                                    ? "Saving..."
-                                    : editingId
-                                        ? "Save Changes"
-                                        : "Save Family Member"}
-                            </Button>
-                        </form>
+                                <ArrowLeft size={18} />
+                                Back
+                            </button>
+                        )}
+
+                        {!editingId && addPersonStep === "choose" && (
+                            <div className="eg-stack">
+                                <button
+                                    type="button"
+                                    className="eg-person-type-row"
+                                    onClick={() => {
+                                        updateForm("role", "parent")
+                                        setAddPersonStep("adult")
+                                    }}
+                                >
+                                    <span className="eg-person-type-icon">
+                                        👨
+                                    </span>
+
+                                    <span className="eg-person-type-copy">
+                                        <strong>Adult</strong>
+                                        <small>
+                                            Invite a spouse, partner, or other adult.
+                                        </small>
+                                    </span>
+
+                                    <ChevronRight size={20} />
+                                </button>
+
+                                <button
+                                    type="button"
+                                    className="eg-person-type-row"
+                                    onClick={() => {
+                                        updateForm("role", "child")
+                                        setAddPersonStep("child")
+                                    }}
+                                >
+                                    <span className="eg-person-type-icon">
+                                        🧒
+                                    </span>
+
+                                    <span className="eg-person-type-copy">
+                                        <strong>Child</strong>
+                                        <small>
+                                            Add a child or create an account for a teen.
+                                        </small>
+                                    </span>
+
+                                    <ChevronRight size={20} />
+                                </button>
+
+                                <button
+                                    type="button"
+                                    className="eg-person-type-row"
+                                    onClick={() => {
+                                        updateForm("role", "pet")
+                                        setAddPersonStep("pet")
+                                    }}
+                                >
+                                    <span className="eg-person-type-icon">
+                                        🐶
+                                    </span>
+
+                                    <span className="eg-person-type-copy">
+                                        <strong>Pet</strong>
+                                        <small>
+                                            Add a pet to your household.
+                                        </small>
+                                    </span>
+
+                                    <ChevronRight size={20} />
+                                </button>
+                            </div>
+                        )}
+
+                        {!editingId && addPersonStep === "adult" && (
+                            <AddAdultForm
+                                value={adultInvite}
+                                onChange={setAdultInvite}
+                                onSubmit={handleAdultInviteSubmit}
+                                inviting={inviting}
+                            />
+                        )}
+
+                        {!editingId && addPersonStep === "child" && (
+                            <AddChildForm
+                                value={childForm}
+                                onChange={setChildForm}
+                                onSubmit={handleChildSubmit}
+                                saving={saving}
+                            />
+                        )}
+
+                        {(
+                            editingId ||
+                            addPersonStep === "pet"
+                        ) && (
+                                <form
+                                    className="form-grid"
+                                    onSubmit={handleSubmit}
+                                >
+                                    <label>
+                                        Name
+                                        <input
+                                            value={form.name}
+                                            onChange={event =>
+                                                updateForm("name", event.target.value)
+                                            }
+                                            required
+                                        />
+                                    </label>
+
+                                    <label>
+                                        Role
+                                        <select
+                                            value={form.role}
+                                            onChange={event =>
+                                                updateForm("role", event.target.value)
+                                            }
+                                            required
+                                        >
+                                            <option value="">Select Role</option>
+                                            <option value="parent">Parent</option>
+                                            <option value="child">Child</option>
+                                            <option value="pet">Pet</option>
+                                        </select>
+                                    </label>
+
+                                    {form.role && (
+                                        <>
+                                            <label>
+                                                Avatar Emoji
+                                                <input
+                                                    value={form.avatar_emoji}
+                                                    onChange={event =>
+                                                        updateForm(
+                                                            "avatar_emoji",
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                    placeholder={isPet ? "🐶" : "🧒"}
+                                                />
+                                            </label>
+
+                                            <label>
+                                                {isPet
+                                                    ? "Birthday / Adoption Date"
+                                                    : "Birthdate"}
+                                                <input
+                                                    type="date"
+                                                    value={form.birthdate}
+                                                    onChange={event =>
+                                                        updateForm(
+                                                            "birthdate",
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                />
+                                            </label>
+                                        </>
+                                    )}
+
+                                    {isChild && (
+                                        <>
+                                            <label>
+                                                School
+                                                <input
+                                                    value={form.school}
+                                                    onChange={event =>
+                                                        updateForm(
+                                                            "school",
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                />
+                                            </label>
+
+                                            <label>
+                                                Grade
+                                                <input
+                                                    value={form.grade}
+                                                    onChange={event =>
+                                                        updateForm(
+                                                            "grade",
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                />
+                                            </label>
+                                        </>
+                                    )}
+
+                                    {isPet && (
+                                        <>
+                                            <label>
+                                                Species
+                                                <input
+                                                    value={form.species}
+                                                    onChange={event =>
+                                                        updateForm(
+                                                            "species",
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                    placeholder="Dog, cat, rabbit..."
+                                                />
+                                            </label>
+
+                                            <label>
+                                                Breed
+                                                <input
+                                                    value={form.breed}
+                                                    onChange={event =>
+                                                        updateForm(
+                                                            "breed",
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                    placeholder="Golden Retriever, Tabby..."
+                                                />
+                                            </label>
+                                        </>
+                                    )}
+
+                                    {form.role && (
+                                        <label className="full-width">
+                                            Notes
+                                            <textarea
+                                                value={form.notes}
+                                                onChange={event =>
+                                                    updateForm(
+                                                        "notes",
+                                                        event.target.value
+                                                    )
+                                                }
+                                                rows="3"
+                                            />
+                                        </label>
+                                    )}
+
+                                    <Button
+                                        className="full-width"
+                                        type="submit"
+                                        disabled={saving}
+                                    >
+                                        {saving
+                                            ? "Saving..."
+                                            : editingId
+                                                ? "Save Changes"
+                                                : "Save Family Member"}
+                                    </Button>
+                                </form>
+                            )}
                     </div>
                 </BottomSheet>
 
