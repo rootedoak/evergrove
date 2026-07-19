@@ -228,18 +228,19 @@ export default async function handler(req, res) {
             await supabase
                 .from("family_members")
                 .select(`
-                    id,
-                    household_id,
-                    name,
-                    member_type,
-                    invite_email,
-                    invite_status,
-                    invite_token,
-                    invite_expires_at,
-                    households (
-                        name
-                    )
-                `)
+    id,
+    household_id,
+    name,
+    member_type,
+    invite_email,
+    invite_status,
+    invite_token,
+    invite_expires_at,
+    user_id,
+    households (
+        name
+    )
+`)
                 .eq("id", inviteId)
                 .maybeSingle()
 
@@ -257,6 +258,12 @@ export default async function handler(req, res) {
             })
         }
 
+        if (invite.user_id) {
+            return res.status(400).json({
+                error: "This invitation has already been accepted"
+            })
+        }
+
         const { data: membership, error: membershipError } =
             await supabase
                 .from("household_members")
@@ -267,12 +274,28 @@ export default async function handler(req, res) {
                 .limit(1)
                 .maybeSingle()
 
-        if (membershipError) throw membershipError
+        if (membershipError) {
+            throw membershipError
+        }
 
-        if (
-            !membership ||
-            !["owner", "adult"].includes(membership.role)
-        ) {
+        const { data: adminUser, error: adminError } =
+            await supabase
+                .from("admin_users")
+                .select("user_id")
+                .eq("user_id", user.id)
+                .maybeSingle()
+
+        if (adminError) {
+            throw adminError
+        }
+
+        const isHouseholdAdult =
+            Boolean(membership) &&
+            ["owner", "adult"].includes(membership.role)
+
+        const isAdmin = Boolean(adminUser)
+
+        if (!isHouseholdAdult && !isAdmin) {
             return res.status(403).json({
                 error: "You cannot send invitations for this household"
             })
