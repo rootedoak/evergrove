@@ -1,4 +1,11 @@
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react"
+import { useState } from "react"
+import {
+    CalendarDays,
+    ChevronLeft,
+    ChevronRight,
+    Plus,
+    Trash2
+} from "lucide-react"
 
 import SectionCard from "../ui/SectionCard"
 import Button from "../ui/Button"
@@ -12,9 +19,11 @@ export default function MealWeekCard({
     startDayQuickAdd,
     cancelDayQuickAdd,
     handleDayQuickAdd,
+    mealPlanComponents,
+    createMealPlanComponent,
+    deleteMealPlanComponent,
+    shoppingCategoryOrder,
     deleteMealPlan,
-    setMealPlans,
-    mealPlans,
     setWeekStart,
     weekStart,
     addDays,
@@ -22,6 +31,59 @@ export default function MealWeekCard({
     handleGenerateWeek,
     weekEventCounts
 }) {
+    const [sideFormPlanId, setSideFormPlanId] =
+        useState(null)
+
+    const [sideForm, setSideForm] = useState({
+        name: "",
+        quantity: "",
+        category: ""
+    })
+
+    function openSideForm(planId) {
+        setSideFormPlanId(planId)
+
+        setSideForm({
+            name: "",
+            quantity: "",
+            category: ""
+        })
+    }
+
+    function closeSideForm() {
+        setSideFormPlanId(null)
+
+        setSideForm({
+            name: "",
+            quantity: "",
+            category: ""
+        })
+    }
+
+    async function handleAddSide(planId) {
+        const trimmedName =
+            sideForm.name.trim()
+
+        if (!trimmedName) return
+
+        const formSnapshot = {
+            mealPlanId: planId,
+            name: trimmedName,
+            quantity: sideForm.quantity,
+            category: sideForm.category
+        }
+
+        closeSideForm()
+
+        try {
+            await createMealPlanComponent(
+                formSnapshot
+            )
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
     function getPlanIcon(plan) {
         if (!plan) return null
         if (plan.plan_type === "restaurant") return "🍽️"
@@ -63,10 +125,28 @@ export default function MealWeekCard({
 
                     return (
                         <div key={day.dateValue} className="eg-meal-day-row-wrap">
-                            <button
-                                type="button"
+                            <div
                                 className="eg-meal-day-row"
+                                role="button"
+                                tabIndex={0}
                                 onClick={() => {
+                                    if (isAdding) {
+                                        cancelDayQuickAdd()
+                                        return
+                                    }
+
+                                    startDayQuickAdd(day.dateValue)
+                                }}
+                                onKeyDown={event => {
+                                    if (
+                                        event.key !== "Enter" &&
+                                        event.key !== " "
+                                    ) {
+                                        return
+                                    }
+
+                                    event.preventDefault()
+
                                     if (isAdding) {
                                         cancelDayQuickAdd()
                                         return
@@ -124,18 +204,198 @@ export default function MealWeekCard({
                                             </>
                                         ) : (
                                             <div className="eg-meal-plan-stack">
-                                                {plans.map(plan => (
-                                                    <span
-                                                        key={plan.id}
-                                                        className="eg-meal-plan-pill"
-                                                    >
-                                                        <span>
-                                                            {getPlanIcon(plan)}
-                                                        </span>
+                                                {plans.map(plan => {
+                                                    const sides =
+                                                        mealPlanComponents.filter(
+                                                            component =>
+                                                                component.meal_plan_id ===
+                                                                plan.id
+                                                        )
 
-                                                        {plan.meal_name}
-                                                    </span>
-                                                ))}
+                                                    const isSideFormOpen =
+                                                        sideFormPlanId === plan.id
+
+                                                    return (
+                                                        <div
+                                                            key={plan.id}
+                                                            className="eg-meal-plan-entry"
+                                                            onClick={event =>
+                                                                event.stopPropagation()
+                                                            }
+                                                        >
+                                                            <div className="eg-meal-plan-entry-header">
+                                                                <div className="eg-meal-plan-title">
+                                                                    <span
+                                                                        className="eg-meal-plan-icon"
+                                                                        aria-hidden="true"
+                                                                    >
+                                                                        {getPlanIcon(plan)}
+                                                                    </span>
+
+                                                                    <span>
+                                                                        {plan.meal_name}
+                                                                    </span>
+                                                                </div>
+
+                                                                <button
+                                                                    type="button"
+                                                                    className="eg-danger-icon-button"
+                                                                    onClick={() =>
+                                                                        deleteMealPlan(plan.id)
+                                                                    }
+                                                                    aria-label={`Delete ${plan.meal_name}`}
+                                                                >
+                                                                    <Trash2 size={15} />
+                                                                </button>
+                                                            </div>
+
+                                                            {sides.length > 0 && (
+                                                                <div className="eg-meal-sides">
+                                                                    <span className="eg-meal-sides-label">
+                                                                        Sides
+                                                                    </span>
+
+                                                                    <div className="eg-meal-side-list">
+                                                                        {sides.map(side => (
+                                                                            <div
+                                                                                key={side.id}
+                                                                                className={[
+                                                                                    "eg-meal-side-row",
+                                                                                    side.isOptimistic
+                                                                                        ? "is-saving"
+                                                                                        : ""
+                                                                                ]
+                                                                                    .filter(Boolean)
+                                                                                    .join(" ")}
+                                                                            >
+                                                                                <div className="eg-meal-side-details">
+                                                                                    <span className="eg-meal-side-bullet">
+                                                                                        •
+                                                                                    </span>
+
+                                                                                    <span>
+                                                                                        {side.name}
+                                                                                    </span>
+
+                                                                                    {side.quantity && (
+                                                                                        <span className="eg-meal-side-quantity">
+                                                                                            {side.quantity}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="eg-meal-side-delete"
+                                                                                    onClick={() =>
+                                                                                        deleteMealPlanComponent(
+                                                                                            side.id
+                                                                                        )
+                                                                                    }
+                                                                                    disabled={
+                                                                                        side.isOptimistic
+                                                                                    }
+                                                                                    aria-label={`Remove ${side.name}`}
+                                                                                >
+                                                                                    <Trash2 size={13} />
+                                                                                </button>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {isSideFormOpen ? (
+                                                                <div className="eg-meal-side-form">
+                                                                    <input
+                                                                        className="form-input"
+                                                                        value={sideForm.name}
+                                                                        onChange={event =>
+                                                                            setSideForm(current => ({
+                                                                                ...current,
+                                                                                name: event.target.value
+                                                                            }))
+                                                                        }
+                                                                        placeholder="Side or extra item"
+                                                                        autoFocus
+                                                                    />
+
+                                                                    <div className="eg-meal-side-form-row">
+                                                                        <input
+                                                                            className="form-input"
+                                                                            value={sideForm.quantity}
+                                                                            onChange={event =>
+                                                                                setSideForm(current => ({
+                                                                                    ...current,
+                                                                                    quantity:
+                                                                                        event.target.value
+                                                                                }))
+                                                                            }
+                                                                            placeholder="Quantity"
+                                                                        />
+
+                                                                        <select
+                                                                            className="form-input"
+                                                                            value={sideForm.category}
+                                                                            onChange={event =>
+                                                                                setSideForm(current => ({
+                                                                                    ...current,
+                                                                                    category:
+                                                                                        event.target.value
+                                                                                }))
+                                                                            }
+                                                                        >
+                                                                            <option value="">
+                                                                                Category
+                                                                            </option>
+
+                                                                            {shoppingCategoryOrder.map(
+                                                                                category => (
+                                                                                    <option
+                                                                                        key={category}
+                                                                                        value={category}
+                                                                                    >
+                                                                                        {category}
+                                                                                    </option>
+                                                                                )
+                                                                            )}
+                                                                        </select>
+                                                                    </div>
+
+                                                                    <div className="eg-actions-row">
+                                                                        <Button
+                                                                            size="sm"
+                                                                            onClick={() =>
+                                                                                handleAddSide(plan.id)
+                                                                            }
+                                                                        >
+                                                                            Add Side
+                                                                        </Button>
+
+                                                                        <Button
+                                                                            variant="secondary"
+                                                                            size="sm"
+                                                                            onClick={closeSideForm}
+                                                                        >
+                                                                            Cancel
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    type="button"
+                                                                    className="eg-meal-add-side-button"
+                                                                    onClick={() =>
+                                                                        openSideForm(plan.id)
+                                                                    }
+                                                                >
+                                                                    <Plus size={13} />
+                                                                    Add side
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )
+                                                })}
                                             </div>
                                         )}
                                     </div>
@@ -145,39 +405,7 @@ export default function MealWeekCard({
                                     size={18}
                                     className="eg-meal-day-chevron"
                                 />
-                            </button>
-
-                            {plans.length > 0 && (
-                                <div className="eg-meal-plan-actions">
-                                    {plans.map(plan => (
-                                        <button
-                                            key={plan.id}
-                                            type="button"
-                                            className="eg-danger-icon-button"
-                                            onClick={async event => {
-                                                event.stopPropagation()
-
-                                                const previousMealPlans = mealPlans
-
-                                                setMealPlans(current =>
-                                                    current.filter(item => item.id !== plan.id)
-                                                )
-
-                                                try {
-                                                    await deleteMealPlan(plan.id)
-                                                } catch (error) {
-                                                    console.error(error)
-                                                    setMealPlans(previousMealPlans)
-                                                    alert(error.message || "Could not delete meal plan.")
-                                                }
-                                            }}
-                                            aria-label="Delete meal plan"
-                                        >
-                                            <Trash2 size={15} />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            </div>
 
                             {isAdding && (
                                 <div className="eg-quick-add-panel">

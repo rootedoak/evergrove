@@ -212,6 +212,94 @@ export async function getMealPlans() {
     return data || []
 }
 
+export async function getMealPlanComponents(mealPlanId) {
+    const { household } = await getUserAndHousehold()
+
+    const { data, error } = await supabase
+        .from("meal_plan_components")
+        .select("*")
+        .eq("household_id", household.id)
+        .eq("meal_plan_id", mealPlanId)
+        .order("created_at")
+
+    if (error) throw error
+
+    return data || []
+}
+
+export async function createMealPlanComponent({
+    mealPlanId,
+    name,
+    quantity,
+    category
+}) {
+    const { user, household } =
+        await getUserAndHousehold()
+
+    const { data: component, error } =
+        await supabase
+            .from("meal_plan_components")
+            .insert({
+                user_id: user.id,
+                household_id: household.id,
+                meal_plan_id: mealPlanId,
+                name: name.trim(),
+                quantity: quantity || "",
+                category: category || "",
+                component_type: "side"
+            })
+            .select()
+            .single()
+
+    if (error) throw error
+
+    const { error: groceryError } =
+        await supabase
+            .from("grocery_items")
+            .insert({
+                user_id: user.id,
+                household_id: household.id,
+                name: component.name,
+                quantity: component.quantity,
+                category: component.category,
+                checked: false,
+                source_meal_plan_id: mealPlanId,
+                source_meal_plan_component_id:
+                    component.id
+            })
+
+    if (groceryError) throw groceryError
+
+    return component
+}
+
+export async function deleteMealPlanComponent(
+    componentId
+) {
+    const { household } =
+        await getUserAndHousehold()
+
+    await supabase
+        .from("grocery_items")
+        .delete()
+        .eq(
+            "source_meal_plan_component_id",
+            componentId
+        )
+        .eq("household_id", household.id)
+
+    const { error } =
+        await supabase
+            .from("meal_plan_components")
+            .delete()
+            .eq("id", componentId)
+            .eq("household_id", household.id)
+
+    if (error) throw error
+
+    return true
+}
+
 export async function createMealPlan({
     meal,
     plannedDate,

@@ -15,11 +15,14 @@ import {
     createGroceryItem,
     createMeal,
     createMealPlan,
+    createMealPlanComponent,
     updateMeal,
     deleteGroceryItem,
     deleteMeal,
     deleteMealPlan,
+    deleteMealPlanComponent,
     getGroceryItems,
+    getMealPlanComponents,
     getMealPlans,
     getMeals,
     toggleGroceryItem
@@ -147,6 +150,12 @@ export default function Meals() {
 
     const [meals, setMeals] = useState([])
     const [mealPlans, setMealPlans] = useState([])
+
+    const [
+        mealPlanComponents,
+        setMealPlanComponents
+    ] = useState([])
+
     const [groceryItems, setGroceryItems] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
@@ -209,7 +218,6 @@ export default function Meals() {
                     dateValue: toDateInputValue(date)
                 }
             })
-
             const [mealsData, plansData, groceriesData] = await Promise.all([
                 getMeals(),
                 getMealPlans(),
@@ -219,8 +227,18 @@ export default function Meals() {
                 })
             ])
 
+            const componentGroups = await Promise.all(
+                plansData.map(plan =>
+                    getMealPlanComponents(plan.id)
+                )
+            )
+
+            const componentsData =
+                componentGroups.flat()
+
             setMeals(mealsData)
             setMealPlans(plansData)
+            setMealPlanComponents(componentsData)
             setGroceryItems(groceriesData)
         } catch (err) {
             console.error(err)
@@ -546,6 +564,209 @@ export default function Meals() {
             planType: "home",
             restaurantName: ""
         })
+    }
+
+    async function handleDeleteMealPlan(planId) {
+        const previousMealPlans = mealPlans
+        const previousGroceries = groceryItems
+        const previousComponents =
+            mealPlanComponents
+
+        setMealPlans(current =>
+            current.filter(
+                plan => plan.id !== planId
+            )
+        )
+
+        setMealPlanComponents(current =>
+            current.filter(
+                component =>
+                    component.meal_plan_id !== planId
+            )
+        )
+
+        setGroceryItems(current =>
+            current.filter(
+                item =>
+                    item.source_meal_plan_id !== planId
+            )
+        )
+
+        try {
+            await deleteMealPlan(planId)
+        } catch (error) {
+            console.error(error)
+
+            setMealPlans(previousMealPlans)
+            setMealPlanComponents(
+                previousComponents
+            )
+            setGroceryItems(previousGroceries)
+
+            alert(
+                error.message ||
+                "Could not delete meal plan."
+            )
+        }
+    }
+
+    async function handleCreateMealPlanComponent({
+        mealPlanId,
+        name,
+        quantity,
+        category
+    }) {
+        const trimmedName = name?.trim()
+
+        if (!mealPlanId || !trimmedName) return
+
+        const temporaryComponentId =
+            createTemporaryId("optimistic-component")
+
+        const temporaryGroceryId =
+            createTemporaryId("optimistic-grocery")
+
+        const relatedPlan = mealPlans.find(
+            plan => plan.id === mealPlanId
+        )
+
+        const optimisticComponent = {
+            id: temporaryComponentId,
+            meal_plan_id: mealPlanId,
+            name: trimmedName,
+            quantity: quantity || "",
+            category: category || "",
+            component_type: "side",
+            isOptimistic: true
+        }
+
+        const optimisticGrocery = {
+            id: temporaryGroceryId,
+            name: trimmedName,
+            quantity: quantity || "",
+            category: category || "",
+            checked: false,
+            source_meal_plan_id: mealPlanId,
+            source_meal_plan_component_id:
+                temporaryComponentId,
+            meal_plans: relatedPlan
+                ? {
+                    id: relatedPlan.id,
+                    meal_name: relatedPlan.meal_name,
+                    planned_date:
+                        relatedPlan.planned_date
+                }
+                : null,
+            isOptimistic: true
+        }
+
+        setError("")
+
+        setMealPlanComponents(current => [
+            ...current,
+            optimisticComponent
+        ])
+
+        setGroceryItems(current => [
+            ...current,
+            optimisticGrocery
+        ])
+
+        try {
+            const savedComponent =
+                await createMealPlanComponent({
+                    mealPlanId,
+                    name: trimmedName,
+                    quantity: quantity || "",
+                    category: category || ""
+                })
+
+            setMealPlanComponents(current =>
+                current.map(component =>
+                    component.id ===
+                        temporaryComponentId
+                        ? savedComponent
+                        : component
+                )
+            )
+
+            const groceriesData =
+                await getGroceryItems({
+                    startDate:
+                        weekDays[0].dateValue,
+                    endDate:
+                        weekDays[6].dateValue
+                })
+
+            setGroceryItems(groceriesData)
+
+            return savedComponent
+        } catch (err) {
+            console.error(err)
+
+            setMealPlanComponents(current =>
+                current.filter(
+                    component =>
+                        component.id !==
+                        temporaryComponentId
+                )
+            )
+
+            setGroceryItems(current =>
+                current.filter(
+                    item =>
+                        item.id !==
+                        temporaryGroceryId
+                )
+            )
+
+            setError("Could not add the side.")
+
+            throw err
+        }
+    }
+
+    async function handleDeleteMealPlanComponent(
+        componentId
+    ) {
+        const previousComponents =
+            mealPlanComponents
+
+        const previousGroceries =
+            groceryItems
+
+        setMealPlanComponents(current =>
+            current.filter(
+                component =>
+                    component.id !== componentId
+            )
+        )
+
+        setGroceryItems(current =>
+            current.filter(
+                item =>
+                    item.source_meal_plan_component_id !==
+                    componentId
+            )
+        )
+
+        try {
+            await deleteMealPlanComponent(
+                componentId
+            )
+        } catch (err) {
+            console.error(err)
+
+            setMealPlanComponents(
+                previousComponents
+            )
+
+            setGroceryItems(
+                previousGroceries
+            )
+
+            setError("Could not remove the side.")
+        }
     }
 
     async function handleDayQuickAdd() {
@@ -1144,9 +1365,19 @@ export default function Meals() {
                         startDayQuickAdd={startDayQuickAdd}
                         cancelDayQuickAdd={cancelDayQuickAdd}
                         handleDayQuickAdd={handleDayQuickAdd}
-                        deleteMealPlan={deleteMealPlan}
-                        setMealPlans={setMealPlans}
-                        mealPlans={mealPlans}
+                        deleteMealPlan={handleDeleteMealPlan}
+                        mealPlanComponents={
+                            mealPlanComponents
+                        }
+                        createMealPlanComponent={
+                            handleCreateMealPlanComponent
+                        }
+                        deleteMealPlanComponent={
+                            handleDeleteMealPlanComponent
+                        }
+                        shoppingCategoryOrder={
+                            shoppingCategoryOrder
+                        }
                         setWeekStart={setWeekStart}
                         weekStart={weekStart}
                         addDays={addDays}
