@@ -1,5 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom"
 
+import { supabase } from "../../../lib/supabase"
+
 import { useState } from "react"
 
 import AdminCard from "../../../components/admin/AdminCard"
