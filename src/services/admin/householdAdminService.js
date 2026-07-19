@@ -98,6 +98,98 @@ export async function removeFamilyMember(familyMemberId, householdId) {
     return true
 }
 
+export async function updatePendingInviteEmail({
+    familyMemberId,
+    householdId,
+    inviteEmail
+}) {
+    if (!familyMemberId) {
+        throw new Error("familyMemberId is required")
+    }
+
+    if (!householdId) {
+        throw new Error("householdId is required")
+    }
+
+    const normalizedEmail =
+        inviteEmail?.trim().toLowerCase()
+
+    if (!normalizedEmail) {
+        throw new Error("Email address is required")
+    }
+
+    const emailPattern =
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+    if (!emailPattern.test(normalizedEmail)) {
+        throw new Error(
+            "Enter a valid email address."
+        )
+    }
+
+    const { data: member, error: lookupError } =
+        await supabase
+            .from("family_members")
+            .select(`
+                id,
+                household_id,
+                user_id,
+                invite_email,
+                invite_status
+            `)
+            .eq("id", familyMemberId)
+            .eq("household_id", householdId)
+            .maybeSingle()
+
+    if (lookupError) throw lookupError
+
+    if (!member) {
+        throw new Error(
+            "Family member profile was not found."
+        )
+    }
+
+    if (member.user_id) {
+        throw new Error(
+            "Authenticated users cannot be edited from this tool."
+        )
+    }
+
+    if (member.invite_status !== "pending") {
+        throw new Error(
+            "Only pending invitations can be edited."
+        )
+    }
+
+    const { data: updatedMember, error: updateError } =
+        await supabase
+            .from("family_members")
+            .update({
+                invite_email: normalizedEmail
+            })
+            .eq("id", familyMemberId)
+            .eq("household_id", householdId)
+            .is("user_id", null)
+            .eq("invite_status", "pending")
+            .select(`
+                id,
+                invite_email,
+                invite_status,
+                user_id
+            `)
+            .maybeSingle()
+
+    if (updateError) throw updateError
+
+    if (!updatedMember) {
+        throw new Error(
+            "The invitation could not be updated. It may no longer be pending."
+        )
+    }
+
+    return updatedMember
+}
+
 export async function exportHouseholdData(householdId) {
     if (!householdId) {
         throw new Error("householdId is required")

@@ -1,21 +1,58 @@
 import { supabase } from "../../lib/supabase"
 
 export async function getPlatformSummary() {
-    // Households
-    const { count: householdCount } = await supabase
-        .from("households")
-        .select("*", { count: "exact", head: true })
+    const [
+        householdsResult,
+        familyMembersResult,
+        authenticatedUsersResult
+    ] = await Promise.all([
+        supabase
+            .from("households")
+            .select("id", {
+                count: "exact",
+                head: true
+            }),
 
-    // Family members
-    const { count: userCount } = await supabase
-        .from("family_members")
-        .select("*", { count: "exact", head: true })
+        supabase
+            .from("family_members")
+            .select("id", {
+                count: "exact",
+                head: true
+            }),
+
+        supabase
+            .from("admin_user_summary")
+            .select("user_id")
+    ])
+
+    if (householdsResult.error) {
+        throw householdsResult.error
+    }
+
+    if (familyMembersResult.error) {
+        throw familyMembersResult.error
+    }
+
+    if (authenticatedUsersResult.error) {
+        throw authenticatedUsersResult.error
+    }
+
+    const authenticatedUserIds = new Set(
+        (authenticatedUsersResult.data ?? [])
+            .map(user => user.user_id)
+            .filter(Boolean)
+    )
 
     return {
-        householdCount: householdCount ?? 0,
-        userCount: userCount ?? 0,
+        householdCount:
+            householdsResult.count ?? 0,
 
-        activeToday: null,
+        familyMemberCount:
+            familyMembersResult.count ?? 0,
+
+        authenticatedUserCount:
+            authenticatedUserIds.size,
+
         openIssues: 0
     }
 }

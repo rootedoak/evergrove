@@ -42,27 +42,39 @@ export default function AdminDashboard() {
 
             <section className="admin-grid admin-grid-4">
                 <AdminStatCard
-                    label="Beta Households"
-                    value={loading ? "..." : summary?.householdCount ?? 0}
-                />
-
-                <AdminStatCard
-                    label="Users"
-                    value={loading ? "..." : summary?.userCount ?? 0}
-                />
-
-                <AdminStatCard
-                    label="Active Today"
+                    label="Households"
                     value={
                         loading
                             ? "..."
-                            : summary?.activeToday ?? "Not tracked yet"
+                            : summary?.householdCount ?? 0
+                    }
+                />
+
+                <AdminStatCard
+                    label="Family Profiles"
+                    value={
+                        loading
+                            ? "..."
+                            : summary?.familyMemberCount ?? 0
+                    }
+                />
+
+                <AdminStatCard
+                    label="Authenticated Users"
+                    value={
+                        loading
+                            ? "..."
+                            : summary?.authenticatedUserCount ?? 0
                     }
                 />
 
                 <AdminStatCard
                     label="Open Issues"
-                    value={loading ? "..." : summary?.openIssues ?? 0}
+                    value={
+                        loading
+                            ? "..."
+                            : summary?.openIssues ?? 0
+                    }
                 />
             </section>
 

@@ -93,6 +93,55 @@ export async function getFeedbackAttachmentUrl(path) {
     return data?.signedUrl ?? null
 }
 
+export async function createProductFeedback({
+    subject,
+    message,
+    feedbackType = "bug",
+    priority = "normal",
+    category = "product",
+    status = "new",
+    householdId = null,
+    userId = null,
+    appVersion = null,
+    pagePath = null
+}) {
+    const normalizedSubject = subject?.trim()
+    const normalizedMessage = message?.trim()
+
+    if (!normalizedSubject) {
+        throw new Error("Subject is required")
+    }
+
+    if (!normalizedMessage) {
+        throw new Error("Description is required")
+    }
+
+    const { data, error } = await supabase
+        .from("product_feedback")
+        .insert({
+            subject: normalizedSubject,
+            message: normalizedMessage,
+            feedback_type: feedbackType,
+            priority,
+            category,
+            status,
+            household_id: householdId || null,
+            user_id: userId || null,
+            app_version: appVersion || null,
+            page_path: pagePath || null,
+            source: "internal"
+        })
+        .select(`
+            id,
+            ticket_number
+        `)
+        .single()
+
+    if (error) throw error
+
+    return data
+}
+
 export function formatTicketNumber(ticketNumber) {
     if (!ticketNumber) return "EG-??????"
 

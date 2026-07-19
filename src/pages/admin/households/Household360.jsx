@@ -1,5 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom"
 
+import { useState } from "react"
+
 import AdminCard from "../../../components/admin/AdminCard"
 import AdminEmptyState from "../../../components/admin/AdminEmptyState"
 import AdminStatusChip from "../../../components/admin/AdminStatusChip"
@@ -11,13 +13,23 @@ import { formatTicketNumber } from "../../../services/admin/productFeedbackAdmin
 
 import {
     exportHouseholdData,
-    removeFamilyMember
+    removeFamilyMember,
+    updatePendingInviteEmail
 } from "../../../services/admin/householdAdminService"
 
 export default function Household360() {
     const navigate = useNavigate()
     const { householdId } = useParams()
     const { data, loading, error, refresh } = useHousehold360(householdId)
+
+    const [editingMember, setEditingMember] =
+        useState(null)
+
+    const [editedEmail, setEditedEmail] =
+        useState("")
+
+    const [savingEmail, setSavingEmail] =
+        useState(false)
 
     async function handleExportHouseholdData() {
         try {
@@ -60,6 +72,70 @@ export default function Household360() {
         } catch (err) {
             console.error(err)
             alert(err.message || "Unable to remove family member profile.")
+        }
+    }
+
+    async function handleSaveInviteEmail() {
+        if (!editingMember) {
+            return
+        }
+
+        try {
+            setSavingEmail(true)
+
+            await updatePendingInviteEmail({
+                familyMemberId: editingMember.id,
+                householdId,
+                inviteEmail: editedEmail
+            })
+
+            setEditingMember(null)
+            setEditedEmail("")
+
+            await refresh()
+        } catch (err) {
+            console.error(err)
+            alert(
+                err.message ||
+                "Unable to update email."
+            )
+        } finally {
+            setSavingEmail(false)
+        }
+    }
+
+    async function handleResendInvite(member) {
+        try {
+            const response = await fetch(
+                "/api/send-household-invite",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${(
+                            await supabase.auth.getSession()
+                        ).data.session?.access_token
+                            }`
+                    },
+                    body: JSON.stringify({
+                        inviteId: member.id
+                    })
+                }
+            )
+
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.error)
+            }
+
+            alert("Invitation sent!")
+        } catch (err) {
+            console.error(err)
+            alert(
+                err.message ||
+                "Unable to resend invitation."
+            )
         }
     }
 
@@ -169,7 +245,39 @@ export default function Household360() {
                                             </strong>
                                         )}
 
-                                        {member.email ? (
+                                        {editingMember?.id === member.id ? (
+                                            <div className="admin-member-email-editor">
+                                                <input
+                                                    type="email"
+                                                    value={editedEmail}
+                                                    onChange={event =>
+                                                        setEditedEmail(event.target.value)
+                                                    }
+                                                />
+
+                                                <div className="admin-inline-actions">
+                                                    <button
+                                                        type="button"
+                                                        className="primary-button"
+                                                        disabled={savingEmail}
+                                                        onClick={handleSaveInviteEmail}
+                                                    >
+                                                        Save
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        className="secondary-button"
+                                                        onClick={() => {
+                                                            setEditingMember(null)
+                                                            setEditedEmail("")
+                                                        }}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : member.email ? (
                                             <p>{member.email}</p>
                                         ) : (
                                             <p className="admin-muted">
@@ -182,6 +290,33 @@ export default function Household360() {
                                         <AdminStatusChip status={getMemberTypeStatus(member)}>
                                             {getMemberTypeLabel(member)}
                                         </AdminStatusChip>
+
+                                        {!member.userId &&
+                                            member.inviteStatus === "pending" && (
+                                                <button
+                                                    type="button"
+                                                    className="text-action-button"
+                                                    onClick={() => {
+                                                        setEditingMember(member)
+                                                        setEditedEmail(
+                                                            member.inviteEmail || ""
+                                                        )
+                                                    }}
+                                                >
+                                                    Edit Email
+                                                </button>
+                                            )}
+
+                                        {!member.userId &&
+                                            member.inviteStatus === "pending" && (
+                                                <button
+                                                    type="button"
+                                                    className="text-action-button"
+                                                    onClick={() => handleResendInvite(member)}
+                                                >
+                                                    Resend Invite
+                                                </button>
+                                            )}
 
                                         {!member.userId && (
                                             <button
@@ -308,11 +443,23 @@ export default function Household360() {
 }
 
 function getMemberTypeLabel(member) {
-    return member.userId ? "Linked Account" : "Profile Only"
+    if (member.inviteStatus === "pending") {
+        return "Pending Invite"
+    }
+
+    return member.userId
+        ? "Linked Account"
+        : "Profile Only"
 }
 
 function getMemberTypeStatus(member) {
-    return member.userId ? "fixed" : "neutral"
+    if (member.inviteStatus === "pending") {
+        return "planned"
+    }
+
+    return member.userId
+        ? "fixed"
+        : "neutral"
 }
 
 function AdminMiniDetail({ label, value }) {

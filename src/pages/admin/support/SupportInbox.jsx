@@ -62,7 +62,13 @@ export default function SupportInbox() {
         {
             key: "household",
             label: "Household",
-            render: row => row.households?.name || "Unknown"
+            render: row => {
+                if (row.source === "internal") {
+                    return "Evergrove"
+                }
+
+                return row.households?.name || "Unknown"
+            }
         },
         {
             key: "version",
@@ -91,6 +97,15 @@ export default function SupportInbox() {
                 eyebrow="Support"
                 title="Support Inbox"
                 description="Feedback, bugs, ideas, and questions submitted by Evergrove users."
+                actions={
+                    <button
+                        type="button"
+                        className="admin-primary-button"
+                        onClick={() => navigate("/admin/support/new")}
+                    >
+                        New Ticket
+                    </button>
+                }
             />
 
             <div className="admin-filter-row">

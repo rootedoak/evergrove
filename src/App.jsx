@@ -71,6 +71,7 @@ import Households from "./pages/admin/households/Households"
 import Household360 from "./pages/admin/households/Household360"
 import SupportInbox from "./pages/admin/support/SupportInbox"
 import SupportTicket from "./pages/admin/support/SupportTicket"
+import NewSupportTicket from "./pages/admin/support/NewSupportTicket"
 import UsersPage from "./pages/admin/users/Users"
 import UserProfile from "./pages/admin/users/UserProfile"
 import BetaHealth from "./pages/admin/beta/BetaHealth"
@@ -334,6 +335,10 @@ function AppRoutes() {
         <Route path="households" element={<Households />} />
         <Route path="households/:householdId" element={<Household360 />} />
         <Route path="support" element={<SupportInbox />} />
+        <Route
+          path="support/new"
+          element={<NewSupportTicket />}
+        />
         <Route path="support/:feedbackId" element={<SupportTicket />} />
         <Route path="releases" element={<Releases />} />
         <Route

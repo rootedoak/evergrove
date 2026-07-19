@@ -52,10 +52,12 @@ export async function getHousehold360(householdId) {
 
     const [
         directoryResult,
+        inviteResult,
         supportResult,
         usageResult
     ] = await Promise.all([
         getHouseholdDirectory(householdId),
+        getHouseholdInviteDetails(householdId),
         getHouseholdSupportTickets(householdId),
         getHouseholdUsageEvents(householdId)
     ])
@@ -78,17 +80,42 @@ export async function getHousehold360(householdId) {
         ])
     )
 
+    const inviteByFamilyMemberId = new Map(
+        inviteResult.map(member => [
+            member.id,
+            member
+        ])
+    )
+
     const members = rows
         .filter(row => row.family_member_id)
-        .map(row => ({
-            id: row.family_member_id,
-            name: row.family_member_name,
-            userId: row.user_id,
-            email: row.email,
-            preferences: row.user_id
-                ? preferencesByUserId.get(row.user_id) ?? null
-                : null
-        }))
+        .map(row => {
+            const invite =
+                inviteByFamilyMemberId.get(
+                    row.family_member_id
+                )
+
+            return {
+                id: row.family_member_id,
+                name: row.family_member_name,
+                userId: row.user_id,
+                email:
+                    row.email ||
+                    invite?.invite_email ||
+                    null,
+                inviteEmail:
+                    invite?.invite_email || null,
+                inviteStatus:
+                    invite?.invite_status || null,
+                inviteExpiresAt:
+                    invite?.invite_expires_at || null,
+                preferences: row.user_id
+                    ? preferencesByUserId.get(
+                        row.user_id
+                    ) ?? null
+                    : null
+            }
+        })
 
     const openTickets = supportResult.filter(ticket =>
         ["new", "reviewing", "planned"].includes(ticket.status)
@@ -121,6 +148,25 @@ async function getHouseholdDirectory(householdId) {
         .select("*")
         .eq("household_id", householdId)
         .order("family_member_name")
+
+    if (error) throw error
+
+    return data ?? []
+}
+
+async function getHouseholdInviteDetails(
+    householdId
+) {
+    const { data, error } = await supabase
+        .from("family_members")
+        .select(`
+            id,
+            user_id,
+            invite_email,
+            invite_status,
+            invite_expires_at
+        `)
+        .eq("household_id", householdId)
 
     if (error) throw error
 
