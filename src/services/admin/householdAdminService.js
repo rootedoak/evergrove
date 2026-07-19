@@ -190,6 +190,53 @@ export async function updatePendingInviteEmail({
     return updatedMember
 }
 
+export async function resendPendingInvite(inviteId) {
+    if (!inviteId) {
+        throw new Error("Invite ID is required")
+    }
+
+    const {
+        data: { session },
+        error: sessionError
+    } = await supabase.auth.getSession()
+
+    if (sessionError) {
+        throw sessionError
+    }
+
+    if (!session?.access_token) {
+        throw new Error(
+            "Your session has expired. Please sign in again."
+        )
+    }
+
+    const response = await fetch(
+        "/api/send-household-invite",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization:
+                    `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                inviteId
+            })
+        }
+    )
+
+    const result = await response.json()
+
+    if (!response.ok) {
+        throw new Error(
+            result.error ||
+            "Unable to resend invitation."
+        )
+    }
+
+    return result
+}
+
 export async function exportHouseholdData(householdId) {
     if (!householdId) {
         throw new Error("householdId is required")

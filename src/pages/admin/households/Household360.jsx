@@ -1,7 +1,5 @@
 import { Link, useNavigate, useParams } from "react-router-dom"
 
-import { supabase } from "../../../lib/supabase"
-
 import { useState } from "react"
 
 import AdminCard from "../../../components/admin/AdminCard"
@@ -16,6 +14,7 @@ import { formatTicketNumber } from "../../../services/admin/productFeedbackAdmin
 import {
     exportHouseholdData,
     removeFamilyMember,
+    resendPendingInvite,
     updatePendingInviteEmail
 } from "../../../services/admin/householdAdminService"
 
@@ -108,32 +107,19 @@ export default function Household360() {
 
     async function handleResendInvite(member) {
         try {
-            const response = await fetch(
-                "/api/send-household-invite",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${(
-                            await supabase.auth.getSession()
-                        ).data.session?.access_token
-                            }`
-                    },
-                    body: JSON.stringify({
-                        inviteId: member.id
-                    })
-                }
+            await resendPendingInvite(member.id)
+
+            alert(
+                `Invitation resent to ${member.inviteEmail ||
+                member.email
+                }.`
+            )
+        } catch (err) {
+            console.error(
+                "Failed to resend invitation:",
+                err
             )
 
-            const result = await response.json()
-
-            if (!response.ok) {
-                throw new Error(result.error)
-            }
-
-            alert("Invitation sent!")
-        } catch (err) {
-            console.error(err)
             alert(
                 err.message ||
                 "Unable to resend invitation."
