@@ -87,6 +87,57 @@ function getLocalDateKey(value = new Date()) {
     ].join("-")
 }
 
+async function fetchAllUsageEvents({
+    select,
+    since,
+    eventTypes = null
+}) {
+    const pageSize = 1000
+    let from = 0
+    let allRows = []
+
+    while (true) {
+        let query = supabase
+            .from("usage_events")
+            .select(select)
+            .gte("created_at", since.toISOString())
+            .order("created_at", {
+                ascending: true
+            })
+            .range(from, from + pageSize - 1)
+
+        if (eventTypes?.length === 1) {
+            query = query.eq(
+                "event_type",
+                eventTypes[0]
+            )
+        } else if (eventTypes?.length > 1) {
+            query = query.in(
+                "event_type",
+                eventTypes
+            )
+        }
+
+        const { data, error } = await query
+
+        if (error) {
+            throw error
+        }
+
+        const rows = data ?? []
+
+        allRows = allRows.concat(rows)
+
+        if (rows.length < pageSize) {
+            break
+        }
+
+        from += pageSize
+    }
+
+    return allRows
+}
+
 function calculateTrend(current, previous) {
     if (previous === 0) {
         return {
@@ -158,12 +209,10 @@ export async function getDashboardKpis({ days = 30 } = {}) {
 export async function getFeatureUsage({ days = 30 } = {}) {
     const since = getSinceDate(days)
 
-    const { data, error } = await supabase
-        .from("usage_events")
-        .select("event_type, household_id")
-        .gte("created_at", since.toISOString())
-
-    if (error) throw error
+    const data = await fetchAllUsageEvents({
+        select: "event_type, household_id",
+        since
+    })
 
     const featureStats = {}
     const allHouseholds = new Set()
@@ -202,38 +251,45 @@ export async function getFeatureUsage({ days = 30 } = {}) {
         .sort((a, b) => b.adoption - a.adoption || b.count - a.count)
 }
 
-export async function getDailyAppSessions({ days = 14 } = {}) {
+export async function getDailyAppSessions({
+    days = 14
+} = {}) {
     const since = getSinceDate(days)
 
-    const { data, error } = await supabase
-        .from("usage_events")
-        .select("created_at")
-        .eq("event_type", "session_started")
-        .gte("created_at", since.toISOString())
-
-    if (error) throw error
+    const data = await fetchAllUsageEvents({
+        select: "created_at",
+        since,
+        eventTypes: ["session_started"]
+    })
 
     const dailyMap = new Map()
 
     for (let i = days - 1; i >= 0; i--) {
         const date = new Date()
+
         date.setDate(date.getDate() - i)
 
         const key = getLocalDateKey(date)
+
         dailyMap.set(key, 0)
     }
 
-    for (const row of data ?? []) {
+    for (const row of data) {
         const key = getLocalDateKey(row.created_at)
 
         if (!dailyMap.has(key)) {
             dailyMap.set(key, 0)
         }
 
-        dailyMap.set(key, dailyMap.get(key) + 1)
+        dailyMap.set(
+            key,
+            dailyMap.get(key) + 1
+        )
     }
 
-    return Array.from(dailyMap.entries()).map(([date, sessions]) => ({
+    return Array.from(
+        dailyMap.entries()
+    ).map(([date, sessions]) => ({
         date,
         sessions
     }))
@@ -293,28 +349,32 @@ export async function getLaunchModeMetrics({
     }
 }
 
-export async function getDailyActiveHouseholds({ days = 14 } = {}) {
+export async function getDailyActiveHouseholds({
+    days = 14
+} = {}) {
     const since = getSinceDate(days)
 
-    const { data, error } = await supabase
-        .from("usage_events")
-        .select("household_id, created_at")
-        .gte("created_at", since.toISOString())
-
-    if (error) throw error
+    const data = await fetchAllUsageEvents({
+        select: "household_id, created_at",
+        since
+    })
 
     const dailyMap = new Map()
 
     for (let i = days - 1; i >= 0; i--) {
         const date = new Date()
+
         date.setDate(date.getDate() - i)
 
         const key = getLocalDateKey(date)
+
         dailyMap.set(key, new Set())
     }
 
-    for (const row of data ?? []) {
-        if (!row.household_id || !row.created_at) continue
+    for (const row of data) {
+        if (!row.household_id || !row.created_at) {
+            continue
+        }
 
         const key = getLocalDateKey(row.created_at)
 
@@ -322,10 +382,14 @@ export async function getDailyActiveHouseholds({ days = 14 } = {}) {
             dailyMap.set(key, new Set())
         }
 
-        dailyMap.get(key).add(row.household_id)
+        dailyMap
+            .get(key)
+            .add(row.household_id)
     }
 
-    return Array.from(dailyMap.entries()).map(([date, households]) => ({
+    return Array.from(
+        dailyMap.entries()
+    ).map(([date, households]) => ({
         date,
         activeHouseholds: households.size
     }))
@@ -484,15 +548,14 @@ export async function getEngagementMetrics() {
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(now.getDate() - 30)
 
-    const { data, error } = await supabase
-        .from("usage_events")
-        .select("user_id, event_type, metadata, created_at")
-        .in("event_type", ["session_started", "daily_active"])
-        .gte("created_at", thirtyDaysAgo.toISOString())
-
-    if (error) throw error
-
-    const rows = data ?? []
+    const rows = await fetchAllUsageEvents({
+        select: "user_id, event_type, metadata, created_at",
+        since: thirtyDaysAgo,
+        eventTypes: [
+            "session_started",
+            "daily_active"
+        ]
+    })
 
     const sessions = rows.filter(
         row => row.event_type === "session_started"

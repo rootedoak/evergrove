@@ -35,9 +35,11 @@ import { getFeedReadCounts } from "../services/feedService"
 
 import AttentionCard from "../components/dashboard/AttentionCard"
 import TodayCard from "../components/dashboard/TodayCard"
+import HabitProgressCard from "../components/dashboard/HabitProgressCard"
 import AssistantCard from "../components/dashboard/AssistantCard"
 import FeedCard from "../components/dashboard/FeedCard"
 import UpcomingCard from "../components/dashboard/UpcomingCard"
+import useHabits from "../hooks/useHabits"
 import InsightCard from "../components/dashboard/InsightCard"
 import { getEvergroveInsights } from "../insights"
 import { getTaskTemplate } from "../utils/taskTemplates"
@@ -525,6 +527,17 @@ export default function Dashboard() {
         member => member.user_id === currentUserId
     )
 
+    const householdId =
+        familyMembers?.[0]
+            ?.household_id
+
+    const {
+        habits,
+        completedToday
+    } = useHabits(
+        householdId
+    )
+
     const childMemberIds = (Array.isArray(familyMembers) ? familyMembers : [])
         .filter(isChildMember)
         .map(member => member.id)
@@ -1004,6 +1017,13 @@ export default function Dashboard() {
                         trackDashboardAction("open_dinner")
                         setBriefModal("dinner")
                     }}
+                />
+
+                <HabitProgressCard
+                    habits={habits}
+                    completedToday={
+                        completedToday
+                    }
                 />
 
                 {(visibleInsights.length > 0 || completedInsight) && !isTeen && (

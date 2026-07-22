@@ -6,6 +6,7 @@ import {
   FolderOpen,
   Home,
   Info,
+  Leaf,
   Mail,
   MoreHorizontal,
   Repeat,
@@ -52,6 +53,7 @@ import Reminders from "./pages/Reminders"
 import SchoolHub from "./pages/School"
 import Documents from "./pages/Documents"
 import Routines from "./pages/Routines"
+import Habits from "./pages/Habits"
 import CalendarPage from "./pages/Calendar"
 import Trips from "./pages/Trips"
 import Profile from "./pages/Profile"
@@ -131,6 +133,7 @@ const defaultMoreNavItems = [
   { to: "/documents", icon: FolderOpen, label: "Documents" },
   { to: "/trips", icon: CalendarDays, label: "Trips" },
   { to: "/school", icon: ClipboardList, label: "School" },
+  { to: "/habits", icon: Leaf, label: "Habits" },
   { to: "/routines", icon: Repeat, label: "Automations" },
   { to: "/about", icon: Info, label: "About" }
 ]
@@ -278,6 +281,7 @@ function AppRoutes() {
       />
       <Route path="/school" element={<SchoolHub />} />
       <Route path="/tasks" element={<Tasks />} />
+      <Route path="/habits" element={<Habits />} />
       <Route path="/meals" element={<Meals />} />
       <Route path="/shopping" element={<ShoppingLists />} />
       <Route
