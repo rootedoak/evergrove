@@ -6,6 +6,7 @@ import {
     Link2,
     LoaderCircle,
     RefreshCw,
+    Tag,
     TrendingUp,
     UserCheck,
     UserPlus,
@@ -21,6 +22,14 @@ import {
     buildReferralUrl,
     getReferralDashboard
 } from "../../../services/referralService"
+
+import {
+    createPromoCodeAdmin,
+    getPromoCodesAdmin,
+    setPromoCodeStatusAdmin
+} from "../../../services/admin/promoCodeService"
+
+import PromoCodeForm from "./PromoCodeForm"
 
 const funnelStages = [
     {
@@ -49,15 +58,47 @@ const funnelStages = [
     }
 ]
 
+const offerTypeLabels = {
+    beta_access: "Beta Access",
+    lifetime: "Lifetime Access",
+    extended_trial: "Extended Trial",
+    percent_discount: "Percentage Discount",
+    fixed_discount: "Fixed Discount"
+}
+
 export default function Growth() {
     const [dashboard, setDashboard] = useState(null)
+    const [promoCodes, setPromoCodes] = useState([])
+
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
     const [error, setError] = useState("")
+
     const [copied, setCopied] = useState(false)
+    const [copiedPromoCodeId, setCopiedPromoCodeId] =
+        useState(null)
+
+    const [updatingPromoCodeId, setUpdatingPromoCodeId] =
+        useState(null)
+
+    const [
+        promoFormOpen,
+        setPromoFormOpen
+    ] = useState(false)
+
+    const [
+        creatingPromoCode,
+        setCreatingPromoCode
+    ] = useState(false)
+
+    const [
+        promoFormError,
+        setPromoFormError
+    ] = useState("")
 
     const referralLink = useMemo(() => {
-        const referralCode = dashboard?.referral?.referral_code
+        const referralCode =
+            dashboard?.referral?.referral_code
 
         if (!referralCode) return ""
 
@@ -73,15 +114,18 @@ export default function Growth() {
     const activationRate =
         totalConversions > 0
             ? Math.round(
-                (activatedCount / totalConversions) * 100
+                (activatedCount / totalConversions) *
+                100
             )
             : 0
 
     useEffect(() => {
-        loadDashboard()
+        loadGrowthData()
     }, [])
 
-    async function loadDashboard({ silent = false } = {}) {
+    async function loadGrowthData({
+        silent = false
+    } = {}) {
         try {
             if (silent) {
                 setRefreshing(true)
@@ -91,15 +135,22 @@ export default function Growth() {
 
             setError("")
 
-            const data = await getReferralDashboard()
+            const [
+                referralData,
+                promoCodeData
+            ] = await Promise.all([
+                getReferralDashboard(),
+                getPromoCodesAdmin()
+            ])
 
-            setDashboard(data)
+            setDashboard(referralData)
+            setPromoCodes(promoCodeData)
         } catch (loadError) {
             console.error(loadError)
 
             setError(
                 loadError.message ||
-                "We could not load referral activity."
+                "We could not load growth data."
             )
         } finally {
             setLoading(false)
@@ -111,7 +162,10 @@ export default function Growth() {
         if (!referralLink) return
 
         try {
-            await navigator.clipboard.writeText(referralLink)
+            await navigator.clipboard.writeText(
+                referralLink
+            )
+
             setCopied(true)
 
             window.setTimeout(() => {
@@ -136,6 +190,104 @@ export default function Growth() {
         )
     }
 
+    async function handleCopyPromoCode(promoCode) {
+        try {
+            await navigator.clipboard.writeText(
+                promoCode.code
+            )
+
+            setCopiedPromoCodeId(promoCode.id)
+
+            window.setTimeout(() => {
+                setCopiedPromoCodeId(null)
+            }, 2000)
+        } catch (copyError) {
+            console.error(copyError)
+
+            setError(
+                "We could not copy the promo code."
+            )
+        }
+    }
+
+    async function handleTogglePromoCode(
+        promoCode
+    ) {
+        const nextStatus =
+            promoCode.status === "active"
+                ? "disabled"
+                : "active"
+
+        try {
+            setUpdatingPromoCodeId(
+                promoCode.id
+            )
+
+            setError("")
+
+            const updatedPromoCode =
+                await setPromoCodeStatusAdmin({
+                    promoCodeId: promoCode.id,
+                    status: nextStatus
+                })
+
+            setPromoCodes(currentPromoCodes =>
+                currentPromoCodes.map(current =>
+                    current.id === promoCode.id
+                        ? updatedPromoCode
+                        : current
+                )
+            )
+        } catch (updateError) {
+            console.error(updateError)
+
+            setError(
+                updateError.message ||
+                "We could not update the promo code."
+            )
+        } finally {
+            setUpdatingPromoCodeId(null)
+        }
+    }
+
+    async function handleCreatePromoCode(values) {
+        try {
+            setCreatingPromoCode(true)
+            setPromoFormError("")
+
+            const createdPromoCode =
+                await createPromoCodeAdmin(values)
+
+            setPromoCodes(currentPromoCodes => [
+                createdPromoCode,
+                ...currentPromoCodes
+            ])
+
+            setPromoFormOpen(false)
+        } catch (createError) {
+            console.error(createError)
+
+            setPromoFormError(
+                createError.message ||
+                "We could not create the promotion."
+            )
+        } finally {
+            setCreatingPromoCode(false)
+        }
+    }
+
+    function handleOpenPromoForm() {
+        setPromoFormError("")
+        setPromoFormOpen(true)
+    }
+
+    function handleClosePromoForm() {
+        if (creatingPromoCode) return
+
+        setPromoFormError("")
+        setPromoFormOpen(false)
+    }
+
     return (
         <AppPage>
             <PageHeader
@@ -153,15 +305,17 @@ export default function Growth() {
                     <span>Growth at Evergrove</span>
 
                     <h2>
-                        Grow through trust, usefulness, and
-                        families sharing something that helps.
+                        Grow through trust, usefulness,
+                        and families sharing something
+                        that helps.
                     </h2>
 
                     <p>
-                        Evergrove should earn growth through a
-                        product families value, a message they
-                        understand, and an experience they feel
-                        comfortable recommending.
+                        Evergrove should earn growth
+                        through a product families value,
+                        a message they understand, and an
+                        experience they feel comfortable
+                        recommending.
                     </p>
                 </section>
 
@@ -174,12 +328,13 @@ export default function Growth() {
 
                         <div>
                             <strong>
-                                Loading referral activity…
+                                Loading growth activity…
                             </strong>
 
                             <p>
-                                We&apos;re gathering the latest
-                                referral program data.
+                                We&apos;re gathering the
+                                latest referral and promo
+                                code data.
                             </p>
                         </div>
                     </section>
@@ -192,7 +347,8 @@ export default function Growth() {
                     >
                         <div>
                             <strong>
-                                Referral data could not be loaded.
+                                Growth data could not be
+                                loaded.
                             </strong>
 
                             <p>{error}</p>
@@ -200,7 +356,9 @@ export default function Growth() {
 
                         <Button
                             variant="secondary"
-                            onClick={() => loadDashboard()}
+                            onClick={() =>
+                                loadGrowthData()
+                            }
                         >
                             <RefreshCw size={17} />
                             Try Again
@@ -208,7 +366,7 @@ export default function Growth() {
                     </section>
                 )}
 
-                {!loading && !error && dashboard && (
+                {!loading && dashboard && (
                     <>
                         <SectionCard
                             title="Referral Program"
@@ -218,10 +376,10 @@ export default function Growth() {
                             <div className="growth-referral-layout">
                                 <div>
                                     <p className="growth-referral-card__intro">
-                                        Every household has one
-                                        permanent referral link it
-                                        can share with another
-                                        family.
+                                        Every household has
+                                        one permanent referral
+                                        link it can share with
+                                        another family.
                                     </p>
 
                                     <div className="growth-referral-link">
@@ -244,14 +402,18 @@ export default function Growth() {
                                             {copied ? (
                                                 <>
                                                     <Check
-                                                        size={17}
+                                                        size={
+                                                            17
+                                                        }
                                                     />
                                                     Copied
                                                 </>
                                             ) : (
                                                 <>
                                                     <Copy
-                                                        size={17}
+                                                        size={
+                                                            17
+                                                        }
                                                     />
                                                     Copy Link
                                                 </>
@@ -273,11 +435,13 @@ export default function Growth() {
                                         <Button
                                             variant="secondary"
                                             onClick={() =>
-                                                loadDashboard({
+                                                loadGrowthData({
                                                     silent: true
                                                 })
                                             }
-                                            disabled={refreshing}
+                                            disabled={
+                                                refreshing
+                                            }
                                         >
                                             <RefreshCw
                                                 size={17}
@@ -296,7 +460,9 @@ export default function Growth() {
                                 </div>
 
                                 <div className="growth-referral-summary">
-                                    <span>Activation rate</span>
+                                    <span>
+                                        Activation rate
+                                    </span>
 
                                     <strong>
                                         {activationRate}%
@@ -304,11 +470,200 @@ export default function Growth() {
 
                                     <p>
                                         {activatedCount} of{" "}
-                                        {totalConversions} referral
-                                        starts completed onboarding.
+                                        {totalConversions}{" "}
+                                        referral starts
+                                        completed onboarding.
                                     </p>
                                 </div>
                             </div>
+                        </SectionCard>
+
+                        <SectionCard
+                            title="Promo Codes"
+                            icon={Tag}
+                            className="growth-promo-card"
+                        >
+                            <div className="growth-promo-heading">
+                                <div>
+                                    <p>
+                                        Create and manage
+                                        promotional access
+                                        codes, special offers,
+                                        and launch campaigns.
+                                    </p>
+                                </div>
+
+                                <Button onClick={handleOpenPromoForm}>
+                                    <Tag size={17} />
+                                    New Promo Code
+                                </Button>
+                            </div>
+
+                            {!promoCodes.length ? (
+                                <div className="growth-promo-empty">
+                                    <strong>
+                                        No promo codes yet
+                                    </strong>
+
+                                    <p>
+                                        Create your first
+                                        promotion when you are
+                                        ready to grant special
+                                        access.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="growth-promo-list">
+                                    {promoCodes.map(
+                                        promoCode => {
+                                            const isUpdating =
+                                                updatingPromoCodeId ===
+                                                promoCode.id
+
+                                            const isCopied =
+                                                copiedPromoCodeId ===
+                                                promoCode.id
+
+                                            return (
+                                                <article
+                                                    key={
+                                                        promoCode.id
+                                                    }
+                                                    className="growth-promo-item"
+                                                >
+                                                    <div className="growth-promo-item__main">
+                                                        <div>
+                                                            <span className="growth-promo-item__name">
+                                                                {
+                                                                    promoCode.name
+                                                                }
+                                                            </span>
+
+                                                            <strong>
+                                                                {
+                                                                    promoCode.code
+                                                                }
+                                                            </strong>
+
+                                                            {promoCode.description && (
+                                                                <p>
+                                                                    {
+                                                                        promoCode.description
+                                                                    }
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                        <span
+                                                            className={`growth-promo-status growth-promo-status--${promoCode.status}`}
+                                                        >
+                                                            {
+                                                                promoCode.status
+                                                            }
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="growth-promo-item__details">
+                                                        <div>
+                                                            <span>
+                                                                Offer
+                                                            </span>
+
+                                                            <strong>
+                                                                {offerTypeLabels[
+                                                                    promoCode
+                                                                        .offer_type
+                                                                ] ??
+                                                                    promoCode.offer_type}
+                                                            </strong>
+                                                        </div>
+
+                                                        <div>
+                                                            <span>
+                                                                Usage
+                                                            </span>
+
+                                                            <strong>
+                                                                {
+                                                                    promoCode.redemption_count
+                                                                }{" "}
+                                                                /{" "}
+                                                                {promoCode.max_redemptions ??
+                                                                    "Unlimited"}
+                                                            </strong>
+                                                        </div>
+
+                                                        <div>
+                                                            <span>
+                                                                Expires
+                                                            </span>
+
+                                                            <strong>
+                                                                {formatDate(
+                                                                    promoCode.expires_at
+                                                                )}
+                                                            </strong>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="growth-promo-item__actions">
+                                                        <Button
+                                                            variant="secondary"
+                                                            onClick={() =>
+                                                                handleCopyPromoCode(
+                                                                    promoCode
+                                                                )
+                                                            }
+                                                        >
+                                                            {isCopied ? (
+                                                                <>
+                                                                    <Check
+                                                                        size={
+                                                                            17
+                                                                        }
+                                                                    />
+                                                                    Copied
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Copy
+                                                                        size={
+                                                                            17
+                                                                        }
+                                                                    />
+                                                                    Copy
+                                                                    Code
+                                                                </>
+                                                            )}
+                                                        </Button>
+
+                                                        <Button
+                                                            variant="secondary"
+                                                            onClick={() =>
+                                                                handleTogglePromoCode(
+                                                                    promoCode
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                isUpdating ||
+                                                                promoCode.status ===
+                                                                "expired"
+                                                            }
+                                                        >
+                                                            {isUpdating
+                                                                ? "Saving..."
+                                                                : promoCode.status ===
+                                                                    "active"
+                                                                    ? "Disable"
+                                                                    : "Activate"}
+                                                        </Button>
+                                                    </div>
+                                                </article>
+                                            )
+                                        }
+                                    )}
+                                </div>
+                            )}
                         </SectionCard>
 
                         <section className="growth-section">
@@ -317,27 +672,35 @@ export default function Growth() {
                                     Referral performance
                                 </span>
 
-                                <h2>Referral Funnel</h2>
+                                <h2>
+                                    Referral Funnel
+                                </h2>
 
                                 <p>
-                                    Follow referred families from
-                                    the first landing-page visit
-                                    through completed onboarding.
+                                    Follow referred families
+                                    from the first landing-page
+                                    visit through completed
+                                    onboarding.
                                 </p>
                             </div>
 
                             <div className="growth-funnel">
                                 {funnelStages.map(
                                     (stage, index) => {
-                                        const Icon = stage.icon
+                                        const Icon =
+                                            stage.icon
+
                                         const value =
-                                            dashboard.totals?.[
+                                            dashboard
+                                                .totals?.[
                                             stage.key
                                             ] ?? 0
 
                                         return (
                                             <div
-                                                key={stage.key}
+                                                key={
+                                                    stage.key
+                                                }
                                                 className="growth-funnel-stage-wrap"
                                             >
                                                 <article className="growth-funnel-stage">
@@ -356,7 +719,9 @@ export default function Growth() {
                                                     </span>
 
                                                     <strong>
-                                                        {value}
+                                                        {
+                                                            value
+                                                        }
                                                     </strong>
 
                                                     <p>
@@ -385,21 +750,31 @@ export default function Growth() {
 
                         <section className="growth-metrics-grid">
                             <article className="growth-metric-card">
-                                <span>Total Referral Starts</span>
+                                <span>
+                                    Total Referral
+                                    Starts
+                                </span>
+
                                 <strong>
                                     {totalConversions}
                                 </strong>
+
                                 <p>
                                     All referral conversions
-                                    created from this household.
+                                    created from this
+                                    household.
                                 </p>
                             </article>
 
                             <article className="growth-metric-card">
-                                <span>Activated Families</span>
+                                <span>
+                                    Activated Families
+                                </span>
+
                                 <strong>
                                     {activatedCount}
                                 </strong>
+
                                 <p>
                                     Referred households that
                                     completed onboarding.
@@ -407,19 +782,51 @@ export default function Growth() {
                             </article>
 
                             <article className="growth-metric-card">
-                                <span>Activation Rate</span>
+                                <span>
+                                    Activation Rate
+                                </span>
+
                                 <strong>
                                     {activationRate}%
                                 </strong>
+
                                 <p>
-                                    The share of referral starts
-                                    that became active households.
+                                    The share of referral
+                                    starts that became active
+                                    households.
                                 </p>
                             </article>
                         </section>
                     </>
                 )}
             </div>
+
+            <PromoCodeForm
+                open={promoFormOpen}
+                saving={creatingPromoCode}
+                error={promoFormError}
+                onClose={handleClosePromoForm}
+                onSubmit={handleCreatePromoCode}
+            />
+
         </AppPage>
     )
+}
+
+function formatDate(value) {
+    if (!value) {
+        return "No expiration"
+    }
+
+    const date = new Date(value)
+
+    if (Number.isNaN(date.getTime())) {
+        return "Unknown"
+    }
+
+    return new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+    }).format(date)
 }

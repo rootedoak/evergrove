@@ -52,11 +52,15 @@ export async function getHousehold360(householdId) {
 
     const [
         directoryResult,
+        billingResult,
+        promotionResult,
         inviteResult,
         supportResult,
         usageResult
     ] = await Promise.all([
         getHouseholdDirectory(householdId),
+        getHouseholdBillingDetails(householdId),
+        getHouseholdPromotion(householdId),
         getHouseholdInviteDetails(householdId),
         getHouseholdSupportTickets(householdId),
         getHouseholdUsageEvents(householdId)
@@ -65,13 +69,16 @@ export async function getHousehold360(householdId) {
     const rows = directoryResult
     const firstRow = rows[0]
 
-    if (!firstRow) return null
+    if (!firstRow) {
+        return null
+    }
 
     const userIds = rows
         .map(row => row.user_id)
         .filter(Boolean)
 
-    const preferencesResult = await getHouseholdUserPreferences(userIds)
+    const preferencesResult =
+        await getHouseholdUserPreferences(userIds)
 
     const preferencesByUserId = new Map(
         preferencesResult.map(preferences => [
@@ -118,7 +125,11 @@ export async function getHousehold360(householdId) {
         })
 
     const openTickets = supportResult.filter(ticket =>
-        ["new", "reviewing", "planned"].includes(ticket.status)
+        [
+            "new",
+            "reviewing",
+            "planned"
+        ].includes(ticket.status)
     )
 
     const adoption = getFeatureAdoption(usageResult)
@@ -127,13 +138,71 @@ export async function getHousehold360(householdId) {
         household: {
             id: firstRow.household_id,
             name: firstRow.household_name,
-            createdAt: firstRow.household_created_at,
-            memberCount: firstRow.member_count ?? members.length,
-            status: getHouseholdStatus(openTickets.length),
-            openTicketCount: openTickets.length,
-            ticketCount: supportResult.length,
-            usageEventCount: usageResult.length,
-            lastActiveAt: usageResult[0]?.created_at ?? null
+            createdAt:
+                firstRow.household_created_at,
+            memberCount:
+                firstRow.member_count ??
+                members.length,
+            status: getHouseholdStatus(
+                openTickets.length
+            ),
+            openTicketCount:
+                openTickets.length,
+            ticketCount:
+                supportResult.length,
+            usageEventCount:
+                usageResult.length,
+            lastActiveAt:
+                usageResult[0]?.created_at ??
+                null,
+
+            isBeta:
+                billingResult?.is_beta ??
+                true,
+            billingStatus:
+                billingResult?.billing_status ??
+                "beta",
+            billingExempt:
+                billingResult?.billing_exempt ??
+                false,
+            billingExemptReason:
+                billingResult
+                    ?.billing_exempt_reason ??
+                null,
+            billingExemptAt:
+                billingResult
+                    ?.billing_exempt_at ??
+                null,
+            billingExemptBy:
+                billingResult
+                    ?.billing_exempt_by ??
+                null,
+            billingCustomerId:
+                billingResult
+                    ?.billing_customer_id ??
+                null,
+            billingSubscriptionId:
+                billingResult
+                    ?.billing_subscription_id ??
+                null,
+            billingPeriodEndsAt:
+                billingResult
+                    ?.billing_period_ends_at ??
+                null,
+            promotion: promotionResult
+                ? {
+                    id:
+                        promotionResult.promo_codes?.id,
+                    name:
+                        promotionResult.promo_codes?.name,
+                    code:
+                        promotionResult.promo_codes?.code,
+                    offerType:
+                        promotionResult.promo_codes?.offer_type,
+                    redeemedAt:
+                        promotionResult.redeemed_at
+                }
+                : null
         },
         members,
         supportTickets: supportResult,
@@ -142,16 +211,117 @@ export async function getHousehold360(householdId) {
     }
 }
 
-async function getHouseholdDirectory(householdId) {
+export async function setHouseholdBillingExemption({
+    householdId,
+    billingExempt,
+    reason = null
+}) {
+    if (!householdId) {
+        throw new Error("householdId is required")
+    }
+
+    const normalizedReason =
+        typeof reason === "string"
+            ? reason.trim()
+            : null
+
+    if (
+        billingExempt &&
+        !normalizedReason
+    ) {
+        throw new Error(
+            "A reason is required for Free for Life access."
+        )
+    }
+
+    const { data, error } = await supabase.rpc(
+        "set_household_billing_exemption",
+        {
+            p_household_id:
+                householdId,
+            p_billing_exempt:
+                billingExempt,
+            p_reason: billingExempt
+                ? normalizedReason
+                : null
+        }
+    )
+
+    if (error) {
+        throw error
+    }
+
+    return data
+}
+
+async function getHouseholdDirectory(
+    householdId
+) {
     const { data, error } = await supabase
         .from("admin_household_directory")
         .select("*")
-        .eq("household_id", householdId)
+        .eq(
+            "household_id",
+            householdId
+        )
         .order("family_member_name")
 
-    if (error) throw error
+    if (error) {
+        throw error
+    }
 
     return data ?? []
+}
+
+async function getHouseholdBillingDetails(
+    householdId
+) {
+    const { data, error } = await supabase
+        .from("households")
+        .select(`
+            id,
+            is_beta,
+            billing_status,
+            billing_exempt,
+            billing_exempt_reason,
+            billing_exempt_at,
+            billing_exempt_by,
+            billing_customer_id,
+            billing_subscription_id,
+            billing_period_ends_at
+        `)
+        .eq("id", householdId)
+        .single()
+
+    if (error) {
+        throw error
+    }
+
+    return data
+}
+
+async function getHouseholdPromotion(
+    householdId
+) {
+    const { data, error } = await supabase
+        .from("promo_code_redemptions")
+        .select(`
+            redeemed_at,
+            promo_codes (
+                id,
+                name,
+                code,
+                offer_type
+            )
+        `)
+        .eq("household_id", householdId)
+        .maybeSingle()
+
+    if (error) {
+        throw error
+    }
+
+    return data
 }
 
 async function getHouseholdInviteDetails(
@@ -166,27 +336,42 @@ async function getHouseholdInviteDetails(
             invite_status,
             invite_expires_at
         `)
-        .eq("household_id", householdId)
+        .eq(
+            "household_id",
+            householdId
+        )
 
-    if (error) throw error
+    if (error) {
+        throw error
+    }
 
     return data ?? []
 }
 
-async function getHouseholdUserPreferences(userIds) {
-    if (!userIds.length) return []
+async function getHouseholdUserPreferences(
+    userIds
+) {
+    if (!userIds.length) {
+        return []
+    }
 
     const { data, error } = await supabase
-        .from("user_display_preferences")
+        .from(
+            "user_display_preferences"
+        )
         .select("*")
         .in("user_id", userIds)
 
-    if (error) throw error
+    if (error) {
+        throw error
+    }
 
     return data ?? []
 }
 
-async function getHouseholdSupportTickets(householdId) {
+async function getHouseholdSupportTickets(
+    householdId
+) {
     const { data, error } = await supabase
         .from("product_feedback")
         .select(`
@@ -199,16 +384,26 @@ async function getHouseholdSupportTickets(householdId) {
             priority,
             created_at
         `)
-        .eq("household_id", householdId)
-        .order("created_at", { ascending: false })
+        .eq(
+            "household_id",
+            householdId
+        )
+        .order(
+            "created_at",
+            { ascending: false }
+        )
         .limit(10)
 
-    if (error) throw error
+    if (error) {
+        throw error
+    }
 
     return data ?? []
 }
 
-async function getHouseholdUsageEvents(householdId) {
+async function getHouseholdUsageEvents(
+    householdId
+) {
     const { data, error } = await supabase
         .from("usage_events")
         .select(`
@@ -218,18 +413,34 @@ async function getHouseholdUsageEvents(householdId) {
             entity_id,
             created_at
         `)
-        .eq("household_id", householdId)
-        .order("created_at", { ascending: false })
+        .eq(
+            "household_id",
+            householdId
+        )
+        .order(
+            "created_at",
+            { ascending: false }
+        )
         .limit(50)
 
-    if (error) throw error
+    if (error) {
+        throw error
+    }
 
     return data ?? []
 }
 
-function getHouseholdStatus(openTicketCount) {
-    if (openTicketCount >= 3) return "at-risk"
-    if (openTicketCount >= 1) return "needs-attention"
+function getHouseholdStatus(
+    openTicketCount
+) {
+    if (openTicketCount >= 3) {
+        return "at-risk"
+    }
+
+    if (openTicketCount >= 1) {
+        return "needs-attention"
+    }
+
     return "healthy"
 }
 
@@ -237,14 +448,16 @@ function getFeatureAdoption(events) {
     const adoptedFeatures = new Set()
 
     for (const event of events ?? []) {
-        const feature = featureMap[event.event_type]
+        const feature =
+            featureMap[event.event_type]
 
         if (feature) {
             adoptedFeatures.add(feature)
         }
     }
 
-    return Array.from(adoptedFeatures)
+    return Array
+        .from(adoptedFeatures)
         .sort()
         .map(feature => ({
             feature,

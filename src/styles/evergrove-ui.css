@@ -5745,14 +5745,252 @@ label:has(input[type="time"]) {
     text-decoration: underline;
 }
 
+
+/* Habits page */
+
+.eg-habit-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.eg-habit-summary>div {
+    min-width: 0;
+}
+
+.eg-habit-summary h2 {
+    margin: 0.15rem 0 0;
+    color: #1d2939;
+}
+
+.eg-habit-progress-percent {
+    flex: 0 0 auto;
+    color: #2863eb;
+    font-size: 1.2rem;
+    font-weight: 850;
+}
+
+.eg-habit-progress-track {
+    width: 100%;
+    height: 0.7rem;
+    margin-top: 1rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #eaecf0;
+}
+
+.eg-habit-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: #2863eb;
+    transition: width 180ms ease;
+}
+
+.eg-habit-list {
+    display: grid;
+    gap: 0.7rem;
+    min-width: 0;
+}
+
+.eg-habit-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    gap: 0.8rem;
+    padding: 0.8rem;
+    border: 1px solid #e4e7ec;
+    border-radius: 1rem;
+    background: #ffffff;
+    box-sizing: border-box;
+}
+
+.eg-habit-row.complete {
+    background: #f8fafc;
+}
+
+.eg-habit-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.8rem;
+}
+
+.eg-habit-row-content {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.eg-habit-row-content>strong {
+    min-width: 0;
+    overflow: hidden;
+    color: #1d2939;
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.eg-habit-row-content>p {
+    margin: 0.2rem 0 0;
+    overflow: hidden;
+    color: #667085;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.eg-habit-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+}
+
+.eg-habit-meta>span {
+    color: #667085;
+    font-size: 0.76rem;
+    font-weight: 650;
+}
+
+.eg-habit-status {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    background: #f2f4f7;
+    color: #667085;
+    font-size: 0.72rem;
+    font-weight: 750;
+}
+
+.eg-habit-status.complete {
+    background: #ecfdf3;
+    color: #027a48;
+}
+
+.eg-habit-row-actions {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
+.eg-habit-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2.35rem;
+    height: 2.35rem;
+    padding: 0;
+    border: 1px solid #d0d5dd;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #98a2b3;
+    cursor: pointer;
+}
+
+.eg-habit-check:hover {
+    border-color: #98a2b3;
+    background: #f9fafb;
+}
+
+.eg-habit-check.complete {
+    border-color: #12b76a;
+    background: #ecfdf3;
+    color: #039855;
+}
+
+
+/* Habit counter */
+
+.eg-habit-counter {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 0.28rem;
+    max-width: 100%;
+    padding: 0.24rem;
+    border: 1px solid #d7e1ef;
+    border-radius: 999px;
+    background: #f7faff;
+    box-sizing: border-box;
+}
+
+.eg-habit-counter-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #1f2f46;
+    font-family: inherit;
+    font-size: 1.2rem;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.eg-habit-counter-button:hover:not(:disabled) {
+    background: #edf4ff;
+}
+
+.eg-habit-counter-button:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+.eg-habit-counter-button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.eg-habit-counter-value {
+    min-width: 2.7rem;
+    color: #1f2f46;
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.eg-habit-counter-value small {
+    color: #344054;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+
+/* Habit template sheet */
+
 .eg-habit-template-sheet {
     position: fixed;
     right: 0;
     bottom: 0;
     left: 0;
     z-index: 120;
-    display: grid;
-    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
     width: min(100%, 42rem);
     max-height: min(88vh, 48rem);
     margin: 0 auto;
@@ -5874,20 +6112,6 @@ label:has(input[type="time"]) {
     border-color: #2863eb;
     background: #edf2ff;
     color: #2863eb;
-}
-
-.eg-habit-template-list {
-    display: grid;
-    gap: 0.6rem;
-}
-
-/* Habit template sheet */
-
-.eg-habit-template-sheet {
-    display: flex;
-    flex-direction: column;
-    gap: 22px;
-    padding: 4px 0 24px;
 }
 
 .eg-habit-template-sheet__header {
@@ -6036,6 +6260,9 @@ label:has(input[type="time"]) {
     line-height: 1.35;
 }
 
+
+/* Mobile */
+
 @media (max-width: 600px) {
     .eg-habit-template-sheet {
         gap: 18px;
@@ -6048,60 +6275,24 @@ label:has(input[type="time"]) {
     .eg-habit-template-card {
         padding: 12px;
     }
-}
 
-.eg-habit-counter {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.28rem;
-    border: 1px solid #d7e1ef;
-    border-radius: 999px;
-    background: #f7faff;
-}
+    .eg-habit-row {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
 
-.eg-habit-counter-button {
-    width: 2.1rem;
-    height: 2.1rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 1px solid #e2e8f0;
-    border-radius: 999px;
-    background: #ffffff;
-    color: #1f2f46;
-    font-family: inherit;
-    font-size: 1.25rem;
-    font-weight: 800;
-    line-height: 1;
-    cursor: pointer;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-}
+    .eg-habit-row-content {
+        flex: 1 1 calc(100% - 3.5rem);
+    }
 
-.eg-habit-counter-button:hover:not(:disabled) {
-    background: #edf4ff;
-}
+    .eg-habit-row-actions {
+        width: 100%;
+        justify-content: flex-end;
+        padding-left: 3.3rem;
+        box-sizing: border-box;
+    }
 
-.eg-habit-counter-button:active:not(:disabled) {
-    transform: scale(0.96);
-}
-
-.eg-habit-counter-button:disabled {
-    opacity: 0.4;
-    cursor: default;
-}
-
-.eg-habit-counter-value {
-    min-width: 3.25rem;
-    text-align: center;
-    color: #1f2f46;
-    font-size: 1rem;
-    font-weight: 800;
-}
-
-.eg-habit-counter-value small {
-    color: #718096;
-    font-size: 0.78rem;
-    font-weight: 700;
+    .eg-habit-counter {
+        max-width: 100%;
+    }
 }

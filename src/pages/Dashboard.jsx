@@ -1493,12 +1493,7 @@ export default function Dashboard() {
                 <FloatingQuickActions
                     onAddTask={() => {
                         trackDashboardAction("quick_add_task")
-                        navigate("/calendar", {
-                            state: {
-                                openTaskForm: true,
-                                selectedDate: todayString
-                            }
-                        })
+                        navigate(`/tasks?dueDate=${todayString}`)
                     }}
                     onAddEvent={() => {
                         trackDashboardAction("quick_add_event")
