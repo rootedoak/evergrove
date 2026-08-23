@@ -324,31 +324,19 @@ function AppRoutes() {
         }
       >
         <Route index element={<AdminDashboard />} />
-        <Route
-          path="foundations"
-          element={<Foundations />}
-        />
+        <Route path="foundations" element={<Foundations />} />
         <Route path="brand" element={<Brand />} />
         <Route path="go-to-market" element={<GoToMarket />} />
-        <Route
-          path="trust"
-          element={<AdminTrustCenter />}
-        />
+        <Route path="trust" element={<AdminTrustCenter />} />
         <Route path="growth" element={<Growth />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="households" element={<Households />} />
         <Route path="households/:householdId" element={<Household360 />} />
         <Route path="support" element={<SupportInbox />} />
-        <Route
-          path="support/new"
-          element={<NewSupportTicket />}
-        />
+        <Route path="support/new" element={<NewSupportTicket />} />
         <Route path="support/:feedbackId" element={<SupportTicket />} />
         <Route path="releases" element={<Releases />} />
-        <Route
-          path="errors"
-          element={<AdminErrors />}
-        />
+        <Route path="errors" element={<AdminErrors />} />
         <Route path="releases/:releaseId" element={<ReleaseDetail />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="users/:userId" element={<UserProfile />} />
@@ -356,19 +344,9 @@ function AppRoutes() {
         <Route path="/admin/feature-flags" element={<FeatureFlags />} />
         <Route path="sales" element={<SalesMarketing />} />
         <Route path="roadmap" element={<Roadmap />} />
-        <Route
-          path="communications"
-          element={<AdminCommunications />}
-        />
-        <Route
-          path="discover"
-          element={<DiscoverMessages />}
-        />
-        <Route
-          path="discover/new"
-          element={<DiscoverMessageEditor />}
-        />
-
+        <Route path="communications" element={<AdminCommunications />} />
+        <Route path="discover" element={<DiscoverMessages />} />
+        <Route path="discover/new" element={<DiscoverMessageEditor />} />
         <Route
           path="discover/:discoverMessageId"
           element={<DiscoverMessageEditor />}
@@ -639,10 +617,81 @@ export default function App() {
     const userId = session?.user?.id
 
     if (!userId) return
-    if (automationRanForUserRef.current === userId) return
 
-    automationRanForUserRef.current = userId
-    runFamilyAutomation()
+    function getLocalDateKey() {
+      const now = new Date()
+
+      const year = now.getFullYear()
+      const month = String(
+        now.getMonth() + 1
+      ).padStart(2, "0")
+      const day = String(
+        now.getDate()
+      ).padStart(2, "0")
+
+      return `${year}-${month}-${day}`
+    }
+
+    async function runAutomationsIfNeeded() {
+      const dateKey = getLocalDateKey()
+      const runKey = `${userId}:${dateKey}`
+
+      if (
+        automationRanForUserRef.current ===
+        runKey
+      ) {
+        return
+      }
+
+      try {
+        await runFamilyAutomation()
+
+        automationRanForUserRef.current =
+          runKey
+      } catch (error) {
+        console.error(
+          "Family automation failed:",
+          error
+        )
+      }
+    }
+
+    runAutomationsIfNeeded()
+
+    function handleVisibilityChange() {
+      if (
+        document.visibilityState ===
+        "visible"
+      ) {
+        runAutomationsIfNeeded()
+      }
+    }
+
+    function handleFocus() {
+      runAutomationsIfNeeded()
+    }
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    )
+
+    window.addEventListener(
+      "focus",
+      handleFocus
+    )
+
+    return () => {
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      )
+
+      window.removeEventListener(
+        "focus",
+        handleFocus
+      )
+    }
   }, [session])
 
   if (checkingSession) {

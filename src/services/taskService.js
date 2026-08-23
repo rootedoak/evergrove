@@ -85,8 +85,13 @@ export async function getTasks() {
     }
 
     const { data, error } = await query
-        .order("due_date", { ascending: true, nullsFirst: false })
-        .order("created_at", { ascending: false })
+        .order("due_date", {
+            ascending: true,
+            nullsFirst: false
+        })
+        .order("created_at", {
+            ascending: false
+        })
 
     if (error) throw error
 
@@ -98,10 +103,16 @@ export async function createTask(task) {
     const householdId = await getCurrentHouseholdId(user.id)
 
     if (!householdId) {
-        throw new Error("No household found for current user.")
+        throw new Error(
+            "No household found for current user."
+        )
     }
 
-    const { household_id, user_id, ...cleanTask } = task
+    const {
+        household_id,
+        user_id,
+        ...cleanTask
+    } = task
 
     const { data, error } = await supabase
         .from("tasks")
@@ -110,7 +121,9 @@ export async function createTask(task) {
                 ...cleanTask,
                 user_id: user.id,
                 household_id: householdId,
-                visibility: cleanTask.visibility || "household"
+                visibility:
+                    cleanTask.visibility ||
+                    "household"
             }
         ])
         .select()
@@ -126,12 +139,18 @@ export async function createTask(task) {
         entityId: data.id,
         metadata: {
             source: "tasks",
-            visibility: data.visibility || "household",
-            has_due_date: Boolean(data.due_date),
-            family_member_id: data.family_member_id || null,
-            activity_id: data.activity_id || null,
-            routine_id: data.routine_id || null,
-            trip_id: data.trip_id || null
+            visibility:
+                data.visibility || "household",
+            has_due_date:
+                Boolean(data.due_date),
+            family_member_id:
+                data.family_member_id || null,
+            activity_id:
+                data.activity_id || null,
+            routine_id:
+                data.routine_id || null,
+            trip_id:
+                data.trip_id || null
         }
     })
 
@@ -156,24 +175,34 @@ export async function updateTask(id, updates) {
     const user = await getCurrentUser()
 
     const membership =
-        await getCurrentHouseholdMembership(user.id)
+        await getCurrentHouseholdMembership(
+            user.id
+        )
 
-    const isTeen = membership?.role === "teen"
+    const isTeen =
+        membership?.role === "teen"
 
-    const updateKeys = Object.keys(updates)
+    const updateKeys =
+        Object.keys(updates)
 
     const isStatusOnlyUpdate =
         updateKeys.length === 1 &&
         updateKeys[0] === "status" &&
-        ["open", "complete"].includes(updates.status)
+        ["open", "complete"].includes(
+            updates.status
+        )
 
     let data
 
-    if (isTeen && isStatusOnlyUpdate) {
-        data = await updateAssignedTaskStatus(
-            id,
-            updates.status
-        )
+    if (
+        isTeen &&
+        isStatusOnlyUpdate
+    ) {
+        data =
+            await updateAssignedTaskStatus(
+                id,
+                updates.status
+            )
     } else {
         const response = await supabase
             .from("tasks")
@@ -182,7 +211,9 @@ export async function updateTask(id, updates) {
             .select()
             .maybeSingle()
 
-        if (response.error) throw response.error
+        if (response.error) {
+            throw response.error
+        }
 
         data = response.data
     }
@@ -199,37 +230,57 @@ export async function updateTask(id, updates) {
         updates.completed === true
 
     if (isCompleted) {
-        if (data.visibility !== "private") {
+        if (
+            data.visibility !== "private"
+        ) {
             await createFeedEvent({
-                event_type: "task_completed",
-                title: data.title,
-                description: "Task completed",
-                reference_type: "task",
-                reference_id: data.id,
+                event_type:
+                    "task_completed",
+                title:
+                    data.title,
+                description:
+                    "Task completed",
+                reference_type:
+                    "task",
+                reference_id:
+                    data.id,
                 metadata: {
-                    task_id: data.id,
-                    task_title: data.title,
+                    task_id:
+                        data.id,
+                    task_title:
+                        data.title,
                     family_member_id:
-                        data.family_member_id || null
+                        data.family_member_id ||
+                        null
                 }
             })
         }
 
         await trackUsageEvent({
-            eventType: "task_completed",
-            entityType: "task",
-            entityId: data.id,
+            eventType:
+                "task_completed",
+            entityType:
+                "task",
+            entityId:
+                data.id,
             metadata: {
-                source: "tasks",
-                visibility: data.visibility || null,
+                source:
+                    "tasks",
+                visibility:
+                    data.visibility ||
+                    null,
                 family_member_id:
-                    data.family_member_id || null,
+                    data.family_member_id ||
+                    null,
                 activity_id:
-                    data.activity_id || null,
+                    data.activity_id ||
+                    null,
                 routine_id:
-                    data.routine_id || null,
+                    data.routine_id ||
+                    null,
                 trip_id:
-                    data.trip_id || null
+                    data.trip_id ||
+                    null
             }
         })
     }
@@ -256,16 +307,18 @@ export async function deleteTask(id) {
 }
 
 export async function completeTask(task) {
-    const updatedTask = await updateTask(task.id, {
-        status: "complete"
-    })
+    const updatedTask =
+        await updateTask(
+            task.id,
+            {
+                status: "complete"
+            }
+        )
 
     if (task.routine_id) {
-        await completeRoutine({
-            id: task.routine_id,
-            next_due: task.routines?.next_due || task.due_date,
-            frequency: task.routines?.frequency || "weekly"
-        })
+        await completeRoutine(
+            task.routine_id
+        )
     }
 
     return updatedTask

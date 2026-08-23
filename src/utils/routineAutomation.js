@@ -1,14 +1,26 @@
 import { createTaskFromRoutine } from "../services/routineService"
 
+function getLocalDateString() {
+    const today = new Date()
+
+    const year = today.getFullYear()
+    const month = String(
+        today.getMonth() + 1
+    ).padStart(2, "0")
+    const day = String(
+        today.getDate()
+    ).padStart(2, "0")
+
+    return `${year}-${month}-${day}`
+}
+
 function isDue(dateString) {
     if (!dateString) return false
 
-    const today = new Date()
-    const dueDate = new Date(`${dateString}T00:00:00`)
-
-    today.setHours(0, 0, 0, 0)
-
-    return dueDate <= today
+    return (
+        String(dateString).slice(0, 10) <=
+        getLocalDateString()
+    )
 }
 
 export async function runRoutineAutomation(routines) {
