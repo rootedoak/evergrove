@@ -218,13 +218,151 @@ function getSchoolEvents(schoolItems) {
         }))
 }
 
-function getCalendarEventEvents(calendarEvents) {
-    return (Array.isArray(calendarEvents) ? calendarEvents : []).flatMap(event => {
-        if (!event.start_date) return []
 
-        const events = []
+function getCalendarEventEvents(calendarEvents) {
+    const events = []
+
+    function addEvent(event, date) {
+        events.push({
+            id: `calendar-event-${event.id}-${date}`,
+            sourceId: event.id,
+            sourceType: "calendar_event",
+            date,
+            icon: event.event_type === "Activity" ? "🏃" : "📌",
+            title: event.title,
+            subtitle: event.event_type || "Calendar Event",
+            detail: event.location || "",
+            time_label: formatTimeRange(
+                event.start_time,
+                event.end_time
+            ),
+            start_time: event.start_time,
+            end_time: event.end_time,
+            sort_time: getMinutesFromTime(event.start_time)
+        })
+    }
+
+    function addDateInterval(dateString, frequency) {
+        const date = createLocalDate(dateString)
+
+        if (frequency === "daily") {
+            date.setDate(date.getDate() + 1)
+        } else if (frequency === "weekly") {
+            date.setDate(date.getDate() + 7)
+        } else if (frequency === "monthly") {
+            date.setMonth(date.getMonth() + 1)
+        }
+
+        return formatDateParts(
+            date.getFullYear(),
+            date.getMonth() + 1,
+            date.getDate()
+        )
+    }
+
+    const today = getTodayString()
+    const horizon = createLocalDate(today)
+    horizon.setDate(horizon.getDate() + 7)
+
+    const horizonString = formatDateParts(
+        horizon.getFullYear(),
+        horizon.getMonth() + 1,
+        horizon.getDate()
+    )
+
+    for (const event of Array.isArray(calendarEvents) ? calendarEvents : []) {
+        if (!event.start_date) continue
+
+        const frequency = event.session_frequency || "none"
+
+        const isRecurringActivity =
+            event.event_type === "Activity" &&
+            ["daily", "weekly", "monthly"].includes(frequency)
+
+        if (isRecurringActivity) {
+            const until = event.session_until || event.end_date
+
+            // Match Calendar behavior when no repeat-until date exists.
+            if (!until) {
+                addEvent(event, getDateOnly(event.start_date))
+                continue
+            }
+
+            let currentDate = getDateOnly(event.start_date)
+            const lastDate = getDateOnly(until)
+
+            while (
+                currentDate <= lastDate &&
+                currentDate <= horizonString
+            ) {
+                if (currentDate >= today) {
+                    addEvent(event, currentDate)
+                }
+
+                const nextDate = addDateInterval(currentDate, frequency)
+
+                if (nextDate <= currentDate) break
+                currentDate = nextDate
+            }
+
+            continue
+        }
+
+        // Handle annually repeating calendar events.
+        if (event.repeats_yearly || frequency === "yearly") {
+            const start = createLocalDate(event.start_date)
+            const end = event.end_date
+                ? createLocalDate(event.end_date)
+                : start
+
+            for (
+                let year = new Date().getFullYear();
+                year <= new Date().getFullYear() + 1;
+                year++
+            ) {
+                const occurrenceStart = new Date(
+                    year,
+                    start.getMonth(),
+                    start.getDate()
+                )
+
+                const durationDays = Math.round(
+                    (Date.UTC(
+                        end.getFullYear(),
+                        end.getMonth(),
+                        end.getDate()
+                    ) - Date.UTC(
+                        start.getFullYear(),
+                        start.getMonth(),
+                        start.getDate()
+                    )) / 86400000
+                )
+
+                for (let day = 0; day <= durationDays; day++) {
+                    const date = new Date(occurrenceStart)
+                    date.setDate(date.getDate() + day)
+
+                    const dateString = formatDateParts(
+                        date.getFullYear(),
+                        date.getMonth() + 1,
+                        date.getDate()
+                    )
+
+                    if (dateString >= today && dateString <= horizonString) {
+                        addEvent(event, dateString)
+                    }
+                }
+            }
+
+            continue
+        }
+
+        // Standard single-day or multi-day calendar events.
         const startDate = createLocalDate(event.start_date)
-        const endDate = createLocalDate(event.end_date || event.start_date)
+        const endDate = createLocalDate(
+            event.end_date || event.start_date
+        )
+
         const currentDate = new Date(startDate)
 
         while (currentDate <= endDate) {
@@ -234,27 +372,17 @@ function getCalendarEventEvents(calendarEvents) {
                 currentDate.getDate()
             )
 
-            events.push({
-                id: `calendar-event-${event.id}-${date}`,
-                sourceId: event.id,
-                sourceType: "calendar_event",
-                date,
-                icon: event.event_type === "Activity" ? "🏃" : "📌",
-                title: event.title,
-                subtitle: event.event_type || "Calendar Event",
-                detail: event.location || "",
-                time_label: formatTimeRange(event.start_time, event.end_time),
-                start_time: event.start_time,
-                end_time: event.end_time,
-                sort_time: getMinutesFromTime(event.start_time)
-            })
+            if (date >= today && date <= horizonString) {
+                addEvent(event, date)
+            }
 
             currentDate.setDate(currentDate.getDate() + 1)
         }
+    }
 
-        return events
-    })
+    return events
 }
+
 
 function getTripEvents(trips) {
     return (Array.isArray(trips) ? trips : []).flatMap(trip => {
@@ -493,7 +621,7 @@ export default function Dashboard() {
     const todayEvents = allEvents
         .filter(item => item.date === todayString)
         .sort((a, b) => {
-            if ((a.sort_time || 99999) !== (b.sort_time || 99999)) {
+            if ((a.sort_time || 99999) !== (b.sort_time ?? 99999)) {
                 return (a.sort_time || 99999) - (b.sort_time || 99999)
             }
 
