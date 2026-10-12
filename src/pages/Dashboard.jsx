@@ -540,7 +540,9 @@ export default function Dashboard() {
         end_time: "",
         location: "",
         notes: "",
-        repeats_yearly: false
+        repeats_yearly: false,
+        session_frequency: "none",
+        session_until: ""
     })
 
     const [showAnnouncementForm, setShowAnnouncementForm] = useState(false)
@@ -810,7 +812,9 @@ export default function Dashboard() {
             end_time: existingEvent.end_time || "",
             location: existingEvent.location || "",
             notes: existingEvent.notes || "",
-            repeats_yearly: Boolean(existingEvent.repeats_yearly)
+            repeats_yearly: Boolean(existingEvent.repeats_yearly),
+            session_frequency: existingEvent.session_frequency || "none",
+            session_until: existingEvent.session_until || ""
         })
     }
 
@@ -826,12 +830,24 @@ export default function Dashboard() {
             end_time: "",
             location: "",
             notes: "",
-            repeats_yearly: false
+            repeats_yearly: false,
+            session_frequency: "none",
+            session_until: ""
         })
     }
 
     async function handleUpdateBriefEvent(event) {
         try {
+            const frequency =
+                briefEventForm.session_frequency || "none"
+
+            const repeatsYearly =
+                frequency === "yearly" ||
+                (
+                    frequency === "none" &&
+                    briefEventForm.repeats_yearly
+                )
+
             await updateCalendarEvent(editingBriefEventId, {
                 title: briefEventForm.title.trim(),
                 event_type: briefEventForm.event_type,
@@ -841,12 +857,17 @@ export default function Dashboard() {
                 end_time: briefEventForm.end_time || null,
                 location: briefEventForm.location.trim() || null,
                 notes: briefEventForm.notes.trim() || null,
-                repeats_yearly: briefEventForm.repeats_yearly
+                repeats_yearly: repeatsYearly,
+                session_frequency: frequency,
+                session_until:
+                    briefEventForm.event_type === "Activity" &&
+                        ["daily", "weekly", "monthly"].includes(frequency)
+                        ? briefEventForm.session_until || null
+                        : null
             })
 
             cancelEditBriefEvent()
             await refreshCalendarEvents()
-
         } catch (error) {
             console.error(error)
             alert(error.message || "Could not update event.")
@@ -1194,25 +1215,31 @@ export default function Dashboard() {
                             className="task-action-sheet"
                             onClick={event => event.stopPropagation()}
                         >
+
                             {briefModal === "events" && (
                                 <>
                                     <h3>Events Today</h3>
 
                                     {todayEvents.length === 0 ? (
-                                        <p className="muted-text">Nothing scheduled today.</p>
+                                        <p className="muted-text">
+                                            Nothing scheduled today.
+                                        </p>
                                     ) : (
                                         todayEvents.map(event => (
-                                            <div key={event.id} className="mini-row dashboard-event-detail-row">
+                                            <div
+                                                key={event.id}
+                                                className="mini-row dashboard-event-detail-row"
+                                            >
                                                 {editingBriefEventId === event.sourceId ? (
                                                     <div className="dashboard-task-edit-form">
                                                         <input
                                                             className="form-input"
                                                             value={briefEventForm.title}
                                                             onChange={inputEvent =>
-                                                                setBriefEventForm({
-                                                                    ...briefEventForm,
+                                                                setBriefEventForm(current => ({
+                                                                    ...current,
                                                                     title: inputEvent.target.value
-                                                                })
+                                                                }))
                                                             }
                                                             placeholder="Event title"
                                                         />
@@ -1221,15 +1248,19 @@ export default function Dashboard() {
                                                             className="form-input"
                                                             value={briefEventForm.event_type}
                                                             onChange={inputEvent =>
-                                                                setBriefEventForm({
-                                                                    ...briefEventForm,
-                                                                    event_type: inputEvent.target.value
-                                                                })
+                                                                setBriefEventForm(current => ({
+                                                                    ...current,
+                                                                    event_type: inputEvent.target.value,
+                                                                    session_frequency: "none",
+                                                                    session_until: "",
+                                                                    repeats_yearly: false
+                                                                }))
                                                             }
                                                         >
                                                             <option>Family Event</option>
                                                             <option>Activity</option>
                                                             <option>School</option>
+                                                            <option>Doctor/Medical</option>
                                                             <option>Trip</option>
                                                             <option>Reminder</option>
                                                             <option>Important Date</option>
@@ -1239,65 +1270,134 @@ export default function Dashboard() {
                                                         </select>
 
                                                         <div className="two-column-form">
-                                                            <input
-                                                                className="form-input"
-                                                                type="date"
-                                                                value={briefEventForm.start_date}
-                                                                onChange={inputEvent =>
-                                                                    setBriefEventForm({
-                                                                        ...briefEventForm,
-                                                                        start_date: inputEvent.target.value
-                                                                    })
-                                                                }
-                                                            />
+                                                            <label>
+                                                                Start Date
+                                                                <input
+                                                                    className="form-input"
+                                                                    type="date"
+                                                                    value={briefEventForm.start_date}
+                                                                    onChange={inputEvent =>
+                                                                        setBriefEventForm(current => ({
+                                                                            ...current,
+                                                                            start_date: inputEvent.target.value
+                                                                        }))
+                                                                    }
+                                                                />
+                                                            </label>
 
-                                                            <input
-                                                                className="form-input"
-                                                                type="date"
-                                                                value={briefEventForm.end_date}
-                                                                onChange={inputEvent =>
-                                                                    setBriefEventForm({
-                                                                        ...briefEventForm,
-                                                                        end_date: inputEvent.target.value
-                                                                    })
-                                                                }
-                                                            />
+                                                            <label>
+                                                                End Date
+                                                                <input
+                                                                    className="form-input"
+                                                                    type="date"
+                                                                    value={briefEventForm.end_date}
+                                                                    onChange={inputEvent =>
+                                                                        setBriefEventForm(current => ({
+                                                                            ...current,
+                                                                            end_date: inputEvent.target.value
+                                                                        }))
+                                                                    }
+                                                                />
+                                                            </label>
                                                         </div>
 
-                                                        <div className="two-column-form">
-                                                            <input
-                                                                className="form-input"
-                                                                type="time"
-                                                                value={briefEventForm.start_time}
-                                                                onChange={inputEvent =>
-                                                                    setBriefEventForm({
-                                                                        ...briefEventForm,
-                                                                        start_time: inputEvent.target.value
-                                                                    })
-                                                                }
-                                                            />
+                                                        {["Activity", "Important Date"].includes(
+                                                            briefEventForm.event_type
+                                                        ) && (
+                                                                <label>
+                                                                    Repeat
+                                                                    <select
+                                                                        className="form-input"
+                                                                        value={
+                                                                            briefEventForm.session_frequency === "none" &&
+                                                                                briefEventForm.repeats_yearly
+                                                                                ? "yearly"
+                                                                                : briefEventForm.session_frequency
+                                                                        }
+                                                                        onChange={inputEvent => {
+                                                                            const frequency = inputEvent.target.value
 
-                                                            <input
-                                                                className="form-input"
-                                                                type="time"
-                                                                value={briefEventForm.end_time}
-                                                                onChange={inputEvent =>
-                                                                    setBriefEventForm({
-                                                                        ...briefEventForm,
-                                                                        end_time: inputEvent.target.value
-                                                                    })
-                                                                }
-                                                            />
+                                                                            setBriefEventForm(current => ({
+                                                                                ...current,
+                                                                                session_frequency: frequency,
+                                                                                repeats_yearly: frequency === "yearly",
+                                                                                session_until:
+                                                                                    ["daily", "weekly", "monthly"].includes(frequency)
+                                                                                        ? current.session_until
+                                                                                        : ""
+                                                                            }))
+                                                                        }}
+                                                                    >
+                                                                        <option value="none">Does not repeat</option>
+                                                                        <option value="daily">Daily</option>
+                                                                        <option value="weekly">Weekly</option>
+                                                                        <option value="monthly">Monthly</option>
+                                                                        <option value="yearly">Yearly</option>
+                                                                    </select>
+                                                                </label>
+                                                            )}
+
+                                                        {briefEventForm.event_type === "Activity" &&
+                                                            ["daily", "weekly", "monthly"].includes(
+                                                                briefEventForm.session_frequency
+                                                            ) && (
+                                                                <label>
+                                                                    Repeat Until
+                                                                    <input
+                                                                        className="form-input"
+                                                                        type="date"
+                                                                        min={briefEventForm.start_date || undefined}
+                                                                        value={briefEventForm.session_until}
+                                                                        onChange={inputEvent =>
+                                                                            setBriefEventForm(current => ({
+                                                                                ...current,
+                                                                                session_until: inputEvent.target.value
+                                                                            }))
+                                                                        }
+                                                                    />
+                                                                </label>
+                                                            )}
+
+                                                        <div className="two-column-form">
+                                                            <label>
+                                                                Start Time
+                                                                <input
+                                                                    className="form-input"
+                                                                    type="time"
+                                                                    value={briefEventForm.start_time}
+                                                                    onChange={inputEvent =>
+                                                                        setBriefEventForm(current => ({
+                                                                            ...current,
+                                                                            start_time: inputEvent.target.value
+                                                                        }))
+                                                                    }
+                                                                />
+                                                            </label>
+
+                                                            <label>
+                                                                End Time
+                                                                <input
+                                                                    className="form-input"
+                                                                    type="time"
+                                                                    value={briefEventForm.end_time}
+                                                                    onChange={inputEvent =>
+                                                                        setBriefEventForm(current => ({
+                                                                            ...current,
+                                                                            end_time: inputEvent.target.value
+                                                                        }))
+                                                                    }
+                                                                />
+                                                            </label>
                                                         </div>
 
                                                         <input
                                                             className="form-input"
                                                             value={briefEventForm.location}
                                                             onChange={inputEvent =>
-                                                                setBriefEventForm({
-                                                                    ...briefEventForm,
+                                                                setBriefEventForm(current => ({
+                                                                    ...current,
                                                                     location: inputEvent.target.value
-                                                                })
+                                                                }))
                                                             }
                                                             placeholder="Location"
                                                         />
@@ -1307,28 +1407,23 @@ export default function Dashboard() {
                                                             rows="2"
                                                             value={briefEventForm.notes}
                                                             onChange={inputEvent =>
-                                                                setBriefEventForm({
-                                                                    ...briefEventForm,
+                                                                setBriefEventForm(current => ({
+                                                                    ...current,
                                                                     notes: inputEvent.target.value
-                                                                })
+                                                                }))
                                                             }
                                                             placeholder="Notes"
                                                         />
 
-                                                        <label className="checkbox-row">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={briefEventForm.repeats_yearly}
-                                                                onChange={inputEvent =>
-                                                                    setBriefEventForm({
-                                                                        ...briefEventForm,
-                                                                        repeats_yearly: inputEvent.target.checked
-                                                                    })
-                                                                }
-                                                            />
-
-                                                            <span>Repeat every year</span>
-                                                        </label>
+                                                        {briefEventForm.event_type === "Activity" &&
+                                                            ["daily", "weekly", "monthly"].includes(
+                                                                briefEventForm.session_frequency
+                                                            ) && (
+                                                                <p className="muted-text">
+                                                                    Changes to this recurring activity will
+                                                                    apply to the entire series.
+                                                                </p>
+                                                            )}
 
                                                         <div className="button-row">
                                                             <button
@@ -1377,6 +1472,8 @@ export default function Dashboard() {
                                                                         type="button"
                                                                         className="dashboard-task-edit"
                                                                         onClick={() => startEditBriefEvent(event)}
+                                                                        aria-label={`Edit ${event.title}`}
+                                                                        title="Edit event"
                                                                     >
                                                                         ✏️
                                                                     </button>
@@ -1385,6 +1482,8 @@ export default function Dashboard() {
                                                                         type="button"
                                                                         className="dashboard-task-edit danger"
                                                                         onClick={() => handleDeleteBriefEvent(event)}
+                                                                        aria-label={`Delete ${event.title}`}
+                                                                        title="Delete event"
                                                                     >
                                                                         🗑️
                                                                     </button>
@@ -1397,11 +1496,15 @@ export default function Dashboard() {
                                         ))
                                     )}
 
-                                    <button type="button" onClick={() => setBriefModal(null)}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setBriefModal(null)}
+                                    >
                                         Close
                                     </button>
                                 </>
                             )}
+
 
                             {briefModal === "tasks" && (
                                 <>
