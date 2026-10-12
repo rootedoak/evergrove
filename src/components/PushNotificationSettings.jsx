@@ -1,6 +1,8 @@
+
 import { useEffect, useState } from "react"
 import {
     getNotificationPermission,
+    getPushSubscriptionStatus,
     isPushSupported,
     sendTestPushNotification,
     subscribeToPushNotifications,
@@ -10,12 +12,48 @@ import {
 export default function PushNotificationSettings() {
     const [supported, setSupported] = useState(false)
     const [permission, setPermission] = useState("default")
+    const [subscribed, setSubscribed] = useState(false)
+    const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [message, setMessage] = useState("")
 
     useEffect(() => {
-        setSupported(isPushSupported())
-        getNotificationPermission().then(setPermission)
+        let active = true
+
+        async function loadStatus() {
+            const pushSupported = isPushSupported()
+            if (!active) return
+
+            setSupported(pushSupported)
+
+            if (pushSupported) {
+                try {
+                    const [currentPermission, currentSubscription] =
+                        await Promise.all([
+                            getNotificationPermission(),
+                            getPushSubscriptionStatus(),
+                        ])
+
+                    if (active) {
+                        setPermission(currentPermission)
+                        setSubscribed(currentSubscription)
+                    }
+                } catch (error) {
+                    console.error(error)
+                    if (active) {
+                        setMessage("Unable to check push notification status.")
+                    }
+                }
+            }
+
+            if (active) setLoading(false)
+        }
+
+        loadStatus()
+
+        return () => {
+            active = false
+        }
     }, [])
 
     async function handleEnable() {
@@ -24,7 +62,9 @@ export default function PushNotificationSettings() {
 
         try {
             const result = await subscribeToPushNotifications()
+
             setPermission(result.permission)
+            setSubscribed(await getPushSubscriptionStatus())
 
             setMessage(
                 result.subscribed
@@ -45,8 +85,18 @@ export default function PushNotificationSettings() {
 
         try {
             await unsubscribeFromPushNotifications()
+
+            const currentSubscription =
+                await getPushSubscriptionStatus()
+
+            setSubscribed(currentSubscription)
             setPermission(await getNotificationPermission())
-            setMessage("Push notifications are disabled on this device.")
+
+            setMessage(
+                currentSubscription
+                    ? "Push notifications could not be disabled."
+                    : "Push notifications are disabled on this device."
+            )
         } catch (error) {
             console.error(error)
             setMessage(error.message || "Unable to disable push notifications.")
@@ -73,6 +123,14 @@ export default function PushNotificationSettings() {
         }
     }
 
+    if (loading) {
+        return (
+            <div className="settings-empty-state">
+                <p>Checking push notification status...</p>
+            </div>
+        )
+    }
+
     if (!supported) {
         return (
             <div className="settings-empty-state">
@@ -87,11 +145,21 @@ export default function PushNotificationSettings() {
                 <span>
                     <strong>Device push notifications</strong>
                     <p>
-                        Receive alerts for important Evergrove updates even when the app is closed.
+                        Receive alerts for important Evergrove updates
+                        even when the app is closed.
                     </p>
+
                     <p>
-                        Current status: <strong>{permission}</strong>
+                        Current status:{" "}
+                        <strong>
+                            {subscribed ? "Enabled" : "Disabled"}
+                        </strong>
                     </p>
+
+                    <p>
+                        Browser permission: {permission}
+                    </p>
+
                     {message && <p>{message}</p>}
                 </span>
 
@@ -100,7 +168,7 @@ export default function PushNotificationSettings() {
                         type="button"
                         className="secondary-button"
                         onClick={handleEnable}
-                        disabled={saving || permission === "granted"}
+                        disabled={saving || subscribed || permission === "denied"}
                     >
                         {saving ? "Saving..." : "Enable"}
                     </button>
@@ -109,7 +177,7 @@ export default function PushNotificationSettings() {
                         type="button"
                         className="secondary-button"
                         onClick={handleSendTest}
-                        disabled={saving || permission !== "granted"}
+                        disabled={saving || !subscribed || permission !== "granted"}
                     >
                         Send Test
                     </button>
@@ -118,7 +186,7 @@ export default function PushNotificationSettings() {
                         type="button"
                         className="danger-button"
                         onClick={handleDisable}
-                        disabled={saving}
+                        disabled={saving || !subscribed}
                     >
                         Disable
                     </button>

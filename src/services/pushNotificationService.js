@@ -117,24 +117,37 @@ export async function subscribeToPushNotifications() {
     }
 }
 
-export async function unsubscribeFromPushNotifications() {
+export async function getPushSubscriptionStatus() {
     if (!isPushSupported()) return false
 
     const registration = await navigator.serviceWorker.ready
     const subscription = await registration.pushManager.getSubscription()
 
+    return Boolean(subscription)
+}
+
+export async function unsubscribeFromPushNotifications() {
+    if (!isPushSupported()) return false
+
+    const userId = await getCurrentUserId()
+    const registration = await navigator.serviceWorker.ready
+    const subscription = await registration.pushManager.getSubscription()
+
     if (!subscription) return false
-
-    const endpoint = subscription.endpoint
-
-    await subscription.unsubscribe()
 
     const { error } = await supabase
         .from("push_subscriptions")
         .delete()
-        .eq("endpoint", endpoint)
+        .eq("user_id", userId)
+        .eq("endpoint", subscription.endpoint)
 
     if (error) throw error
+
+    const unsubscribed = await subscription.unsubscribe()
+
+    if (!unsubscribed) {
+        throw new Error("The browser could not unsubscribe this device.")
+    }
 
     return true
 }
